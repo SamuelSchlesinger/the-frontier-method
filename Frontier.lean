@@ -22,6 +22,10 @@ public import Frontier.Ledger.Main
 public import Frontier.Nondeterministic
 public import Frontier.Signals
 public import Frontier.AverageCase.Extractor
+public import Frontier.Boundary.Code
+public import Frontier.AverageCase.Pruning
+public import Frontier.Tree.Network
+public import Frontier.Layouts.Local
 
 /-!
 # The frontier method
@@ -40,7 +44,9 @@ A circuit lower bound from graph layouts, in independent pieces:
 * `Frontier.Demand`: demand and supply, the comparison that ends every lower bound.
 * `Frontier.Reduction` and `Frontier.LowerBound`: a small circuit yields a graph of small cycle
   rank all of whose layouts are wide; the layout hypothesis finishes the proof.
-* `Frontier.Layouts`: the layout bound for subcubic graphs, proved with Gaussian edge scores.
+* `Frontier.Layouts`: Gaussian layouts for subcubic graphs and a spanning-tree layout bound
+  for every fixed maximum degree. `Frontier.Layouts.Local`: independent median updates
+  cannot increase any threshold cut.
 * `Frontier.Linear`: totally regular linear maps, over finite fields with any basis and over
   infinite fields with polynomial operations; Cauchy matrices and arithmetic circuits.
 * `Frontier.Ledger` and `Frontier.Components`: gates of unbounded fan-in that aggregate in a
@@ -50,6 +56,9 @@ A circuit lower bound from graph layouts, in independent pieces:
 * `Frontier.Signals`: frontier capacity measured by distinct circuit signals.
 * `Frontier.AverageCase`: coherent weighted peeling and average-case circuit hardness from
   rectangle bias or sumset bias, with an exponentially small remainder below `L n`.
+* `Frontier.Boundary`: hypergraph signal boundaries, exact linear syndrome states, and
+  transition codes. `Frontier.AverageCase.Pruning`: transition deletion with an explicit tail
+  budget. `Frontier.Tree`: weighted peeling on trees of regions, with joint merge capacity.
 
 The main theorem is `Frontier.lowerBound`: under `LayoutBound (r + 1) A`, circuits of fan-in at
 most `r` deciding dense rectangle-free sets satisfy `(r - 1) s > (1 + 1/A - ε) n`. For fan-in

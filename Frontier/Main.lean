@@ -22,6 +22,9 @@ every circuit with fan-in at most two deciding `S_n`, over any basis on `U`, has
   (`lowerBound_gaussian`), and in particular
 * `(4 - ε) n` gates (`lowerBound_four`).
 
+For every fixed fan-in `r ≥ 2`, the general-degree spanning-tree bound gives
+`(r - 1) s > (2 - ε)n` (`lowerBound_all_fanIn`).
+
 Constant gates are free: the bounds hold for the number of gates of positive arity
 (`Cslib.Circuits.Circuit.innerSize`), and so for the size.
 -/
@@ -62,5 +65,21 @@ theorem lowerBound_four (S : ∀ n, Set (Fin n → U)) (K : ℕ → ℕ)
         (4 - ε) * n < c.innerSize := by
   have h := lowerBound_fanInTwo (by norm_num) layoutBound_one_third S K hfree hK hdense hε
   rwa [show (1 : ℝ) + 1 / (1 / 3) = 4 by norm_num] at h
+
+/-- **Every fixed fan-in.** The general-degree layout bound gives
+`(r - 1) s > (2 - ε)n` for every fixed `r ≥ 2`. The Gaussian theorem is sharper at `r = 2`. -/
+theorem lowerBound_all_fanIn {r : ℕ} (hr : 2 ≤ r)
+    (S : ∀ n, Set (Fin n → U)) (K : ℕ → ℕ)
+    (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
+    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
+    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
+      fun n => (n : ℝ))
+    {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
+      (c : Circuit σ n 1), c.FanInAtMost r → Decides c I Acc (S n) →
+        (2 - ε) * n < (r - 1) * c.innerSize := by
+  simpa only [div_one, one_add_one_eq_two] using
+    lowerBound hr (by norm_num : (0 : ℝ) < 1) (layoutBound_one (r + 1))
+      S K hfree hK hdense hε
 
 end Frontier

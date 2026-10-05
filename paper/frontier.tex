@@ -182,6 +182,11 @@ than $(4 - \varepsilon)n$.
 \leanref{Frontier.lowerBound_gaussian}
 \end{corollary}
 
+For every fixed fan-in $r\ge2$, we also prove the baseline bound
+$(r-1)s>(2-\varepsilon)n$. It follows from the general-degree estimate
+$\cw(G)\le\beta_1(G)+d\lfloor\log_2\card V\rfloor$
+(\cref{thm:general-layout,cor:all-fanin}).
+
 \paragraph{Nondeterministic circuits.}
 The same lower bound holds for verifiers $C(x,y)$ with $n$ ordinary inputs and any number of
 existential witness inputs, counting all positive-arity verifier gates. The threshold for $n$
@@ -445,7 +450,7 @@ instantiations, the signal-capacity inequality, the layout theorem, and the unif
 average-case bound from rectangle or sumset bias are
 formalized in Lean~4~\cite{Lean4} (toolchain \texttt{v4.35.0-rc3}),
 using Mathlib~\cite{Mathlib} (commit \texttt{9a6fbe0}) and CSLib~\cite{CSLib} (commit
-\texttt{89dc6fb}), in about 10,000 lines including documentation, available at
+\texttt{89dc6fb}), in about 12,000 lines including documentation, available at
 \begin{center}
 \url{https://github.com/SamuelSchlesinger/the-frontier-method}.
 \end{center}
@@ -461,7 +466,9 @@ polynomial-time evaluation behind \cref{cor:explicit,cor:extractor-average} are 
 formalized: Lean proves the bounds for every family satisfying the respective disperser or
 flat-source bias hypothesis. The weighted inequality for coherent sweeps
 (\cref{prop:weighted-sweep}) and the uniform average-case circuit theorem
-(\cref{thm:average-case}) are checked. The explicit branching-program model and rectangle
+(\cref{thm:average-case}) are checked. The general-degree layout and higher-fan-in bounds
+of \cref{sec:higher-fanin}, and the hypergraph, code, pruning, tree-frontier, and local-update
+results of \cref{sec:boundary}, are also checked. The explicit branching-program model and rectangle
 partition, the packing and arbitrary-distribution circuit statements
 (\cref{lem:weighted-frontier,thm:weighted-distribution,thm:weighted-circuit}), the random-set
 existence argument, the cubic-tree sharpness calculation, the signal-state counting algorithm,
@@ -475,8 +482,9 @@ lake env lean scripts/Audit.lean
 python3 scripts/check_algorithms.py
 ./scripts/build-paper.sh
 \end{verbatim}
-The audit checks the exact axiom lists of fifteen principal results, including weighted
-peeling and the average-case endpoints; a changed list fails the check.
+The audit checks the exact axiom lists of twenty-five principal results, including weighted
+peeling, the average-case endpoints, and the new capacity and layout results; a changed
+list fails the check.
 The Python script checks the reference edge, signal, and ledger counting
 procedures against exhaustive evaluation on small circuits, checks local conditional moments
 against full enumeration, and checks rectangle peeling and threshold charges in an unambiguous
@@ -492,8 +500,9 @@ counting lemma, with no graphs or circuits. \Cref{sec:networks} introduces const
 and sweeps along layouts, and \cref{sec:compiler} compiles circuits into networks.
 \Cref{sec:lowerbound} compares demand and supply and proves \cref{thm:main}, and
 \cref{sec:layouts} proves the layout bound. \Cref{sec:linear,sec:ledgers} treat linear maps and
-aggregate gates, and \cref{sec:counting} the counting algorithm. \Cref{sec:design} discusses the
-formalization and \cref{sec:open} open problems.
+aggregate gates, and \cref{sec:counting} the counting algorithm. \Cref{sec:boundary} refines
+the boundary capacities and proves the local median update. \Cref{sec:design} discusses
+the formalization and \cref{sec:open} open problems.
 
 % ===========================================================================
 \section{Rectangles}
@@ -1934,12 +1943,58 @@ hypothesis. A sharper theorem for the particular graphs produced by circuits cou
 other possibilities are a finer measure of frontiers or a different compiler.
 
 \subsection{Larger fan-in}
+\label{sec:higher-fanin}
 
-For fan-in $r \ge 3$ one needs $\LB_{r+1}(A)$ for graphs of maximum degree $r+1$, and any such
-bound gives $(r-1)s > (1 + 1/A - \varepsilon)\,n$. Since every circuit computing a function of
-$n$ essential variables has $(r-1)s \ge n - 1$, the method improves the trivial bound by the
-factor $1 + 1/A$. We do not know the best coefficients for $d \ge 4$; a compression as in
-\cref{sec:cubic} should again reduce the question to graphs of minimum degree three.
+The layout hypothesis has an unconditional instantiation in every fixed degree.
+
+\begin{theorem}[Every fixed degree]
+\label{thm:general-layout}
+Let $G$ be a nonempty connected multigraph on $N$ vertices, of maximum degree at most $d$.
+There is a layout of width at most
+\[
+  \beta_1(G)+d\lfloor\log_2 N\rfloor.
+\]
+Consequently $\LB_d(1)$ holds for every fixed $d$.
+\leanref{Frontier.Multigraph.exists_layout_cycleRank, Frontier.layoutBound_one}
+\end{theorem}
+
+\begin{proof}
+Choose a spanning tree $T$. A tree of maximum degree $d$ has cutwidth at most
+$d\lfloor\log_2 N\rfloor$: remove a centroid, recursively list the resulting components,
+each of size at most $N/2$, and put the centroid last. At a cut within one component,
+at most $d$ edges to the centroid supplement the recursive cut. The recurrence terminates
+at single vertices, whose internal cuts are empty. A centroid exists by repeatedly moving
+into a component containing more than half the vertices, if there is one; its size strictly
+decreases at each move.
+
+There are exactly $\beta_1(G)$ edges outside $T$. Restoring them adds at most that many
+edges to any cut. The logarithmic term is at most $\eta N+C_{d,\eta}$, proving the stated
+layout hypothesis. Lean obtains the same tree bound by the ordered-block merges of
+\cref{prop:compression}: in a tree the quotient has a block of boundary at most two,
+which can merge with a neighbour until only one block remains.
+\end{proof}
+
+\begin{corollary}[All fixed fan-ins]
+\label{cor:all-fanin}
+Under the hypotheses on $S_n$ in \cref{thm:main}, for every fixed $r\ge2$ and
+$\varepsilon>0$, all sufficiently large $n$ satisfy
+\[
+  (r-1)s>(2-\varepsilon)n
+\]
+for every circuit of fan-in at most $r$ deciding $S_n$.
+\leanref{Frontier.lowerBound_all_fanIn}
+\end{corollary}
+
+\begin{proof}
+Apply \cref{thm:main} with $A=1$ and \cref{thm:general-layout} at degree $r+1$.
+\end{proof}
+
+Thus the leading gate coefficients supplied here are $1$ for fan-in three, $2/3$ for
+fan-in four, and $2/(r-1)$ in general. These are baseline consequences of the layout
+method, not claims of optimal higher-fan-in lower bounds. For fan-in two,
+\cref{cor:unconditional} gives the stronger coefficient $L$. A calculation restricted to
+$d$-regular graphs would not suffice to sharpen \cref{cor:all-fanin}: the compiler needs
+all loopless multigraphs of maximum degree $d=r+1$, including irregular ones.
 
 % ===========================================================================
 \section{Linear maps and arithmetic circuits}
@@ -2647,6 +2702,269 @@ Finally, fixed-monoid aggregate gates have $\log\card M=O(k)$ by \cref{prop:aggr
 \end{proof}
 
 % ===========================================================================
+\section{Refining boundary capacity}
+\label{sec:boundary}
+
+The preceding bounds count boundary values. This section gives four checked ways to refine
+that count or the geometry of the decomposition, followed by a checked local change to
+Gaussian vertex keys. These statements do not improve the universal coefficient $L$ on
+their own: a numerical improvement also requires a bound on the resulting capacities or
+on the gain of the new keys.
+
+\subsection{Signal hypergraphs and boundary codes}
+
+For each circuit signal $a$, let $H_a$ be the set of endpoints of edges carrying $a$ in the
+compiled network. Regard these sets as the hyperedges of a hypergraph on the network
+vertices. Write
+\[
+  \partial_H X=\{a:H_a\cap X\ne\varnothing,\ H_a\setminus X\ne\varnothing\},
+  \qquad \lambda_H(X)=\card{\partial_H X}.
+\]
+
+\begin{proposition}[Signal cuts are hypergraph cuts]
+\label{prop:signal-hypergraph}
+The signals carried by edges of $\delta_G(X)$ are exactly $\partial_H X$. In particular,
+signal capacity is symmetric and submodular:
+\[
+  \lambda_H(X)=\lambda_H(V\setminus X),\qquad
+  \lambda_H(X\cap Y)+\lambda_H(X\cup Y)\le\lambda_H(X)+\lambda_H(Y).
+\]
+\leanref{Frontier.Compiler.signalCut_submodular}
+\end{proposition}
+
+\begin{proof}
+A crossing edge witnesses a crossing hyperedge. Conversely, all occurrences of a signal
+are connected by its junction chain and consumer edges. A path of that signal between
+opposite sides of $X$ must cross $\delta_G(X)$. For submodularity, check each hyperedge
+separately: its crossing indicator is a symmetric submodular $0$--$1$ set function.
+Summing gives the inequality. Equivalently,
+$\partial_H(X\cap Y)\cup\partial_H(X\cup Y)\subseteq\partial_H X\cup\partial_H Y$
+and the analogous inclusion holds for the intersections.
+\end{proof}
+
+An encoding can improve capacity further, provided it determines a whole transition.
+
+\begin{proposition}[Transition codes]
+\label{prop:boundary-code}
+Let $P$ be a sweep of $S$. At each step let $e_t:S\to C_t$ be an encoding into a finite set
+such that $e_t(x)=e_t(y)$ implies $\tau_t(x)=\tau_t(y)$. Then
+\[
+  D(P)\le\sum_t\card{C_t}.
+\]
+Under the hypotheses of \cref{prop:weighted-sweep}, its conclusion strengthens to
+\[
+  \left|\sum_{x\in S}w(x)\right|
+  \le\sum_{x\in S}c(x)+a(K_L-1)(K_R-1)\sum_t\card{C_t}.
+\]
+For a sweep over $\F_q$, if equality of a linear map $E_t x$ determines $\tau_t(x)$,
+one may use $\card{C_t}=q^{\operatorname{rank}E_t}$.
+\leanref{Frontier.Sweep.abs_sumOn_le_codes}
+\end{proposition}
+
+\begin{proof}
+The transition map factors through the used codes, so its image has at most $\card{C_t}$
+elements. Sum over steps and apply \cref{prop:weighted-sweep}. A linear map has
+$q^{\operatorname{rank}E_t}$ elements in its image.
+\end{proof}
+
+The reconstruction condition includes both adjacent messages and the newly read inputs.
+Ranks of the two boundary messages alone need not account for their joint transition.
+
+\subsection{Exact states of a linear boundary}
+
+For linear constraints, the appropriate code has a standard description in terms of
+syndromes and matroid connectivity. The relation between this connectivity and trellis
+state complexity is developed by Kashyap~\cite{Kashyap2007}. Here is the precise algebraic
+statement used by the boundary interface.
+
+\begin{proposition}[Feasible syndrome states]
+\label{prop:syndrome}
+Let $L:V\to W$ and $R:Z\to W$ be linear maps over a finite field $\F_q$, with $V$ and $W$
+finite-dimensional. A left assignment $x$ is feasible for $Lx+Ry=0$ if and only if
+$Lx\in\operatorname{im}R$. Among feasible left assignments, two have the same set of
+right completions if and only if their $L$-syndromes agree. The feasible syndromes form
+$\operatorname{im}L\cap\operatorname{im}R$, so their number is $q^\lambda$, where
+\[
+  \lambda=\operatorname{rank}L+\operatorname{rank}R-
+    \dim(\operatorname{im}L+\operatorname{im}R).
+\]
+Every exact classification of right-completion sets needs at least this many states.
+\leanref{Frontier.LinearBoundary.ncard_syndromes}
+\end{proposition}
+
+\begin{proof}
+A completion satisfies $Ry=-Lx$, proving the feasibility assertion and the description of
+the syndrome space. Equal syndromes give equal completion sets. Conversely, if a feasible
+$x$ and $x'$ have the same completion set, choose a common completion and cancel $Ry$ to
+obtain $Lx=Lx'$. The dimension formula for the intersection of two subspaces gives
+$\lambda$. Distinct feasible syndromes must therefore receive distinct exact states.
+\end{proof}
+
+For a column partition of a matrix this is the matroid connectivity expression
+$r(X)+r(\bar X)-r(E)$. All equations of the split system must be retained when forming
+these spaces. This supplies an exact linear boundary classification; its use in a sweep
+still requires the transition-reconstruction condition of \cref{prop:boundary-code}.
+
+\subsection{Pruning unlikely transitions}
+
+Let $P$ be a coherent sweep with nested revealed sets. Choose finite sets $T_t$ of retained
+transitions and keep exactly
+\[
+  S'=\{x\in S:\tau_t(x)\in T_t\text{ at every step}\},\qquad
+  D_T=\sum_t\card{T_t}.
+\]
+
+\begin{proposition}[Pruning with a tail budget]
+\label{prop:pruning}
+Under the weight and rectangle hypotheses of \cref{prop:weighted-sweep},
+\[
+  \left|\sum_{x\in S}w(x)\right|\le
+  \sum_{x\in S}c(x)+a(K_L-1)(K_R-1)D_T+
+  \sum_{x\in S\setminus S'}|w(x)|.
+\]
+For any nonnegative weight $\mu$, the discarded weight is at most
+\[
+  \sum_{x\in S\setminus S'}\mu(x)
+  \le \sum_t\sum_{\substack{x\in S\\\tau_t(x)\notin T_t}}\mu(x).
+\]
+\leanref{Frontier.Sweep.abs_sumOn_le_pruned, Frontier.Sweep.sumOn_discarded_le}
+\end{proposition}
+
+\begin{proof}
+A splice of retained inputs inherits each entire transition from one of its parents:
+coherence controls the messages, and nested revealed sets put each step's new coordinates
+on the same side of the splice. At the splice step the shared message supplies the common
+endpoint. Hence restriction to $S'$ preserves coherence and has at most $D_T$ transitions.
+Apply \cref{prop:weighted-sweep} to $S'$, and pay the absolute weight of its complement.
+Every discarded input has at least one failed transition, giving the second assertion by
+a weighted union bound. No independence of transition failures is assumed.
+\end{proof}
+
+For a Boolean predictor $g$ and a target of rectangle bias $2b$, apply the proposition to
+the two output sweeps. If the total discarded fraction under uniform inputs is $\delta$
+and their retained-transition budgets are $D_0,D_1$, then
+\begin{equation}
+\label{eq:pruned-agreement}
+  \Pr[f=g]\le\frac12+b+\frac\delta2+
+       \frac{(K-1)^2(D_0+D_1)}{2^{n+1}}.
+\end{equation}
+The factor $1/2$ on the discarded mass follows by adding the two signed output-class
+errors before converting correlation to agreement
+(\lean{Frontier.agreement_le_pruned_sweeps}). Network sweeps have nested revealed sets,
+including their final unused-input step (\lean{Frontier.Network.sweep_revealed_mono}).
+A universal gain would require small retained codebooks for every small circuit, together
+with a suitably small discarded mass; the bound does not presume such a concentration theorem.
+
+\subsection{A tree of regions}
+
+A binary region decomposition has a finite set of nodes, a root region $[n]$, and two
+disjoint child regions contained in each parent region. Nonempty children have smaller
+integer rank; empty children act as leaves. Write $X_v$ for a node's region and
+$Q_v=X_v\setminus(X_{v_0}\cup X_{v_1})$ for its local coordinates.
+A tree frontier assigns a message $\mu_v(x)$ to each node, with constant root message,
+and permits splicing along $X_v$ when the messages agree. Call it coherent if this splice
+preserves the shared message at $v$ and every other node's message comes from one parent
+input. Its joint merge record is
+\[
+  \tau_v(x)=(\mu_v(x),\mu_{v_0}(x),\mu_{v_1}(x),x|_{Q_v}),\qquad
+  D_{\rm tree}=\sum_v\card{\tau_v(S)}.
+\]
+
+\begin{theorem}[Weighted tree frontiers]
+\label{thm:tree-frontier}
+For a coherent tree frontier and the weight hypotheses of \cref{prop:weighted-sweep}
+with $K_L=K_R=K\ge2$,
+\[
+  \left|\sum_{x\in S}w(x)\right|
+  \le\sum_{x\in S}c(x)+a(K-1)^3D_{\rm tree}.
+\]
+\leanref{Frontier.TreeFrontier.abs_sumOn_le_of_budget}
+\end{theorem}
+
+\begin{proof}
+As before, coherence makes message classes rectangles and allows their deletion.
+Peel thick classes. In the residual set, fix an input $x$. If the residual set has size
+at least $K$, the root's interior peer set is large. Choose a node of smallest rank whose
+interior peer set has at least $K$ elements. Its two child interior peer sets have fewer
+than $K$ elements, and its exterior peer set also has fewer than $K$ elements, since
+the node's class is thin.
+
+Charge $x$ to that node and its merge record. Within one charge class, these two small
+child interiors and the small parent exterior determine the input: the merge record
+already fixes all local coordinates. There are at most $(K-1)^3$ choices. Summing over
+records bounds the residue. If the residue has fewer than $K$ inputs, the same bound
+holds because its transition count is positive whenever it is nonempty. Finally sum
+the rectangle budgets and the residual weight bound.
+\end{proof}
+
+There is a direct network realization. Suppose every input is read, satisfying edge
+assignments are unique, and the vertex regions $Y_v$ form a laminar binary decomposition:
+any two are nested or disjoint. Give node $v$ the trace on $\delta_G(Y_v)$ and region
+of inputs read in $Y_v$. The separator lemma gives splicing, and laminarity plus uniqueness
+gives coherence. Each merge record is determined by the values on
+\[
+  J_v=\delta_G(Y_v)\cup\delta_G(Y_{v_0})\cup\delta_G(Y_{v_1})
+\]
+and the locally read inputs $Q_v$. Thus the checked network bound is
+\begin{equation}
+\label{eq:tree-network}
+  \left|\sum_{x\in S}w(x)\right|\le\sum_{x\in S}c(x)+
+     a(K-1)^3\sum_v q^{\card{J_v}+\card{Q_v}}
+\end{equation}
+(\lean{Frontier.Network.abs_sumOn_accepted_le_tree}). The assumption that every input is
+read is explicit here; the earlier unused-input bias bound handles circuits with many
+unread inputs separately.
+
+For $\log K=o(n)$, replacing the square by a cube does not change the leading exponent.
+The graph-theoretic target is now the joint merge capacity $\card{J_v}+\card{Q_v}$.
+The largest individual separator does not automatically bound this quantity with
+coefficient one. This distinction also appears in tensor-network contraction
+widths~\cite{MarkovShi2005}. The rectangle interpretation of tree-based computation is
+related to the communication-complexity approach to knowledge
+compilation~\cite{BovaEtAl2016}; the theorem above states the weighted charging inequality
+directly, without assuming an equivalence with an unspecified branching-program model.
+
+\subsection{A nonlinear local improvement of vertex keys}
+
+The current Gaussian layout assigns a real key to each vertex. On a cubic graph, let
+$I$ be an independent set, and replace the key of each $v\in I$ by the median of its
+three neighbours' original keys. Keep all other keys fixed. This is a nonlinear local
+operation with a deterministic guarantee, regardless of how the original keys were drawn.
+
+\begin{proposition}[Independent median updates]
+\label{prop:local-median}
+For every real threshold $t$, the updated keys $k'$ satisfy
+\[
+  \card{\delta_G\{v:k'(v)<t\}}\le\card{\delta_G\{v:k(v)<t\}}.
+\]
+More precisely, if $c_v(t)$ and $c'_v(t)$ count incident crossing edges before and after
+the update, then
+\[
+  \card{\delta_G\{k<t\}}=\card{\delta_G\{k'<t\}}+
+       \sum_{v\in I}\bigl(c_v(t)-c'_v(t)\bigr),
+  \qquad c'_v(t)\le c_v(t).
+\]
+The decrease is strict if some selected vertex strictly improves.
+\leanref{Frontier.LocalLayout.cutSize_improve_cubic_le}
+\end{proposition}
+
+\begin{proof}
+At any threshold, the median chooses the majority side of the three neighbour keys,
+minimizing the local number of crossing edges. Independence keeps those neighbours fixed
+and ensures that every affected edge is incident to exactly one updated vertex.
+Consequently the local gains add without overlap. The same median choice works at every
+threshold, proving all inequalities simultaneously.
+\end{proof}
+
+To improve the universal Gaussian coefficient, one must additionally prove a positive
+linear expected gain at the relevant thresholds on every cubic graph, preserve the
+concentration argument, and handle ties when converting updated keys into a vertex order.
+The proposition establishes none of those quantitative claims by itself. Local modifications
+of Gaussian cuts and numerical experiments on the regular tree also occur in
+Lichev and Mitsche~\cite[Section~6]{LichevMitsche2020}; a tree experiment cannot replace
+the needed uniform theorem for arbitrary cubic graphs.
+
+% ===========================================================================
 \section{Design notes on the formalization}
 \label{sec:design}
 
@@ -2780,17 +3098,22 @@ straddling estimate alone cannot improve its limiting constant. A different scor
 a stronger global layout argument, or signal compression would be needed.
 
 \paragraph{Larger fan-in.}
-For fan-in $r \ge 3$ the method gives $(r-1)s > (1 + 1/A_{r+1} - \varepsilon)n$ under
-$\LB_{r+1}(A_{r+1})$. We do not know good layout coefficients for maximum degree $d \ge 4$; a
-compression as in \cref{sec:cubic} should again reduce the question to graphs of minimum degree
-three.
+\Cref{thm:general-layout} proves $\LB_d(1)$ in every fixed degree, giving
+$(r-1)s>(2-\varepsilon)n$. What sharper coefficients hold for $d\ge4$?
+A promising route is to replace higher-degree vertices by subcubic trees and control the
+congestion when projecting a cubic layout back to the original graph. Both that projection
+bound and the irregular-degree case must be proved before any regular-graph calculation
+can improve the circuit coefficient.
 
 \paragraph{Other capacities.}
-The nondeterministic extension is proved in \cref{thm:nondeterministic}, and
-\cref{thm:weighted-circuit} handles input distributions through min-entropy and rectangle
-bias. Beyond these, rank, and distinct signals, can entropy at a frontier or dimension for
-continuous operations over the reals (\cref{rem:continuous}) supply other demands and
-capacities? Such a capacity must still support a splicing or injectivity theorem at the cut.
+\Cref{sec:boundary} proves code, pruning, and tree-frontier inequalities. The missing
+step toward better universal coefficients is a supply theorem for one of these capacities:
+small transition codes, a small high-probability set of transitions, or small joint merge
+boundaries. For the local median update, the missing step is a quantitative gain theorem
+uniform over cubic graphs and the relevant thresholds. Can these statements be proved for
+the actual compiled networks? Dimension for continuous operations over the reals
+(\cref{rem:continuous}) is another possible capacity, provided it supports the required
+splicing or injectivity theorem.
 
 \paragraph{Explicit hard sets in the formalization.}
 The formalization takes the hard sets as hypotheses. A formal construction of a sumset
@@ -2876,6 +3199,25 @@ Lem.~\ref{lem:kernel} & \lean{Gaussian.sum_unitKernel_mul_ge} \\
 Lem.~\ref{lem:sheppard} & \lean{Gaussian.gaussPi_between_le_arccos} \\
 Prop.~\ref{prop:straddle} & \lean{Gaussian.measureReal_straddleEvent_le} \\
 Cor.~\ref{cor:unconditional} & \lean{lowerBound_gaussian}, \lean{lowerBound_four} \\
+Thm.~\ref{thm:general-layout} & \lean{Multigraph.exists_layout_cycleRank}, \lean{layoutBound_one} \\
+Cor.~\ref{cor:all-fanin} & \lean{lowerBound_all_fanIn} \\
+\midrule
+\multicolumn{2}{l}{\emph{Boundary refinements} (\lean{Boundary/*.lean}, \lean{Signals.lean})} \\*
+Prop.~\ref{prop:signal-hypergraph} & \lean{Compiler.signalCut_eq_hypergraph_cut} \\
+ & \lean{Hypergraph.cut_compl}, \lean{Compiler.signalCut_submodular} \\
+Prop.~\ref{prop:boundary-code} & \lean{Sweep.transitionCount_le_codes}, \lean{Sweep.abs_sumOn_le_codes} \\
+ & \lean{Sweep.transitionCount_le_linear_codes} \\
+Prop.~\ref{prop:syndrome} & \lean{LinearBoundary.completions_eq_iff}, \lean{LinearBoundary.ncard_syndromes} \\
+ & \lean{LinearBoundary.ncard_syndromes_le_states} \\
+\multicolumn{2}{l}{\emph{Pruning} (\lean{AverageCase/Pruning.lean})} \\*
+Prop.~\ref{prop:pruning} & \lean{Sweep.abs_sumOn_le_pruned}, \lean{Sweep.sumOn_discarded_le} \\
+Eq.~\eqref{eq:pruned-agreement} & \lean{agreement_le_pruned_sweeps} \\
+\multicolumn{2}{l}{\emph{Tree frontiers} (\lean{Tree.lean}, \lean{Tree/Network.lean})} \\*
+Thm.~\ref{thm:tree-frontier} & \lean{TreeFrontier.abs_sumOn_le_of_budget} \\
+Eq.~\eqref{eq:tree-network} & \lean{Network.abs_sumOn_accepted_le_tree} \\
+\multicolumn{2}{l}{\emph{Local updates} (\lean{Layouts/Local.lean})} \\*
+Prop.~\ref{prop:local-median} & \lean{LocalLayout.cutSize_improve_cubic_le} \\
+ & \lean{Multigraph.cutSize_eq_add_gain}, \lean{Multigraph.cutSize_lt_of_local} \\
 \midrule
 \multicolumn{2}{l}{\emph{Linear maps} (\lean{Linear/*.lean})} \\*
 Def.~\ref{def:totally-regular} & \lean{TotallyRegular}, \lean{TotallyRegular.eq_zero} \\

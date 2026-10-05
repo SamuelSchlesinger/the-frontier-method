@@ -65,3 +65,43 @@ Run after `lake build --wfail` with `lake env lean scripts/Audit.lean`.
 /-- info: 'Frontier.averageCase_sumset' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Frontier.averageCase_sumset
+
+/-- info: 'Frontier.layoutBound_one' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.layoutBound_one
+
+/-- info: 'Frontier.lowerBound_all_fanIn' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.lowerBound_all_fanIn
+
+/-- info: 'Frontier.Compiler.signalCut_submodular' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Compiler.signalCut_submodular
+
+/-- info: 'Frontier.LinearBoundary.ncard_syndromes' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.LinearBoundary.ncard_syndromes
+
+/-- info: 'Frontier.LinearBoundary.ncard_syndromes_le_states' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.LinearBoundary.ncard_syndromes_le_states
+
+/-- info: 'Frontier.Sweep.abs_sumOn_le_codes' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Sweep.abs_sumOn_le_codes
+
+/-- info: 'Frontier.Sweep.transitionCount_le_linear_codes' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Sweep.transitionCount_le_linear_codes
+
+/-- info: 'Frontier.agreement_le_pruned_sweeps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.agreement_le_pruned_sweeps
+
+/-- info: 'Frontier.Network.abs_sumOn_accepted_le_tree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Network.abs_sumOn_accepted_le_tree
+
+/-- info: 'Frontier.LocalLayout.cutSize_improve_cubic_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.LocalLayout.cutSize_improve_cubic_le

@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 module
 
 public import Frontier.Compiler
+public import Frontier.Boundary.Hypergraph
 
 /-!
 # Frontiers measured by distinct circuit signals
@@ -24,6 +25,56 @@ open Cslib.Circuits Set
 
 variable {σ : Signature} {n s : ℕ} {O U : Type*} [Finite O] [Finite U] [Nonempty U]
   {p : Program σ n s} {out : O → Wire n s} (I : Interpretation σ U) (Acc : O → Set U)
+
+omit [Finite U] [Nonempty U] in
+/-- All occurrences of a signal are joined by edges carrying that same signal. -/
+theorem signal_junction_path (w : Signal p out) :
+    ∀ k (hk : k < fanout p out w),
+      Relation.ReflTransGen ((network p out I Acc).toMultigraph.labelGraph Edge.signal w).Adj
+        (.junction ⟨w, ⟨k, hk⟩⟩) (.signal w)
+  | 0, _ => .single ⟨⟨.feed ⟨w, ⟨0, _⟩⟩, rfl⟩,
+      Or.inr ⟨by simp [Multigraph.labelGraph, network, src, feeder], rfl⟩⟩
+  | k + 1, hk => .head ⟨⟨.feed ⟨w, ⟨k + 1, hk⟩⟩, rfl⟩,
+      Or.inr ⟨by simp [Multigraph.labelGraph, network, src, feeder], rfl⟩⟩
+      (signal_junction_path w k (by lia))
+
+omit [Finite U] [Nonempty U] in
+theorem signal_occurrence_path (w : Signal p out) (v : Vertex p out)
+    (hv : v ∈ (network p out I Acc).toMultigraph.signalHypergraph Edge.signal w) :
+    Relation.ReflTransGen ((network p out I Acc).toMultigraph.labelGraph Edge.signal w).Adj
+      v (.signal w) := by
+  obtain ⟨e, rfl, he⟩ := hv
+  cases e with
+  | feed j =>
+    have hj := signal_junction_path I Acc j.1 j.2.val j.2.isLt
+    rcases he with rfl | rfl
+    · exact .head ⟨⟨.feed j, rfl⟩, Or.inl ⟨rfl, rfl⟩⟩ hj
+    · exact hj
+  | deliver j =>
+    have hj := signal_junction_path I Acc j.1 j.2.val j.2.isLt
+    rcases he with rfl | rfl
+    · exact hj
+    · exact .head ⟨⟨.deliver j, rfl⟩, Or.inr ⟨rfl, rfl⟩⟩ hj
+
+omit [Finite U] [Nonempty U] in
+/-- The junction compiler realizes exactly the native signal-hypergraph separator. -/
+theorem signalCut_eq_hypergraph_cut (X : Set (Vertex p out)) :
+    Edge.signal '' (network p out I Acc).cut X =
+      ((network p out I Acc).toMultigraph.signalHypergraph Edge.signal).cut X := by
+  apply Multigraph.image_cut_eq_hypergraph_cut
+  intro w u hu v hv
+  exact (signal_occurrence_path I Acc w u hu).trans
+    (Multigraph.reflTransGen_adj_symm (signal_occurrence_path I Acc w v hv))
+
+omit [Finite U] [Nonempty U] in
+/-- Distinct-signal capacity is a symmetric submodular separator function. -/
+theorem signalCut_submodular (X Y : Set (Vertex p out)) :
+    (Edge.signal '' (network p out I Acc).cut (X ∩ Y)).ncard +
+      (Edge.signal '' (network p out I Acc).cut (X ∪ Y)).ncard ≤
+        (Edge.signal '' (network p out I Acc).cut X).ncard +
+          (Edge.signal '' (network p out I Acc).cut Y).ncard := by
+  simp only [signalCut_eq_hypergraph_cut]
+  exact Hypergraph.ncard_cut_submodular _ _ _
 
 /-- The signal labels on a frontier. Repeated edges of the same wire are charged once. -/
 noncomputable def signalFrontier (π : Layout (Vertex p out)) (t : ℕ) : Set (Signal p out) :=

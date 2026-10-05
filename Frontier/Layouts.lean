@@ -7,9 +7,10 @@ module
 
 public import Frontier.Layouts.Compression
 public import Frontier.Layouts.Gaussian
+public import Frontier.Layouts.General
 
 /-!
-# Layout bounds for subcubic graphs
+# Layout bounds
 
 The graph-theoretic input of the lower bound, proved:
 
@@ -19,6 +20,8 @@ The graph-theoretic input of the lower bound, proved:
   compressing a subcubic multigraph to its cubic core turns this into a layout bound with
   coefficient `2p` (`Frontier.LayoutBound.of_cubic`).
 * `layoutBound_one_third`: `LayoutBound 3 (1/3)`, since `2p ≤ 9/32 < 1/3`.
+* `layoutBound_one d`: coefficient one in every fixed degree, from a spanning tree of width
+  at most `d log₂ |V|` and one additional edge per independent cycle.
 
 ## Structure of the proof
 

@@ -162,7 +162,7 @@ theorem Connected.cut_nonempty (hG : G.Connected) {S : Set V} {u v : V} (hu : u 
 /-- A *compression* of `G`: a partition of its vertices into *blocks*, each listing its
 vertices in order, with the invariants maintained by merging. A block `B` is identified with
 its vertex set `{v | v ∈ B}`. -/
-structure Compression (G : Multigraph V E) where
+structure Compression (G : Multigraph V E) (d : ℕ := 3) where
   /-- The blocks. -/
   blocks : Finset (List V)
   /-- Every vertex lies in a block. -/
@@ -173,25 +173,27 @@ structure Compression (G : Multigraph V E) where
   nodup : ∀ B ∈ blocks, B.Nodup
   /-- Blocks are nonempty. -/
   ne_nil : ∀ B ∈ blocks, B ≠ []
-  /-- At most three edges leave a block. -/
-  cut_le : ∀ B ∈ blocks, (G.cut {v | v ∈ B}).ncard ≤ 3
-  /-- At most `3 log₂ |B|` edges leave a proper prefix of a block `B`. -/
+  /-- At most `d` edges leave a block. -/
+  cut_le : ∀ B ∈ blocks, (G.cut {v | v ∈ B}).ncard ≤ d
+  /-- At most `d log₂ |B|` edges leave a proper prefix of a block `B`. -/
   cut_take_le : ∀ B ∈ blocks, ∀ k < B.length,
-    (G.cut {v | v ∈ B.take k}).ncard ≤ 3 * Nat.log 2 B.length
+    (G.cut {v | v ∈ B.take k}).ncard ≤ d * Nat.log 2 B.length
   /-- There are at least as many blocks and edges inside blocks as vertices. -/
   card_le : Nat.card V ≤
     blocks.card + {e | ∃ B ∈ blocks, G.src e ∈ B ∧ G.tgt e ∈ B}.ncard
 
 namespace Compression
 
-variable (c : Compression G)
+section General
 
-/-- **Merging.** Two distinct blocks joined by an edge, whose union has at most three edges
+variable {d : ℕ} (c : Compression G d)
+
+/-- **Merging.** Two distinct blocks joined by an edge, whose union has at most `d` edges
 leaving it, may be replaced by their union, listing the longer block first. -/
 theorem exists_merge [Finite E] {B B' : List V} (hB : B ∈ c.blocks) (hB' : B' ∈ c.blocks)
     (hne : B ≠ B') (hjoin : (G.cut {v | v ∈ B} ∩ G.cut {v | v ∈ B'}).Nonempty)
-    (hcut : (G.cut ({v | v ∈ B} ∪ {v | v ∈ B'})).ncard ≤ 3) :
-    ∃ c' : Compression G, c'.blocks.card < c.blocks.card := by
+    (hcut : (G.cut ({v | v ∈ B} ∪ {v | v ∈ B'})).ncard ≤ d) :
+    ∃ c' : Compression G d, c'.blocks.card < c.blocks.card := by
   classical
   wlog hlen : B'.length ≤ B.length generalizing B B'
   · rw [inter_comm] at hjoin
@@ -262,7 +264,7 @@ theorem exists_merge [Finite E] {B B' : List V} (hB : B ∈ c.blocks) (hB' : B' 
       rcases lt_or_ge k B.length with hk' | hk'
       · rw [Nat.sub_eq_zero_of_le hk'.le, List.take_zero, List.append_nil]
         exact (c.cut_take_le B hB k hk').trans
-          (Nat.mul_le_mul_left 3 (Nat.log_mono_right (by omega)))
+          (Nat.mul_le_mul_left d (Nat.log_mono_right (by omega)))
       · rw [List.take_of_length_le hk']
         have hb : B'.length ≠ 0 := by omega
         have h₁ := Set.ncard_le_ncard (G.cut_union_subset {v | v ∈ B}
@@ -274,6 +276,8 @@ theorem exists_merge [Finite E] {B B' : List V} (hB : B ∈ c.blocks) (hB' : B' 
         have h₅ : Nat.log 2 B'.length + 1 ≤ Nat.log 2 (B.length + B'.length) := by
           rw [← Nat.log_mul_base one_lt_two hb]
           exact Nat.log_mono_right (by omega)
+        have h₆ := Nat.mul_le_mul_left d h₅
+        simp only [Nat.mul_add, Nat.mul_one] at h₆
         rw [happ]
         omega
     · exact c.cut_take_le C hC k hk
@@ -307,8 +311,8 @@ theorem exists_merge [Finite E] {B B' : List V} (hB : B ∈ c.blocks) (hB' : B' 
     omega
 
 /-- The initial compression: every vertex is a block of its own. -/
-def initial [Fintype V] [DecidableEq V] [Finite E] (hG : G.MaxDegreeLE 3) :
-    Compression G where
+def initial [Fintype V] [DecidableEq V] [Finite E] (hG : G.MaxDegreeLE d) :
+    Compression G d where
   blocks := Finset.univ.image fun v => [v]
   cover v := ⟨[v], Finset.mem_image_of_mem _ (Finset.mem_univ v), List.mem_singleton_self v⟩
   eq_of_mem := by simp
@@ -327,6 +331,10 @@ def initial [Fintype V] [DecidableEq V] [Finite E] (hG : G.MaxDegreeLE 3) :
     rw [Finset.card_image_of_injective _ List.singleton_injective, Finset.card_univ,
       Nat.card_eq_fintype_card]
     exact Nat.le_add_right _ _
+
+end General
+
+variable (c : Compression G)
 
 /-- A compression is *final* when no merge applies: two distinct blocks joined by an edge are
 joined by only one, and three edges leave each of them. (The edges leaving both of two distinct
@@ -430,7 +438,8 @@ two blocks. -/
 theorem isRegularOfDegree [Finite E] (hc : c.Final) (hG : G.Connected)
     (two : 2 ≤ c.blocks.card) [c.quotient.LocallyFinite] : c.quotient.IsRegularOfDegree 3 := by
   intro B
-  rw [← SimpleGraph.ncard_incidenceSet, ← c.ncard_cut_eq_three hc hG two B]
+  rw [← SimpleGraph.ncard_incidenceSet]
+  apply Eq.trans ?_ (c.ncard_cut_eq_three hc hG two B)
   have : c.quotient.incidenceSet B = c.ends '' G.cut {v | v ∈ B.1} := by
     ext s
     rw [SimpleGraph.incidenceSet, edgeSet_quotient]
