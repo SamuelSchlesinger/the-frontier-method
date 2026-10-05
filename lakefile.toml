@@ -2,5 +2,22 @@ name = "Frontier"
 version = "0.1.0"
 defaultTargets = ["Frontier"]
 
+[leanOptions]
+weak.linter.mathlibStandardSet = true
+pp.unicode.fun = true
+autoImplicit = false
+
+# Pinned to the latest CSLib commit at the time of writing. Its Mathlib pin
+# dictates ours: bump CSLib first, then copy its Mathlib `rev` and toolchain.
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "9a6fbe02d04cd1f582eac50a8a4e34ad67582169"
+
+[[require]]
+name = "cslib"
+git = "https://github.com/leanprover/cslib"
+rev = "89dc6fbada3e8f6dc2a132e67214da9fb0fa7039"
+
 [[lean_lib]]
 name = "Frontier"
