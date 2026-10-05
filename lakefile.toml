@@ -1,0 +1,6 @@
+name = "Frontier"
+version = "0.1.0"
+defaultTargets = ["Frontier"]
+
+[[lean_lib]]
+name = "Frontier"
