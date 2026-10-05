@@ -20,6 +20,24 @@ The layout bound is proved for subcubic graphs with `A = (3/π) arccos((1 + 2√
   balanced sumset dispersers (`Frontier.lowerBound_sumsetDisperser`). The paper obtains an
   explicit Boolean language in P from Xin Li's [sumset-extractor construction](https://arxiv.org/abs/2303.06802).
   This construction and its polynomial-time evaluation are external to the formalization.
+* **Average-case hardness**: a one-bit sumset extractor with error `b_n` and
+  entropy threshold `o(n)` has agreement at most `1/2 + b_n + 2^(-Ω_ε(n))` with every
+  deterministic binary circuit of size at most `(L - ε)n`, for each fixed `ε > 0`.
+  A weighted frontier lemma partitions an unambiguous program's accepted set into large
+  rectangles and a small residual set. Its weighted form handles arbitrary input distributions
+  through min-entropy, asymmetric rectangle thresholds, and a shared exceptional measure.
+  Lean checks the coherent-sweep weighted inequality, the uniform circuit theorem
+  (`Frontier.averageCase`, `Frontier.averageCase_abs`), and its flat-source sumset instantiation
+  (`Frontier.averageCase_sumset`). The explicit program partition and general distributional
+  packing theorem remain paper proofs. The exponential remainder requires a fixed gap below `Ln`.
+* **Nondeterministic circuits**: the same coefficient holds for verifier circuits, uniformly
+  in the number of existential witness inputs (`Frontier.lowerBound_nondeterministic_gaussian`).
+  The gate count includes every positive-arity verifier gate; the input count includes only
+  ordinary inputs.
+* **Signal capacity**: the proved frontier inequality can charge distinct circuit signals
+  instead of their repeated edge copies (`Frontier.Compiler.ncard_accepted_le_signals`).
+  This supplies a finer capacity theorem; improving the numerical coefficient still requires
+  a stronger signal-layout bound.
 * **Linear maps and arithmetic circuits**: circuits computing a totally regular map `x ↦ M x`,
   over finite fields with any basis and over infinite fields with polynomial operations, need
   `(L - ε) N` gates; over every field of characteristic zero, arithmetic circuits computing the
@@ -31,16 +49,25 @@ The layout bound is proved for subcubic graphs with `A = (3/π) arccos((1 + 2√
   (`Frontier.lowerBound_ledger`, `Frontier.lowerBound_aggregate_gaussian`). The proof charges
   only the ordinary gates.
 
-The general lower-bound theorems, arithmetic instantiations, and layout theorem are proved
+The exact and uniform average-case lower bounds, arithmetic instantiations, and layout theorem
+are proved
 with no `sorry`, using only the standard axioms (`propext`, `Classical.choice`, `Quot.sound`),
-in about 8,600 lines of Lean. The accompanying paper also gives a deterministic #SAT algorithm
+in about 10,000 lines of Lean. The accompanying paper also gives a deterministic #SAT algorithm
 for circuits of fan-in two with `s` positive-arity gates, running for every fixed `η > 0` in
 time and space `O*(2^((1/L + η) s))`, where `1/L = 0.2191781936...`. Here `O*` suppresses
-polynomial factors in the full circuit encoding and the number of inputs; its polynomial
-degree may depend on `η`. The proof enumerates boundedly independent, finite-precision
-Gaussian samples to find a layout. The algorithms, their complexity bounds, this
-derandomization, the random-set existence argument, and the branching-program discussion
-are not formalized.
+polynomial factors in the full circuit encoding and the number of inputs. With `m` inputs
+reachable from the output, the sharper time bound is
+`O*(2^(min(m, A(s-m)) + ηs))`. With a finite, efficiently evaluable ledger, the algorithm takes
+`|M|^O(1) O*(2^((1/L + η) s_ord))`; this allows `k` unbounded AND/OR/parity/fixed-modulus gates
+at an additional `O(k)` cost in the exponent.
+
+The deterministic cubic-layout construction uses fixed-accuracy discretization and conditional
+expectations, taking `f(ξ) h^3 polylog(h)` time on an `h`-vertex cubic graph; the polynomial degree
+is independent of accuracy. The paper also proves exact counting with signal states and gives
+a tree-limit calculation showing that the current local Gaussian straddling estimate is sharp.
+The algorithms and their complexity bounds, this limiting calculation, the random-set existence
+argument, the explicit program partition and general distributional packing bounds, and the
+branching-program discussion are not formalized.
 
 ## How the proof is factored
 
@@ -55,6 +82,9 @@ are not formalized.
 | `Frontier/Demand.lean` | Demand and supply: the comparison that ends every lower bound |
 | `Frontier/Reduction.lean`, `Frontier/LowerBound.lean` | The main theorem |
 | `Frontier/Layouts/*.lean`, `Frontier/Layouts.lean` | The layout bound: kernels, Sheppard's bound, concentration, median layouts, Gaussian scores, compression |
+| `Frontier/Projection.lean`, `Frontier/Nondeterministic.lean` | Existential projection and the same lower bounds for verifiers |
+| `Frontier/Signals.lean` | Frontier capacity measured by distinct signals |
+| `Frontier/AverageCase/*.lean` | Coherent weighted peeling, circuit agreement bounds, and sumset bias |
 | `Frontier/Main.lean` | The `(L - ε) n` and `(4 - ε) n` bounds for dense rectangle-free families |
 | `Frontier/Linear/*.lean` | Totally regular maps, Cauchy matrices, linear capacity, linearization, arithmetic circuits |
 | `Frontier/Components.lean`, `Frontier/Ledger/*.lean` | Layouts of disconnected graphs; ledgers for gates of unbounded fan-in |
@@ -85,11 +115,19 @@ To bump, choose a CSLib commit first and copy its Mathlib `rev` and toolchain.
 lake exe cache get
 lake build --wfail
 lake env lean scripts/Audit.lean
+python3 scripts/check_algorithms.py
 ```
 
-The audit checks the exact axiom lists of eight principal results and fails if any list changes.
+The audit checks the exact axiom lists of fifteen principal results and fails if any list changes.
 It also runs in CI. The paper's theorem-to-declaration index identifies the checked statements;
 the audit does not verify the external extractor construction or the algorithmic claims.
+The Python script independently compares raw-edge, signal-state, and ledger counting with
+exhaustive circuit evaluation, checks exact conditional moments against full enumeration,
+and verifies rectangle peeling and threshold charges in an unambiguous program with guess
+layers, including asymmetric thresholds, nonuniform weights, and shared error budgets.
+It includes repeated arguments, constants, unused inputs, noncancellative monoids, and arbitrary
+vertex orders. These finite checks exercise correctness; they do not prove the asymptotic
+bounds or implement the full Gaussian layout construction.
 
 ## License
 

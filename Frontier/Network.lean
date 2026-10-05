@@ -253,6 +253,33 @@ theorem ncard_transition_le [Finite ι] [Finite U] [Finite E] {t : ℕ} (ht : t 
   rwa [Nat.card_prod, Nat.card_fun, Nat.card_fun, Nat.card_coe_set_eq, Nat.card_coe_set_eq,
     ← pow_add] at h
 
+/-- **Transitions by distinct labels.** If edges with the same label carry the same value,
+charge a label only once across the union of the adjacent frontiers. -/
+theorem ncard_transition_le_labels [Finite ι] [Finite U] {Λ : Type*} [Finite Λ]
+    (label : E → Λ) (value : (ι → U) → Λ → U)
+    (hval : ∀ x ∈ S, ∀ e, val x e = value x (label e))
+    {t : ℕ} (ht : t < Nat.card V) :
+    ((N.frontierSweep π val extra hlast hsplice).transition t '' S).ncard ≤
+      ((fun x => (extra t x, extra (t + 1) x)) '' S).ncard *
+        Nat.card U ^ ((label '' (N.frontier π t ∪ N.frontier π (t + 1))).ncard +
+          (N.readAt (π.symm ⟨t, ht⟩)).ncard) := by
+  set C := N.frontier π t ∪ N.frontier π (t + 1)
+  set Q := N.readAt (π.symm ⟨t, ht⟩)
+  have h := N.ncard_transition_le_of_determines (hlast := hlast) (hsplice := hsplice)
+    (D := (label '' C → U) × (Q → U))
+    (fun x => ((label '' C).domRestrict (value x), Q.domRestrict x))
+    fun x hx y hy h₀ h₁ hg => by
+      simp only [Prod.mk.injEq, domRestrict_eq_domRestrict_iff] at hg
+      have hv : EqOn (val x) (val y) C := fun e he => by
+        rw [hval x hx e, hval y hy e]
+        exact hg.1 ⟨e, he, rfl⟩
+      simp only [Sweep.transition, frontierSweep, Prod.mk.injEq, frontierValues_eq_iff,
+        domRestrict_eq_domRestrict_iff]
+      exact ⟨⟨h₀, hv.mono subset_union_left⟩, ⟨h₁, hv.mono subset_union_right⟩,
+        hg.2.mono (N.newly_subset_readAt (hlast := hlast) (hsplice := hsplice) ht)⟩
+  rwa [Nat.card_prod, Nat.card_fun, Nat.card_fun, Nat.card_coe_set_eq, Nat.card_coe_set_eq,
+    ← pow_add] at h
+
 /-- **Transitions inside a closed set.** If the vertex processed lies in `W`, both frontiers lie
 among the edges at `W`, and the values on the edges at `W` are determined by the extra messages
 and the inputs read in `W`, then so is the transition. -/
@@ -355,6 +382,35 @@ theorem ncard_accepted_le [Finite ι] [Finite U] [Finite E] {K : ℕ}
           have := hm (π.symm ⟨t, ht⟩)
           omega
       _ = Nat.card V * Nat.card U ^ (w + d + m) := by simp
+  · exact (Nat.mul_le_mul_right _ (hunit (Nat.card V))).trans (by rw [one_mul])
+
+/-- A label budget on adjacent frontiers bounds the accepted set without charging repeated
+copies of a label. This includes the inputs read during the step in the budget `b`. -/
+theorem ncard_accepted_le_labels [Finite ι] [Finite U] {Λ : Type*} [Finite Λ]
+    (label : E → Λ) (value : (ι → U) → Λ → U)
+    (hval : ∀ x ∈ N.accepted, ∀ e, N.witness x e = value x (label e))
+    {K b : ℕ} (hfree : RectangleFree N.accepted K) (hK : K ≤ N.accepted.ncard)
+    (hb : ∀ t, ∀ ht : t < Nat.card V,
+      (label '' (N.frontier π t ∪ N.frontier π (t + 1))).ncard +
+        (N.readAt (π.symm ⟨t, ht⟩)).ncard ≤ b) :
+    N.accepted.ncard ≤ (K - 1) ^ 2 *
+      (Nat.card V * Nat.card U ^ b + Nat.card U ^ N.readᶜ.ncard) := by
+  have hq : 1 ≤ Nat.card U := Nat.card_pos
+  have hunit : ∀ t, ((fun x => (((fun _ _ => ()) : ℕ → (ι → U) → Unit) t x,
+      ((fun _ _ => ()) : ℕ → (ι → U) → Unit) (t + 1) x)) '' N.accepted).ncard ≤ 1 :=
+    fun _ => (ncard_le_one (toFinite _)).mpr fun _ _ _ _ => Subsingleton.elim _ _
+  refine ((N.sweep π).ncard_le hfree hK).trans (Nat.mul_le_mul_left _ ?_)
+  rw [show (N.sweep π).length = Nat.card V + 1 from rfl, Finset.sum_range_succ]
+  refine add_le_add ?_ ((N.ncard_transition_last_le).trans ?_)
+  · calc ∑ t ∈ Finset.range (Nat.card V), ((N.sweep π).transition t '' N.accepted).ncard
+        ≤ ∑ _t ∈ Finset.range (Nat.card V), Nat.card U ^ b := by
+          refine Finset.sum_le_sum fun t ht => ?_
+          have ht : t < Nat.card V := Finset.mem_range.mp ht
+          exact (N.ncard_transition_le_labels label value hval ht).trans
+            ((Nat.mul_le_mul_right _ (hunit t)).trans (by
+              rw [one_mul]
+              exact Nat.pow_le_pow_right hq (hb t ht)))
+      _ = Nat.card V * Nat.card U ^ b := by simp
   · exact (Nat.mul_le_mul_right _ (hunit (Nat.card V))).trans (by rw [one_mul])
 
 end Sweep

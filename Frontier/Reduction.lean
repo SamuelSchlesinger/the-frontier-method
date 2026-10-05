@@ -80,6 +80,46 @@ theorem accepted_constraintNetwork {I : Interpretation σ U} {Acc : Set U} {c : 
   rw [hS x]
   exact ⟨fun h => h 0, fun h o => Subsingleton.elim o 0 ▸ h⟩
 
+/-- **Frontier demand for any network.** Rectangle-freeness pays for unread inputs;
+no uniqueness of satisfying assignments is needed. -/
+theorem Network.logb_ncard_accepted_le {V E : Type*} [Finite V] [Finite E]
+    [Finite U] [Nontrivial U] (N : Network U (Fin n) V E) {K d m w : ℕ}
+    (hfree : RectangleFree N.accepted K) (hbig : Nat.card U * K ^ 2 ≤ N.accepted.ncard)
+    (π : Layout V) (hw : ∀ t, (N.cut (π.initial t)).ncard ≤ w)
+    (hd : N.MaxDegreeLE d) (hm : ∀ v, (N.readAt v).ncard ≤ m) :
+    Real.logb (Nat.card U) N.accepted.ncard ≤
+      w + (d + m) + 3 * Real.logb (Nat.card U) K + Real.logb (Nat.card U) (Nat.card V + 1) := by
+  set q := Nat.card U
+  set v := Nat.card V
+  have hq1 : 1 < q := Finite.one_lt_card
+  have hK := hfree.pos
+  have hcount := N.ncard_accepted_le π hfree
+    ((Nat.le_mul_of_pos_left K (by positivity)).trans
+      ((Nat.mul_le_mul_left _ (Nat.le_self_pow two_ne_zero K)).trans hbig)) hw hd hm
+  have hunread := hfree.pow_ncard_compl_lt N.dependsOn_read hbig
+  have hnat : N.accepted.ncard ≤ K ^ 3 * (v + 1) * q ^ (w + d + m) := by
+    calc N.accepted.ncard ≤ (K - 1) ^ 2 * (v * q ^ (w + d + m) + q ^ N.readᶜ.ncard) := hcount
+      _ ≤ K ^ 2 * (v * K * q ^ (w + d + m) + K * q ^ (w + d + m)) := by
+          gcongr
+          · omega
+          · exact Nat.le_mul_of_pos_right _ hK
+          · exact hunread.le.trans (Nat.le_mul_of_pos_right _ (by positivity))
+      _ = K ^ 3 * (v + 1) * q ^ (w + d + m) := by ring
+  have hSpos : (0 : ℝ) < N.accepted.ncard := by
+    have : 0 < N.accepted.ncard := lt_of_lt_of_le (by positivity) hbig
+    exact_mod_cast this
+  have hqR : (1 : ℝ) < q := by exact_mod_cast hq1
+  calc Real.logb q N.accepted.ncard
+      ≤ Real.logb q ((K : ℝ) ^ 3 * (v + 1) * (q : ℝ) ^ (w + d + m)) :=
+        Real.logb_le_logb_of_le hqR hSpos (by exact_mod_cast hnat)
+    _ = w + (d + m) + 3 * Real.logb q K + Real.logb q (v + 1) := by
+        have hKR : (0 : ℝ) < K := by exact_mod_cast hK
+        rw [Real.logb_mul (by positivity) (by positivity), Real.logb_mul (by positivity)
+          (by positivity), Real.logb_pow, Real.logb_pow, Real.logb_self_eq_one hqR]
+        push_cast
+        ring
+
+
 section Reduction
 
 variable [Finite U] [Nontrivial U] {I : Interpretation σ U} {Acc : Set U} {c : Circuit σ n 1}
@@ -126,42 +166,13 @@ theorem logb_ncard_le (hr : 2 ≤ r) (hfan : c.FanInAtMost r) (hS : Decides c I 
     Real.logb (Nat.card U) S.ncard ≤
       w + (r + 2) + 3 * Real.logb (Nat.card U) K +
         Real.logb (Nat.card U) (Nat.card (Compiler.Vertex c.program c.outputs) + 1) := by
-  set N := constraintNetwork I Acc c
-  set q := Nat.card U
-  set V := Nat.card (Compiler.Vertex c.program c.outputs)
-  have hq1 : 1 < q := Finite.one_lt_card
-  have hK := hfree.pos
   have hacc := accepted_constraintNetwork hS
-  -- The frontier counting lemma, with degree `r + 1` and one input per vertex.
-  have hcount := N.ncard_accepted_le π (hacc ▸ hfree)
-    (hacc ▸ (Nat.le_mul_of_pos_left K (by positivity)).trans
-      ((Nat.mul_le_mul_left _ (Nat.le_self_pow two_ne_zero K)).trans hbig))
-    hw (Compiler.maxDegreeLE I _ hr hfan) (Compiler.ncard_readAt_le I _)
-  rw [hacc] at hcount
-  -- The unread inputs carry fewer than `K` assignments.
-  have hunread := pow_ncard_unread_lt hS hfree hbig
-  rw [show w + (r + 1) + 1 = w + (r + 2) by ring] at hcount
-  have hnat : S.ncard ≤ K ^ 3 * (V + 1) * q ^ (w + (r + 2)) := by
-    calc S.ncard ≤ (K - 1) ^ 2 * (V * q ^ (w + (r + 2)) + q ^ N.readᶜ.ncard) := hcount
-      _ ≤ K ^ 2 * (V * K * q ^ (w + (r + 2)) + K * q ^ (w + (r + 2))) := by
-          gcongr
-          · omega
-          · exact Nat.le_mul_of_pos_right _ hK
-          · exact hunread.le.trans (Nat.le_mul_of_pos_right _ (by positivity))
-      _ = K ^ 3 * (V + 1) * q ^ (w + (r + 2)) := by ring
-  have hSpos : (0 : ℝ) < S.ncard := by
-    have : 0 < S.ncard := lt_of_lt_of_le (by positivity) hbig
-    exact_mod_cast this
-  have hqR : (1 : ℝ) < q := by exact_mod_cast hq1
-  calc Real.logb q S.ncard
-      ≤ Real.logb q ((K : ℝ) ^ 3 * (V + 1) * (q : ℝ) ^ (w + (r + 2))) :=
-        Real.logb_le_logb_of_le hqR hSpos (by exact_mod_cast hnat)
-    _ = w + (r + 2) + 3 * Real.logb q K + Real.logb q (V + 1) := by
-        have hKR : (0 : ℝ) < K := by exact_mod_cast hK
-        rw [Real.logb_mul (by positivity) (by positivity), Real.logb_mul (by positivity)
-          (by positivity), Real.logb_pow, Real.logb_pow, Real.logb_self_eq_one hqR]
-        push_cast
-        ring
+  have h := (constraintNetwork I Acc c).logb_ncard_accepted_le (hacc ▸ hfree)
+    (hacc ▸ hbig) π hw (Compiler.maxDegreeLE I _ hr hfan) (Compiler.ncard_readAt_le I _)
+  rw [hacc] at h
+  convert h using 1
+  push_cast
+  ring
 
 /-- **The reduction theorem.** A circuit with `s` inner gates of fan-in at most `r ≥ 2`, over
 any basis on `U`, deciding a `K`-rectangle-free set `S ⊆ U^n` with `|S| ≥ q K^2`, yields a

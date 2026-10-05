@@ -90,7 +90,9 @@ $(3.1 - o(1))\,n$. The same coefficient holds for arbitrary-basis circuits compu
 regular linear maps over finite fields, and for arithmetic circuits over every field of
 characteristic zero computing the Cauchy map
 $x \mapsto \bigl(\sum_j x_j/(i - N - j)\bigr)_i$, counting additions and multiplications.
-It also survives $o(n)$ gates of unbounded fan-in computing AND, OR, parity, or fixed-modulus counts.
+The Boolean lower bound also holds for nondeterministic circuits, uniformly in the number of
+witness inputs. It survives $o(n)$ gates of unbounded fan-in computing AND, OR, parity, or
+fixed-modulus counts.
 
 The method is not gate elimination. Lay the wiring graph of a circuit out on a line and cut it
 anywhere: whatever the inputs on one side tell the computation on the other must cross the cut.
@@ -107,10 +109,16 @@ vertices of a cubic graph by the median of correlated Gaussian edge scores. Run 
 dynamic program, the same frontiers count the satisfying assignments of a circuit of fan-in two
 with $s$ gates deterministically in time $O^*(2^{(1/L + \eta)s})$ for every $\eta>0$, where
 $1/L \approx 0.219178$ and $O^*$ suppresses polynomial factors in the full instance size.
+With $m$ reachable inputs the sharper exponent is $\min\{m,A(s-m)\}+\eta s$; with a finite
+ledger $M$, counting costs $\card M^{O(1)}2^{(1/L+\eta)s_{\mathrm{ord}}}$ up to polynomial factors.
+The deterministic cubic layout construction has polynomial degree independent of its accuracy.
+A second capacity theorem charges distinct signal values instead of their repeated edge copies.
 
-The layout theorem and the general lower-bound theorems are formally verified in Lean~4.
-The explicit Boolean instantiation uses a cited sumset-extractor construction; the counting
-algorithms and their running times are not formalized.
+A weighted frontier lemma bounds agreement of circuits of size $(L-\varepsilon)n$ with a
+sumset extractor of error $b$ by $1/2+b+2^{-\Omega_\varepsilon(n)}$ under uniform inputs.
+The layout theorem, the general exact lower bounds, and this uniform average-case bound are
+formally verified in Lean~4. The explicit Boolean instantiations use a cited sumset-extractor
+construction. The counting algorithms are not formalized.
 \end{abstract}
 
 \newpage
@@ -174,6 +182,12 @@ than $(4 - \varepsilon)n$.
 \leanref{Frontier.lowerBound_gaussian}
 \end{corollary}
 
+\paragraph{Nondeterministic circuits.}
+The same lower bound holds for verifiers $C(x,y)$ with $n$ ordinary inputs and any number of
+existential witness inputs, counting all positive-arity verifier gates. The threshold for $n$
+is independent of the witness count (\cref{thm:nondeterministic}). In particular the explicit
+language below has the same nondeterministic lower bound.
+
 \paragraph{Explicit sets.}
 Over an alphabet with an addition, a rectangle is a sumset, so the fibers of a function that is
 never constant on the sum $A + B$ of two large sets of inputs are rectangle-free
@@ -193,6 +207,15 @@ $(L - \varepsilon)\,n$ gates, where $L \approx 4.5625$.
 The formal statement (\cref{thm:disperser}) applies to every balanced family of sumset
 dispersers with $\log K_n = o(n)$; that Li's extractor is one is a citation, not part of the
 formalization.
+
+\paragraph{Average-case hardness.}
+If the hard function is a sumset extractor of error $b_n$, the weighted frontier lemma gives
+agreement at most $1/2+b_n+2^{-\Omega_\varepsilon(n)}$ under uniform inputs for every circuit
+of size at most $(L-\varepsilon)n$ (\cref{thm:average-case,cor:extractor-average}). This is a
+bound for deterministic circuits; its proof uses uniqueness of the compiled trace.
+The ordinary bias $2b_n$ corresponds to prediction advantage $b_n$.
+The weighted form also handles arbitrary input distributions through their min-entropy
+and permits exceptional inputs charged to a shared measure (\cref{thm:weighted-circuit}).
 
 \paragraph{Linear maps and arithmetic circuits.}
 Nothing in the method is specific to deciding a set. For a circuit computing a linear map
@@ -244,7 +267,7 @@ Run forward as a dynamic program over frontier values, a layout of width $w$ cou
 satisfying assignments of a bounded-degree network in time $O^*(q^{w + O(1)})$
 (\cref{sec:counting}). Here $O^*$ suppresses polynomial factors in the number of inputs and
 the length of the circuit or network encoding. For each fixed accuracy parameter, the constants
-and polynomial degrees may depend on that parameter.
+may depend on that parameter; the Gaussian cubic-layout construction has an absolute polynomial degree.
 
 \begin{theorem}[Counting satisfying assignments]
 \label{thm:sat-intro}
@@ -258,9 +281,14 @@ The lower-bound coefficient and the counting exponent are reciprocals:
 \[
   L = 1 + \frac1A, \qquad \alpha = \frac{A}{1+A} = \frac1L.
 \]
-The deterministic layout algorithm enumerates a space of boundedly independent finite-precision
-Gaussian samples (\cref{lem:derandomization}). Direct sampling also gives an expected-polynomial-time
-layout algorithm, with the same counting exponent. Using the earlier coefficient $A=1/3$ gives
+The stronger input-sensitive bound is
+$O^*(2^{\min\{m,A(s-m)\}+\eta s})$ for $m$ reachable inputs (\cref{thm:sat}). With a finite
+ledger, the bound becomes $O^*(\card M^{O(1)}2^{(1/L+\eta)s_{\mathrm{ord}}})$
+(\cref{thm:ledger-counting}).
+The deterministic layout algorithm uses fixed-accuracy local discretization and conditional
+expectations (\cref{lem:derandomization}). Its time on an $h$-vertex cubic graph is
+$f(\xi)h^3(\log(h+2))^{O(1)}$, with an absolute polynomial degree. Direct sampling also gives an
+expected-polynomial-time layout algorithm, with the same counting exponent. Using the earlier coefficient $A=1/3$ gives
 the simpler deterministic exponent $1/4$.
 
 \subsection{Comparison with previous work}
@@ -289,7 +317,10 @@ extractors of Chattopadhyay and Zuckerman~\cite{ChattopadhyayZuckerman2019}, and
 min-entropy $O(\log n)$ by Li~\cite{Li2023}. Chattopadhyay and Liao~\cite{ChattopadhyayLiao2023}
 showed that sumset extractors are hard for strongly read-once linear branching programs, a model
 of Gryaznov, Pudl{\'a}k, and Talebanfard~\cite{GPT2022}; see also Li and
-Zhong~\cite{LiZhong2024}.
+Zhong~\cite{LiZhong2024}. This includes average-case hardness: the extractor-to-hardness
+connection is already present in these works; see also~\cite[Theorem~7.27]{Li2023}.
+Our weighted extension uses disjoint rectangles in an unambiguous fixed-order program
+and the circuit-to-layout conversion to obtain a circuit-size bound.
 
 \paragraph{Cuts, width, and layouts.}
 Converting circuits into ordered decision diagrams through small cuts goes back at least to
@@ -324,7 +355,8 @@ Circuit SAT over the full binary basis with $s$ gates can be solved in time $2^{
 algorithm of Nurk~\cite{Nurk2009}. Golovnev, Kulikov, Smal, and Tamaki~\cite{GKST2016} gave a
 framework in which gate elimination yields both lower bounds and algorithms counting satisfying
 assignments; in particular, they count in time faster than $2^n$ for full-binary-basis circuits
-of size at most $2.99n$. This input-relative regime differs from a bound expressed only in the
+of size at most $(3-\varepsilon)n$ for every fixed $\varepsilon>0$
+\cite[Section~5.2, Remark~2]{GKST2016}. This input-relative regime differs from a bound expressed only in the
 gate-count exponent. Our bound gives faster-than-$2^n$ counting for every fixed gate/input
 ratio below $L$, with polynomial factors in the instance size and exponential space.
 Williams~\cite{Williams2013} showed that improving exhaustive search implies
@@ -408,10 +440,12 @@ counting lemma itself then finds one component that reads almost all inputs
 \subsection{Formal verification}
 \label{sec:formal}
 
-The general circuit lower bounds, their arithmetic instantiations, and the layout theorem are
+The exact circuit lower bounds, including the nondeterministic extension, their arithmetic
+instantiations, the signal-capacity inequality, the layout theorem, and the uniform
+average-case bound from rectangle or sumset bias are
 formalized in Lean~4~\cite{Lean4} (toolchain \texttt{v4.35.0-rc3}),
 using Mathlib~\cite{Mathlib} (commit \texttt{9a6fbe0}) and CSLib~\cite{CSLib} (commit
-\texttt{89dc6fb}), in about 8,600 lines including documentation, available at
+\texttt{89dc6fb}), in about 10,000 lines including documentation, available at
 \begin{center}
 \url{https://github.com/SamuelSchlesinger/the-frontier-method}.
 \end{center}
@@ -423,19 +457,32 @@ depend only on Lean's standard axioms (\texttt{propext},
 \texttt{Classical.choice}, \texttt{Quot.sound}); there is no \texttt{sorry}. The formal
 statements quantify over every signature, interpretation, acceptance set and circuit, and their
 hypotheses match the corresponding general statements here. The extractor construction and its
-polynomial-time evaluation behind \cref{cor:explicit} are cited, not formalized: Lean proves
-the lower bound for every suitable disperser family. The random-set existence argument, the
-branching-program discussion, and all algorithms and complexity bounds in \cref{sec:counting},
-including derandomization, are also outside the formalization.
+polynomial-time evaluation behind \cref{cor:explicit,cor:extractor-average} are cited, not
+formalized: Lean proves the bounds for every family satisfying the respective disperser or
+flat-source bias hypothesis. The weighted inequality for coherent sweeps
+(\cref{prop:weighted-sweep}) and the uniform average-case circuit theorem
+(\cref{thm:average-case}) are checked. The explicit branching-program model and rectangle
+partition, the packing and arbitrary-distribution circuit statements
+(\cref{lem:weighted-frontier,thm:weighted-distribution,thm:weighted-circuit}), the random-set
+existence argument, the cubic-tree sharpness calculation, the signal-state counting algorithm,
+and all algorithms and complexity bounds in \cref{sec:counting}, including derandomization,
+are outside the formalization.
 After checking out the indicated clean snapshot, the verification commands are
 \begin{verbatim}
 lake exe cache get
 lake build --wfail
 lake env lean scripts/Audit.lean
+python3 scripts/check_algorithms.py
 ./scripts/build-paper.sh
 \end{verbatim}
-The audit checks the axiom lists of the principal lower bounds and the layout theorem; a changed
-list fails the check. \Cref{sec:design} records the design decisions behind the formal statements,
+The audit checks the exact axiom lists of fifteen principal results, including weighted
+peeling and the average-case endpoints; a changed list fails the check.
+The Python script checks the reference edge, signal, and ledger counting
+procedures against exhaustive evaluation on small circuits, checks local conditional moments
+against full enumeration, and checks rectangle peeling and threshold charges in an unambiguous
+program with guess layers, asymmetric thresholds, and nonuniform weights. These are finite
+correctness checks, not proofs of the asymptotic
+running times. \Cref{sec:design} records the design decisions behind the formal statements,
 and \cref{app:index} is an index from the paper to the code.
 
 \subsection{Organization}
@@ -689,6 +736,146 @@ input. Charging each input at the first time its past side reaches $K$ catches i
 when the previous past side and the current future side are both below $K$. The transition
 records exactly what is needed to pass between the two times.
 \end{remark}
+
+\subsection{A weighted approximate frontier lemma}
+\label{sec:weighted}
+
+For average-case bounds, deleting a message class must preserve splicing on exactly the
+remaining inputs. The abstract sweep axiom alone does not guarantee this. We call a sweep
+\emph{coherent} if splicing $x,y$ at time $t$, when their messages agree, also splices their
+whole message traces: the resulting input $z$ has $\mu_u(z)=\mu_u(x)$ for $u\le t$ and
+$\mu_u(z)=\mu_u(y)$ for $u\ge t$. Compiled circuits have this stronger property because
+their satisfying edge assignments are unique. The formal proof uses the following interface.
+
+\begin{proposition}[Weighted coherent sweeps]
+\label{prop:weighted-sweep}
+Let $P$ be a coherent sweep of $S\subseteq U^n$ of positive length, with $U$ finite. Fix
+$K_L,K_R\ge2$, write $B=(K_L-1)(K_R-1)$, and let $D$ be the sum of the numbers of used
+transitions over its steps. Call a coordinate rectangle \emph{thick} when its two sides
+have at least $K_L$ and $K_R$ elements, respectively. Let $w:U^n\to\R$, $c:U^n\to[0,\infty)$,
+and $a\ge0$ satisfy $|w(x)|\le a$ and
+\[
+  \left|\sum_{x\in R}w(x)\right|\le\sum_{x\in R}c(x)
+  \qquad\text{for every thick rectangle }R.
+\]
+Then
+\[
+  \left|\sum_{x\in S}w(x)\right|\le\sum_{x\in S}c(x)+aBD.
+\]
+\leanref{Frontier.Sweep.abs_sumOn_le_of_budget}
+\end{proposition}
+
+\begin{proof}
+Coherence makes each message class equal to its rectangular hull: splicing two peers
+preserves their message at the splice time. Delete any thick class $R$ at time $t$.
+The sweep restricted to $S\setminus R$ is still coherent. Indeed, splice two remaining
+inputs at time $u$. Its message at $t$ comes from the first input if $t\le u$, and from
+the second if $u\le t$, so it avoids the deleted class. Restriction cannot increase $D$.
+Repeat; the deleted rectangles are disjoint.
+
+In the residual sweep every class has past side smaller than $K_L$ or future side smaller
+than $K_R$. If the residual set has at least $K_L$ inputs, the threshold-charging proof of
+\cref{lem:counting}, with past threshold $K_L$ and future threshold $K_R$, bounds its size
+by $BD$: at a charged transition the previous past side has at most $K_L-1$ elements and
+the next future side at most $K_R-1$. If it has fewer than $K_L$ inputs, the same bound
+holds because a nonempty sweep of positive length has $D\ge1$. Sum the bounds on the
+deleted rectangles and use $|w|\le a$ on the residue. Nonnegativity of $c$ allows its sum
+over the deleted rectangles to be bounded by its sum over $S$.
+\end{proof}
+
+For example, taking $w(x)=f(x)\mu(x)$, $c(x)=\beta\mu(x)+\xi(x)$ and
+$a=\max_x\mu(x)$ handles an arbitrary input distribution and a shared nonnegative error
+measure $\xi$. The following program formulation also records the rectangle partition
+explicitly. Unambiguity makes state deletion remove exactly the inputs in its rectangle.
+
+\begin{lemma}[Weighted approximate frontier lemma; not formalized]
+\label{lem:weighted-frontier}
+Let $P$ be an unambiguous layered read-once program with a fixed variable order, one accepting
+sink, and $D$ edges. Every accepting path queries all $n\ge1$ input coordinates, with
+additional guess layers allowed. Let $S\subseteq U^n$ be its accepted set, where $U$ is a
+finite alphabet. Fix $K_L,K_R\ge2$ and put $B=(K_L-1)(K_R-1)$. Call a coordinate rectangle
+\emph{thick} if its past side has at least $K_L$ elements and its future side has at least
+$K_R$ elements. Then $S$ is the disjoint union of thick rectangles, possibly at different
+coordinate splits, and a residual set of size at most $BD$.
+
+Consequently, if $w:U^n\to[-1,1]$ and $\beta\ge0$ satisfy
+\[
+  \left|\sum_{x\in R}w(x)\right|\le\beta|R|
+\]
+for every thick coordinate rectangle $R$, then
+\[
+  \left|\sum_{x\in S}w(x)\right|
+  \le \beta|S|+BD.
+\]
+\end{lemma}
+
+\begin{proof}
+Discard states not lying on an accepting path. At a state $v$ in layer $t$, let $A_v$ be the
+set of input prefixes on paths from the start to $v$, and $B_v$ the set of suffixes on paths
+from $v$ to the sink. Fixed order makes the inputs having an accepting path through $v$
+exactly the rectangle $R_v=A_v\times B_v$, for the coordinate partition at that layer.
+If $|A_v|\ge K_L$ and $|B_v|\ge K_R$, record $R_v$ and delete $v$ and its incident edges.
+By unambiguity, no input of $R_v$ has another accepting path avoiding $v$. Thus the remaining
+accepted set is exactly the old one minus $R_v$, and the remaining program is still
+unambiguous. Repeat until there is no such state. The recorded rectangles are disjoint,
+and deletion never increases the number of edges.
+
+Let $S'$ be the residual accepted set. If it is empty there is nothing to prove.
+Otherwise $D\ge1$, since $n\ge1$.
+If $|S'|<K_L$, it has at most $K_L-1\le BD$ elements. Otherwise,
+on the unique accepting path of each $x\in S'$, charge $x$ to the edge $u\to v$ at which
+$|A_v|$ first reaches $K_L$. The start has one prefix and the sink has $|S'|$ prefixes, so the
+edge exists. Minimality gives $|A_u|<K_L$; termination of the deletion process gives $|B_v|<K_R$.
+For a fixed charged edge, an input is determined by its prefix at $u$, its suffix at $v$,
+and the edge label (a queried symbol or a guess). Hence at most $B$ inputs charge to it,
+exactly as in \cref{lem:counting}. This bounds $|S'|$ by $BD$ in the second case.
+Finally sum the rectangle bounds over the disjoint pieces and use $|w(x)|\le1$ on $S'$.
+\end{proof}
+
+The weight need not be Boolean. For a Boolean target $f$, the relevant weight is
+$w(x)=(-1)^{f(x)}$. If $f$ has bias at most $2b$ on every large rectangle, apply the lemma
+with $K_L=K_R=K$ and $\beta=2b$ separately to the two output classes of a circuit. This bounds prediction
+agreement by $1/2+b$ plus half the residual fraction. A cover with overlapping rectangles
+would not justify this summation; the state-deletion argument supplies a partition.
+
+\begin{theorem}[Weighted distributions and a shared error budget; not formalized]
+\label{thm:weighted-distribution}
+Let $f,g:U^n\to\{-1,1\}$ and let $\mu$ be any probability measure on $U^n$, where
+$q=|U|\ge2$ and $n\ge1$. Define
+\[
+  \operatorname{Pack}_{K_L,K_R}(f,\mu)
+  =\sup_{(R_j)}\sum_j\left|\int_{R_j}f\,d\mu\right|,
+  \qquad h_q=-\log_q\max_x\mu(x),
+\]
+where the supremum is over pairwise disjoint thick coordinate rectangles; their splits
+may differ. Since $|f|=1$, this parameter lies in $[0,1]$.
+Suppose each output class of $g$ has an unambiguous program as in
+\cref{lem:weighted-frontier}, with a total of $D$ edges between the two programs. Then
+\[
+  |\mathbb E_\mu[fg]|
+  \le\operatorname{Pack}_{K_L,K_R}(f,\mu)+(K_L-1)(K_R-1)Dq^{-h_q}.
+\]
+In particular, if $\beta\ge0$ and a nonnegative measure $\xi$ of mass $\zeta$ satisfy
+\[
+  \left|\int_R f\,d\mu\right|\le\beta\mu(R)+\xi(R)
+\]
+for every thick rectangle $R$, then the packing term is at most $\beta+\zeta$.
+\end{theorem}
+
+\begin{proof}
+Peel the two output classes separately. All resulting rectangles are disjoint, including
+across classes, and $g$ is constant on each. Their total absolute contribution is therefore
+at most the packing term. The leftover has at most $(K_L-1)(K_R-1)D$ points and mass at most
+its cardinality times $\max_x\mu(x)=q^{-h_q}$. For the last assertion, sum the rectangle
+inequality: disjointness bounds the total $\mu$-mass by one and the total $\xi$-mass by
+$\zeta$.
+\end{proof}
+
+No product structure is assumed for $\mu$. For example, let $E$ be a set of exceptional
+inputs with $\mu(E)=\zeta$. If every thick rectangle satisfies
+$|\int_{R\setminus E}f\,d\mu|\le\beta\mu(R\setminus E)$, take $\xi$ to be the restriction
+of $\mu$ to $E$. The triangle inequality gives the hypothesis of the theorem, and the
+exceptional mass is charged only once over all peeled rectangles.
 
 % ===========================================================================
 \section{Graphs and constraint networks}
@@ -1075,6 +1262,71 @@ $\beta_1=s+1-m$: repeated occurrences of an input count as sharing too. For exam
 $x_1\wedge(x_1\vee x_2)$ has $s=m=2$ and compiles to a graph of cycle rank one. Constant gates
 only lower the cycle rank, which is why they are free in every theorem.
 
+\subsection{Counting distinct signals}
+\label{sec:signals}
+
+An edge records a copy of a circuit signal. Exactness identifies all copies on every accepting
+run, allowing a finer capacity measure. Write $\ell(e)$ for the signal carried by edge $e$,
+$C_t$ for a frontier, and $L_t=\ell(C_t)$ for its set of signal labels. For the vertex $v_t$
+processed at step $t$, define the \emph{signal transition budget}
+\[
+  b_t=|L_t\cup L_{t+1}|+|\rd(v_t)|,\qquad b=\max_{t<|V|}b_t.
+\]
+The union matters: the two frontiers share one assignment of values to their signal labels.
+
+\begin{proposition}[Signal capacity]
+\label{prop:signal-capacity}
+For a compiled circuit over an alphabet of size $q$, with a $K$-rectangle-free accepted set $S$
+of size at least $K$, every layout satisfies
+\[
+  |S|\le(K-1)^2\bigl(|V|q^b+q^{n-|\rd|}\bigr).
+\]
+Moreover $|L_t|\le|C_t|$ and, at maximum degree $d$ with one input per vertex, $b\le w+d+1$
+for edge width $w$.
+\leanref{Frontier.Compiler.ncard_accepted_le_signals}
+\end{proposition}
+
+\begin{proof}
+By exactness, the value on $e$ is the trace value of $\ell(e)$. Thus the labels on
+$C_t\cup C_{t+1}$, together with the input read at $v_t$, determine the transition; there are
+at most $q^{b_t}$ choices. Apply the frontier counting lemma and the usual last-step bound
+for unread inputs. The formal transition lemma works for any edge labels through which the
+chosen edge values factor (\lean{Frontier.Network.ncard_transition_le_labels}). Finally,
+taking an image cannot increase cardinality, and $C_{t+1}\subseteq C_t\cup E(v_t)$.
+\end{proof}
+
+This can save arbitrarily many redundant copies at a particular frontier: process a signal's
+producer and all its junctions before its $k$ consumers. Its $k$ delivery edges cross the cut,
+but they carry one signal value. The proposition applies to dense rectangle-free families
+with the same $n-o(n)$ demand on $b$ as on the former edge budget.
+
+\begin{proposition}[Counting with signal states; not formalized]
+\label{prop:signal-dp}
+Given a layout of a compiled Boolean circuit with signal transition budget $b$, its accepting
+inputs can be counted in time $O^*(2^b)$ and space
+$O^*(2^{\max_t|L_t|})$.
+\end{proposition}
+
+\begin{proof}
+Use the dynamic program of \cref{prop:dp}, retaining only frontier assignments constant on
+each signal label. Represent such a state by one bit per label. At a step enumerate values
+on $L_t\cup L_{t+1}$ and the inputs read at the current vertex, test its local constraint,
+and accumulate the next table. Every incident edge lies in the union of the adjacent
+frontiers, since the compiled graph is loopless. The procedure removes some partial runs
+from the original dynamic program, but every globally satisfying run remains, because its
+copies of each signal agree. Conversely every remaining path is a path in the original
+program and hence a satisfying assignment. Compiler exactness gives one such assignment
+per accepted input. Multiply by $2$ for each unread input as before. All labels and their
+restrictions are computed directly from the compiler; no oracle for globally feasible
+states is required.
+\end{proof}
+
+A universal bound $b\le(A_{\mathrm{sig}}+o(1))\beta_1+o(|V|)$ for compiled graphs would
+therefore give coefficient $1+1/A_{\mathrm{sig}}$, and, if constructive, counting exponent
+$A_{\mathrm{sig}}/(1+A_{\mathrm{sig}})$. The present edge-layout theorem supplies
+$A_{\mathrm{sig}}=A$. A strict improvement $A_{\mathrm{sig}}<A$ is an additional layout problem;
+the capacity proposition alone does not establish it.
+
 % ===========================================================================
 \section{Demand and supply}
 \label{sec:lowerbound}
@@ -1185,6 +1437,197 @@ $q^{n - o(n)}$ edges. The support lemma is replaced by the observation that a se
 only on $R$ has an unambiguous program with $O(\card R\, q^{\card R} + n q)$ edges, so that
 $\card{\rd} \ge n - o(n)$.
 \end{remark}
+
+\subsection{Existential witness inputs}
+\label{sec:nondeterministic}
+
+\begin{lemma}[Hiding inputs]
+\label{lem:hide-inputs}
+Let $N$ be a network with ordinary inputs $x\in U^n$ and witness inputs $y\in U^k$, over a
+nonempty alphabet. There is a network $H$ on the same graph with ordinary inputs only and
+accepted set $\{x:\exists y,\ (x,y)\in\operatorname{accepted}(N)\}$. Each visible input keeps
+its original site; consequently the number of inputs read at any vertex, and in total,
+cannot increase.
+\leanref{Frontier.Network.accepted_hide}
+\end{lemma}
+
+\begin{proof}
+At each vertex replace the old constraint $Q_v(x,y,a)$ by $\exists y\,Q_v(x,y,a)$.
+These constraints remain local on the visible inputs and incident edges. To assemble local
+witnesses, choose a witness assignment $y_v$ for each satisfied local constraint, and set the
+global value of a witness coordinate to its value in $y_v$ at its unique read site $v$.
+Unread coordinates get any fixed alphabet value. Locality implies that this single assignment
+satisfies every old constraint. The converse uses the same global witness at every vertex.
+\end{proof}
+
+\begin{theorem}[Nondeterministic circuits]
+\label{thm:nondeterministic}
+The conclusion of \cref{thm:main} holds for a verifier circuit $C(x,y)$ accepting $x\in S_n$
+exactly when $C(x,y)\in\Acc$ for some $y\in U^k$. The size threshold is uniform in $k$:
+only the $n$ ordinary inputs appear on the right-hand side, while all positive-arity verifier
+gates count towards $s$. In particular, at fan-in two the coefficient is $L=4.562497\ldots$.
+\leanref{Frontier.lowerBound_nondeterministic}
+\end{theorem}
+
+\begin{proof}
+Compile $C$ and hide its witness inputs. The connected graph still has maximum degree $r+1$
+and at most $2rs+3$ vertices. If $m$ ordinary inputs and $m_y$ witness inputs were reachable,
+its cycle rank satisfies
+\[
+  \beta_1\le(r-1)s+1-m-m_y\le(r-1)s+1-m.
+\]
+The support lemma for $H$ forces $m>n-\log_q K_n$. Its accepting assignments need not be unique,
+but the network frontier inequality uses only existence. Thus every layout has the same
+frontier demand as in \cref{thm:reduction}; formally the finite reduction is
+\lean{Frontier.exists_graph_of_nondeterministic_decides}.
+The identical demand--supply comparison finishes the proof. The Gaussian specialization is
+\lean{Frontier.lowerBound_nondeterministic_gaussian}. Applying this to Li's cited disperser
+family gives the explicit Boolean language of \cref{cor:explicit} the same nondeterministic
+lower bound. This does not give projected model counting: counting pairs $(x,y)$ would
+count witnesses with multiplicity.
+\end{proof}
+
+\subsection{Average-case hardness from extractors}
+\label{sec:average-case}
+
+\begin{theorem}[Circuit correlation under weighted inputs; not formalized]
+\label{thm:weighted-circuit}
+Fix a finite alphabet $U$ of size $q\ge2$, a fan-in bound $r\ge2$, and assume
+$\LB_{r+1}(A)$. Put $\alpha=A/(1+A)$. Let $C_n$ be single-output circuits with
+$s_n=O(n)$ positive-arity gates and $m_n$ reachable inputs, and let $g_n:U^n\to\{-1,1\}$
+be any Boolean readout of their outputs. Write $s'_n=(r-1)s_n$. For arbitrary targets
+$f_n:U^n\to\{-1,1\}$, probability measures $\mu_n$, and thresholds $K_{L,n},K_{R,n}\ge2$,
+put $B_n=(K_{L,n}-1)(K_{R,n}-1)$ and $h_{q,n}=-\log_q\max_x\mu_n(x)$. Then
+\begin{align*}
+  |\mathbb E_{\mu_n}[f_ng_n]|
+  &\le \operatorname{Pack}_{K_{L,n},K_{R,n}}(f_n,\mu_n)
+      +B_nq^{-h_{q,n}+\min\{m_n,A(s'_n-m_n)\}+o(n)}\\
+  &\le \operatorname{Pack}_{K_{L,n},K_{R,n}}(f_n,\mu_n)
+      +B_nq^{-h_{q,n}+\alpha s'_n+o(n)}.
+\end{align*}
+The lower-order term is uniform over the targets, measures, and thresholds.
+Under the shared-error hypothesis of \cref{thm:weighted-distribution}, the packing term
+may be replaced by $\beta_n+\zeta_n$.
+\end{theorem}
+
+\begin{proof}
+There are two ways to obtain unambiguous programs for the two output classes.
+First, enumerate the reachable inputs in a decision tree, then query each unread input
+along a chain before the accepting sink. Across the two classes this uses
+$q^{m_n+O(\log(n+1))}$ edges. Second, the compiler gives
+$\beta_1\le s'_n-m_n+1$ and $|V|\le2rs_n+3\le4s'_n+3$. For each fixed $\eta>0$,
+the layout bound and the direct construction of \cref{prop:network-program}, including
+queries of unread inputs, give programs with total edge count $D_n$ satisfying
+\[
+  \log_q D_n\le A(s'_n-m_n)+5\eta s'_n+C_\eta+O_{q,r}(\log(n+1)),
+\]
+where the constant absorbs the layout bound's additive term. Taking $\eta$ to zero
+sufficiently slowly gives $\log_q D_n\le A(s'_n-m_n)+o(n)$ uniformly for $s_n=O(n)$.
+Both constructions apply to each circuit output class, so the two-program hypothesis
+requires no extra assumption on the circuit. Choose the smaller construction and apply
+\cref{thm:weighted-distribution}. The second bound uses
+$\min\{m,A(s'-m)\}\le\alpha s'$.
+\end{proof}
+
+For uniform inputs $h_{q,n}=n$. If $\log_q K_{L,n}+\log_q K_{R,n}=o(n)$ and
+$s'_n\le(1+1/A-\varepsilon)n$ for a fixed $\varepsilon>0$, the remainder is
+$q^{-\Omega_\varepsilon(n)}$. More generally, correlation at least the packing term plus
+a fixed $\delta>0$ forces
+\[
+  s'_n\ge(1+1/A)\bigl(h_{q,n}-\log_q B_n+\log_q\delta\bigr)-o(n).
+\]
+The next theorem specializes to uniform rectangle bias and improves the exponential
+remainder by using the unused coordinates directly.
+
+\begin{theorem}[Average-case circuit lower bound]
+\label{thm:average-case}
+Assume $\LB_3(A)$ for $A>0$ and put $L=1+1/A$. Let $K_n\ge2$ with $\log K_n=o(n)$, and let
+$f_n:\{0,1\}^n\to\{0,1\}$ have bias at most $2b_n$, where $0\le b_n\le1/2$, on every
+coordinate rectangle whose two sides have at least $K_n$ elements:
+\[
+  \left|\mathbb E_{x\text{ uniform in }R}(-1)^{f_n(x)}\right|\le2b_n.
+\]
+For every fixed $0<\varepsilon<L$ and $0<\gamma<\min\{1,A\varepsilon\}$, for all sufficiently
+large $n$ every Boolean circuit $C$ of fan-in at most two with at most $(L-\varepsilon)n$
+positive-arity gates satisfies
+\[
+  \Pr_{x\text{ uniform}}[C(x)=f_n(x)]
+  \le\frac12+b_n+2^{-\gamma n}.
+\]
+In fact, its absolute signed correlation with $f_n$ is at most
+$2b_n+2^{1-\gamma n}$. With the Gaussian layout theorem $L=4.562497\ldots$.
+\leanref{Frontier.averageCase, Frontier.averageCase_abs, Frontier.averageCase_gaussian}
+\end{theorem}
+
+\begin{proof}
+Set $K=K_n$, $b=b_n$, $k=\lceil\log_2K\rceil$, and let $m$ be the number of reachable inputs
+of $C$. Write $S_a=\{x:C(x)=a\}$ and $w(x)=(-1)^{f_n(x)}$.
+
+\emph{Many unread inputs.} If $n-m\ge k$, choose $k$ unread coordinates $X$.
+Each output class is the rectangle $S_a=\{0,1\}^X\times B_a$. Its first side has
+$K\le2^k<2K$ elements. If $|B_a|\ge K$, the bias hypothesis applies; otherwise
+$|S_a|\le2K(K-1)$. Treat the small classes as a residual set of total size at most $4K^2$.
+It follows that
+\[
+  \left|2^{-n}\sum_x(-1)^{C(x)}w(x)\right|\le2b+4K^2\,2^{-n}.
+\]
+Since $k=o(n)$ and $\gamma<1$, its contribution to agreement is at most $2^{-\gamma n}$
+for large $n$.
+
+\emph{Few unread inputs.} Otherwise $m>n-k$. Compile $C$, obtaining a graph with
+$v\le4s+3$ vertices and $\beta_1\le s+1-m$. For any fixed $\eta>0$ the layout theorem gives
+width
+\[
+  w_0\le(A+\eta)(s+1-m)+\eta(4s+3)+C_\eta
+      \le (1-A\varepsilon+O_A(\eta))n+O_{A,\eta}(k+1)+C_\eta,
+\]
+where $s\le(L-\varepsilon)n$. Choose $\eta$ sufficiently small in terms of $A,\varepsilon,
+\gamma$. For each output value $a$, sweep the compiled network accepting $S_a$ along this
+layout. This sweep is coherent: the separator lemma splices two satisfying edge assignments,
+and uniqueness identifies the result with the trace of the spliced input. Every earlier
+frontier then has the first input's values and every later frontier the second's.
+Its number of used transitions is at most
+\[
+  D=v2^{w_0+4}+2^{n-m}<v2^{w_0+4}+K.
+\]
+The final step reveals all unread coordinates; the adjacent-frontier union pays only
+$w_0+3$ edge values and at most one newly read input at each other step.
+Apply \cref{prop:weighted-sweep} with $c(x)=2b$ and atom bound $1$ to each output class.
+With $r=(K-1)^2D$, this gives
+\[
+  \left|2^{-n}\sum_x(-1)^{C(x)}w(x)\right|\le2b+2r\,2^{-n}.
+\]
+Now $r\,2^{-n}\le2^{-\gamma n}$ for large $n$: the two exponential rates in the remainder
+are at most $-A\varepsilon+O_A(\eta)+o(1)$ and $-1+o(1)$, respectively. Finally,
+$\Pr[C(x)=f_n(x)]=(1+\mathbb E(-1)^{C(x)+f_n(x)})/2$.
+The absolute-value bound also controls agreement after complementing the circuit output.
+\leanref{Frontier.Network.sweep_coherent, Frontier.agreement_le_layout,
+  Frontier.agreement_le_unused}
+\end{proof}
+
+\begin{corollary}[Sumset extractors]
+\label{cor:extractor-average}
+The hypothesis of \cref{thm:average-case} holds if $f_n$ is a one-bit sumset extractor with
+error $b_n$ for independent sources of min-entropy at least $\log_2 K_n$. Thus every such
+family with $\log K_n=o(n)$ has agreement at most
+$1/2+b_n+2^{-\Omega_\varepsilon(n)}$ with circuits of size at most $(L-\varepsilon)n$.
+The formal hypothesis is just the flat-source guarantee: independent uniform sources on
+any two sets of size at least $K_n$ have XOR output bias at most $2b_n$.
+\leanref{Frontier.FlatSumsetBias.rectangleBias, Frontier.averageCase_sumset}
+\end{corollary}
+
+\begin{proof}
+Extend independent uniform samples from the two rectangle sides by zero on the opposite
+coordinates. Their sum is uniform on the rectangle and both sources have the required
+min-entropy. Error $b_n$ for a single output bit is exactly bias at most $2b_n$.
+\end{proof}
+
+Li's cited extractor gives this statement for any fixed positive constant error, with
+$\log K_n=O(\log n)$~\cite{Li2023}. No vanishing-error construction is needed for the stated
+constant-advantage hardness. A vanishing $b_n$ requires an extractor with the corresponding
+error guarantee; that does not follow by letting the error parameter vary in a theorem
+stated only for fixed constants. The exponential remainder also uses a fixed gap below $Ln$;
+the theorem does not assert the same remainder exactly at $s=Ln$.
 
 % ===========================================================================
 \section{Layout bounds}
@@ -1379,6 +1822,39 @@ $2\kappa^2 - 1 = \rho_0 \ge 0$, by the triangle inequality for angles, and as $\
 concave and decreasing on $[0,1]$, the six angles sum to at most $6\arccos\frac{1+3\rho_0}{4}$
 (\lean{Frontier.Gaussian.sum_arccos_star_le}). So the probability is at most
 $\frac14 \cdot 6 \cdot \frac1\pi\arccos\frac{1+3\rho_0}{4}$.
+\end{proof}
+
+\begin{proposition}[Sharpness of the local Gaussian estimate; not formalized]
+\label{prop:tree-sharpness}
+For the radial kernels on the infinite $3$-regular tree, first letting the truncation radius
+tend to infinity and then $\lambda\uparrow1/\sqrt2$, the probability that a vertex straddles
+zero tends to $p$. Thus the limiting constant in \cref{prop:straddle} is attained within this
+family of local score distributions.
+\end{proposition}
+
+\begin{proof}
+For fixed $0<\lambda<1/\sqrt2$, the untruncated row $k_v(z)=\lambda^{\operatorname{dist}(v,z)}$
+is square summable, with
+$\|k_v\|^2=(1+\lambda^2)/(1-2\lambda^2)$. Summing along the path between two vertices gives
+correlations between normalized rows at distances one and two
+\[
+  r_1=\frac{2\lambda}{1+\lambda^2},\qquad
+  r_2=\frac{\lambda^2(3-\lambda^2)}{1+\lambda^2}.
+\]
+For example, for distance two the three path vertices contribute $3\lambda^2$ and their
+off-path branches contribute $5\lambda^4/(1-2\lambda^2)$. All pairs of the three incident
+edge scores therefore have correlation
+\[
+  c_\lambda=\frac{1+2r_1+r_2}{2+2r_1}
+  \;\longrightarrow\;\frac{1+2\sqrt2}{4}.
+\]
+Except on a null set, exactly two of the three unordered edge pairs have opposite signs
+when a vertex straddles zero, and none otherwise. The zero-threshold Gaussian angle formula
+gives probability $3\arccos(c_\lambda)/(2\pi)$. Truncated rows converge in norm, so their
+local score distributions and straddling probabilities converge to these values. The
+limiting row correlations are those of the cubic-tree Gaussian wave
+of \cite{CGHV2015,Lyons2017}. This is sharpness of the local probability estimate, not an
+optimality assertion for layouts or for the global cutwidth coefficient.
 \end{proof}
 
 \begin{proof}[Proof of \cref{thm:layout}]
@@ -1778,15 +2254,17 @@ prefix inside the current component (\lean{Frontier.Multigraph.cut_union_of_cut_
 
 \begin{lemma}[Counting inside a closed set]
 \label{lem:count-closed}
-In the network of a program with fan-in at most $r$ and $s$ inner gates, every closed set $W$
-with at least $\card W - 1$ edges satisfies $\beta_1(W) + \card{\rd(W)} \le (r-1)s + 1$.
-\leanref{Frontier.Compiler.cycleRankOn_add_ncard_readIn_le}
+In the network of a program with fan-in at most $r$, let $s_W$ count the inner gate vertices
+in a closed set $W$. If $W$ has at least $\card W-1$ edges, then
+$\beta_1(W)+\card{\rd(W)}\le(r-1)s_W+1$.
+In particular this is at most $(r-1)s+1$ for the total number $s$ of inner gates.
+\leanref{Frontier.Compiler.cycleRankOn_add_ncard_readIn_le_local}
 \end{lemma}
 
 \begin{proof}
 The proof of \cref{prop:counting}, restricted to $W$: the edges at $W$ are those of the junctions
 in $W$, which are the junctions of the slots of the gates in $W$ and of the outputs in $W$
-(\lean{Frontier.Compiler.card_touching_add_ncard_readIn_le}).
+(\lean{Frontier.Compiler.card_touching_add_ncard_readIn_le_local}).
 \end{proof}
 
 Inside a closed set the run depends only on the guess and on the inputs read there, by the
@@ -1966,59 +2444,95 @@ own $b$-bit word, computable in polynomial time. Each trial succeeds with probab
 $1-O_\xi(1/h)\ge 1/2$ for large $h$. \Cref{lem:constructive-compression} concludes.
 \end{proof}
 
-\begin{lemma}[Moments of local tests]
-\label{lem:local-moments}
-Let $C$ be a finite sum of real-valued functions of independent uniform words, each depending on at most
-$D$ words. Replacing the words by $2D$-wise independent uniform words preserves
-$\mathbb E C$ and $\mathbb E C^2$, and hence $\operatorname{Var} C$.
+\begin{lemma}[Fixed-accuracy local discretization]
+\label{lem:local-discretization}
+Fix the kernel and grid parameters in the proof of \cref{thm:layout}. For every $\gamma>0$
+there are a finite rational alphabet $\Omega$, a uniform random variable $W$ on $\Omega$, and
+rational edge coefficients, all with precision independent of $h$, such that replacing the
+independent Gaussian coordinates by independent copies of $W$ changes the expectation of
+each individual straddling, window, or tail indicator by at most $\gamma$. The supports of the
+coefficients are unchanged. Each discretized indicator depends on at most $D$ coordinates
+and its support meets at most $B$ others in any one count, for constants $D,B$ depending only
+on the fixed parameters and not on the graph.
 \end{lemma}
 
 \begin{proof}
-Each summand depends on at most $D$ words and each product of two summands on at most $2D$.
-Their joint marginal distributions, and therefore their expectations, are unchanged.
-Expand $C^2$ and sum.
+Every test uses at most three edge scores and at most $D$ Gaussian coordinates, for a uniform
+constant $D$ supplied by the degree and radius bounds. Couple the Gaussian coordinates to
+finite rational samples by rounding their inverse-normal quantiles at dyadic midpoints, as
+in \cref{lem:sampling}, but choose a constant number of bits. First choose $T_0$ so large that
+the probability that any of the at most $D$ coordinates in one test exceeds $T_0$ in absolute
+value is below $\gamma/2$. On $[-T_0-1,T_0+1]$ the Gaussian density has a positive lower bound.
+Consequently, sufficiently fine constant quantile and coefficient precision makes the
+perturbation of every score in this test at most $\zeta$, outside that exceptional event.
+The normal coefficients are unit vectors; their rational approximations retain all exact
+zeros, and the error in the dot product is bounded by $D$ times the coordinate and coefficient
+errors, with a factor depending only on $T_0$.
+
+Each original edge score is standard normal. A test changes only if one of its at most three
+scores lies within $\zeta$ of one of its defining thresholds. The probability of this event is
+at most a fixed constant times $\zeta$, by the upper bound $1/\sqrt{2\pi}$ on the normal density.
+Choose $\zeta$ to make it below $\gamma/2$. This bounds the probability of a changed indicator,
+and hence the change in its mean, by $\gamma$. The rational midpoint approximations form a
+uniform finite alphabet; repeated alphabet values may instead be indexed by their sampling
+words. The bounded support overlap is exactly the radius argument in \cref{thm:layout}.
+All choices are effective and independent of $h$. This is a coupling for each local test;
+no simultaneous approximation of all coordinates is required.
+\end{proof}
+
+\begin{lemma}[Conditional expectations for local counts]
+\label{lem:local-moments}
+Let $C_1,\ldots,C_J$ each be a sum of at most $ch$ indicators of independent uniform words in
+a fixed finite alphabet of size $Q$. Suppose that each indicator depends on at most $D$ words
+and overlaps at most $B$ other indicators within its count. For fixed $J,c,Q,D,B,\varepsilon>0$
+and sufficiently large $h$, one can deterministically choose the $h$ words so that
+$|C_j-\mathbb E C_j|<\varepsilon h$ for every $j$. The running time is
+$f(J,c,Q,D,B,\varepsilon)h^3(\log(h+2))^{O(1)}$, provided each local test can be evaluated in
+constant time depending on these parameters.
+\end{lemma}
+
+\begin{proof}
+Put $\mu_j=\mathbb E C_j$, computed exactly by enumerating each local support, and consider
+\[
+  F=\sum_{j=1}^J\frac{(C_j-\mu_j)^2}{(\varepsilon h)^2}.
+\]
+Disjoint supports are independent, so $\operatorname{Var} C_j\le ch(B+1)$ and
+$\mathbb E F\le Jc(B+1)/(\varepsilon^2h)<1$ for large $h$. Fix the words one at a time,
+choosing a value whose conditional expectation of $F$ is no larger than the current one.
+Such a value exists by averaging. At the end $F<1$, which gives all the asserted inequalities.
+This is the method of conditional expectations; see Vadhan~\cite[Section~3.4]{Vadhan2012}.
+
+To compute each conditional expectation, expand the squares. There are $O(Jh^2)$ terms,
+each a product of at most two local indicators or a constant multiple of one. Each term has
+at most $2D$ unfixed coordinates, so its conditional mean is an exact average over at most
+$Q^{2D}$ possibilities. Testing $Q$ choices at each of $h$ steps gives the stated bound.
+The rational numbers have $O(\log(h+2))$ bits plus a parameter-dependent constant: the local
+probabilities have denominators dividing $Q^{2D}$, and the normalization adds a factor $h^2$.
+For an arbitrary real requested tolerance use a smaller positive rational tolerance.
 \end{proof}
 
 \begin{lemma}[Deterministic Gaussian layouts]
 \label{lem:derandomization}
-For every fixed $\xi>0$, a simple cubic graph on $h\ge h_0(\xi)$ vertices has a layout of
-cutwidth at most $(p+\xi)h$ that can be found deterministically in time $h^{O_\xi(1)}$.
-Consequently $\LB_3(2p)$ is constructive.
+There are a computable function $f$ and an absolute constant $c$ such that, for every fixed
+rational $\xi>0$, a simple cubic graph on $h\ge h_0(\xi)$ vertices has a layout of cutwidth
+at most $(p+\xi)h$ that can be found deterministically in time
+$f(\xi)h^3(\log(h+2))^c$. Consequently $\LB_3(2p)$ is constructive.
 \end{lemma}
 
 \begin{proof}
-Use the parameters and the $b$-bit discretization of \cref{lem:sampling}. First give the
-words their fully independent distribution. Write $C_j$ for any of the $2M+2$ Gaussian
-straddling, window, and tail counts, and $C'_j$ for its discretized counterpart. The coupling
-in that proof gives $\card{C'_j-C_j}\le 2Z$ except with probability at most $h^{-2}$, and
-$\mathbb E Z\le 1$. Since both counts are at most $3h/2$,
-\[
-  \card{\mathbb E C'_j-\mathbb E C_j}
-  \le 2\mathbb E Z + \frac{3h}{2}\,h^{-2} = O_\xi(1).
-\]
-The truncation radius is fixed. Every summand of $C'_j$ depends on at most $D=D(\xi)$ words,
-and its support meets only $O_\xi(1)$ other supports in the same count. Keeping the zero
-coefficients exactly zero in \cref{lem:sampling} preserves this locality. Disjoint supports
-are independent, so $\operatorname{Var} C'_j=O_\xi(h)$.
-
-Replace the words by $2D$-wise independent uniform $b$-bit words. By
-\cref{lem:local-moments}, the means and variances just established remain valid. Chebyshev's
-inequality and a union bound imply that every $C'_j$ is at most
-$\mathbb E C'_j+\varepsilon h$, simultaneously, with probability $1-O_\xi(1/h)>0$ for large
-$h$. The parameter choice in \cref{lem:sampling} and \cref{lem:median} now give a layout of
-cutwidth at most $(p+\xi/4)h+O_\xi(1)$, hence at most $(p+\xi/2)h$ for large $h$.
-
-There is an explicit polynomial-size sample space with the required independence. Set
-$\ell=\max\{b,\lceil\log_2 h\rceil\}$, choose $h$ distinct points of $\F_{2^\ell}$, and
-evaluate a polynomial of degree below $2D$ with uniformly chosen coefficients at those points.
-Project each value onto $b$ coordinates in a fixed $\F_2$-basis. Polynomial interpolation
-makes the resulting words $2D$-wise independent; see
-Vadhan~\cite[Section~3.5.5]{Vadhan2012}. The seed has $2D\ell=O_\xi(\log h)$ bits. The field can
-be constructed deterministically in polynomial time in $h$, even by exhaustive search for an
-irreducible polynomial of degree $\ell$ over $\F_2$ and trial division. Enumerate all
-$2^{2D\ell}=h^{O_\xi(1)}$ seeds, compute their median layouts, and return one of minimum
-observed cutwidth. The positive-probability argument guarantees that one succeeds. Finally
-apply \cref{lem:constructive-compression}.
+Choose the rational kernel and grid parameters in the proof of \cref{thm:layout} with enough
+slack that allowing every count to exceed its Gaussian mean by $3\varepsilon h$ still gives
+cutwidth at most $(p+\xi)h$, for some rational $\varepsilon>0$. This is possible by first
+choosing the limiting mean bounds strictly below the target and then decreasing $\varepsilon$.
+Apply \cref{lem:local-discretization} with $\gamma=\varepsilon/2$. A count has at most $3h/2$
+indicators, so its discretized mean differs from its Gaussian mean by less than $\varepsilon h$.
+Apply \cref{lem:local-moments} to the $2M+2$ discretized counts. Their realized values are at
+most their Gaussian means plus $2\varepsilon h$. The deterministic median lemma therefore
+gives the claimed width. Computing the fixed-precision coefficients, evaluating the local
+tests, and sorting the rational median scores fit in the stated running time. All dependence
+on the accuracy lies in $f$ and $h_0$, not in the polynomial degree. These constants can be very
+large; the assertion is an asymptotic construction. \Cref{lem:constructive-compression}
+then gives the constructive layout bound.
 \end{proof}
 
 \subsection{The algorithm}
@@ -2027,9 +2541,13 @@ apply \cref{lem:constructive-compression}.
 \label{thm:sat}
 Let $A>0$ and let $\LB_3(A)$ be constructive, or randomized constructive. For every fixed
 $\eta>0$, the number of satisfying assignments of a Boolean circuit of fan-in two with $n$
-inputs and $s$ positive-arity gates can be computed in time
-$O^*(2^{(A/(1+A)+\eta)s})$, or in expected time $O^*(2^{(A/(1+A)+\eta)s})$, respectively.
-The deterministic algorithm uses $O^*(2^{(A/(1+A)+\eta)s})$ space as well.
+inputs, $s$ positive-arity gates, and $m$ inputs having a path to the output can be computed in
+\[
+  O^*\!\left(2^{\min\{m,\,A(s-m)\}+\eta s}\right)
+  \;\le\; O^*\!\left(2^{(A/(1+A)+\eta)s}\right)
+\]
+time, or expected time, respectively. The deterministic algorithm uses at most the same
+space. The hidden multiplicative constant may depend on $A$ and $\eta$.
 \end{theorem}
 
 \begin{proof}
@@ -2042,7 +2560,8 @@ layout of width $w \le (A + \eta)(s + 1 - \card R) + \eta(4s + 3) + C$, and appl
 the layout (expected polynomial cost in the randomized case). Run the algorithm with the
 smaller bound. Since
 $\min(\card R, A(s - \card R)) \le \frac{A}{1+A}\,s$ (if $\card R > \frac{A}{1+A}s$ then
-$A(s - \card R) < \frac{A}{1+A}s$), the time is
+$A(s - \card R) < \frac{A}{1+A}s$), the time is first
+$O^*(2^{\min\{\card R,A(s-\card R)\}+O(\eta)s})$ and then
 $O^*(2^{\frac{A}{1+A}s+O(\eta)s})$; rescale $\eta$. The factors hidden by $O^*$ cover reading
 the circuit and writing the answer, including the factor $2^{n-\card R}$ for unused inputs.
 \end{proof}
@@ -2055,6 +2574,77 @@ the deterministic exponent
 Using \cref{lem:sampling} instead gives a randomized algorithm with the same exponent and an
 expected-polynomial-time layout search. The pathwidth construction gives the simpler
 deterministic exponent $\frac{1/3}{1+1/3}=\frac14$.
+
+\begin{corollary}[The input-relative exponent]
+\label{cor:input-counting}
+If all $n$ inputs have a path to the output and $s=cn$ for a fixed $c$, the deterministic
+running time is $O^*(2^{(\min\{1,A(c-1)\}+\varepsilon)n})$ for every fixed $\varepsilon>0$.
+With the Gaussian coefficient, $c=3$ gives exponent $0.5614038745\ldots+\varepsilon$, and
+$c=4$ gives $0.8421058118\ldots+\varepsilon$. The cutoff for a constant improvement over
+$2^n$ remains $c<L$. Reachability here is syntactic; no test for semantic dependence is used.
+\end{corollary}
+
+\subsection{Counting with a ledger}
+
+\begin{theorem}[Counting with aggregate gates]
+\label{thm:ledger-counting}
+Assume $\LB_3(A)$ is constructive and put $\alpha=A/(1+A)$. Consider a Boolean circuit with
+$s_{\mathrm{ord}}$ ordinary positive-arity gates of fan-in at most two and special gates
+admitting a finite ledger $M$. Suppose that $M$ can be enumerated and its multiplication,
+contributions, readouts, and gate operations can be evaluated in time polynomial in the full
+instance encoding and $\log\card M$. Then for every fixed $\eta>0$ its satisfying assignments
+can be counted deterministically in time and space
+\[
+  O^*\!\left(\card M^{O(1)}2^{(\alpha+\eta)s_{\mathrm{ord}}}\right).
+\]
+For $k$ unbounded AND, OR, parity, or fixed-modulus count gates this becomes
+$O^*(2^{(\alpha+\eta)s_{\mathrm{ord}}+O(k)})$.
+\end{theorem}
+
+\begin{proof}
+Fix a ledger guess $a\in M$, erase the special gates, and compile the designated output
+and every live wire, exactly as in \cref{sec:ledgers}. The graph is independent of $a$.
+Contributions of nonlive wires (constants and special-gate placeholders) are known from $a$;
+let their product be $b(a)$. Associate the contribution of each live wire with its unique
+producer vertex, so each is multiplied exactly once.
+
+For a component $W_i$, let $m_i$ be the number of input vertices, $s_i$ the number of ordinary
+inner gate vertices, and $o_i$ the number of output vertices in it. The local form of
+\cref{lem:count-closed} gives
+\[
+  \beta_1(W_i)+m_i\le s_i+1.
+\]
+The compiler count restricted to this component gives $|W_i|\le4s_i+3o_i$: every signal has a
+consumer in the same component, and there are at most $2s_i+o_i$ consumers. There is one
+auxiliary output per live wire and one designated output, hence $o_i\le m_i+s_i+1$ and
+$|W_i|\le10s_i+6$. In particular, components with no ordinary gate have bounded size.
+
+Compute a table $T_i(z)$ counting the satisfying assignments in $W_i$ whose live-wire
+contributions multiply to $z\in M$. One method enumerates its $2^{m_i}$ input assignments;
+for the fixed guess the component run depends only on these inputs, by the closed-set
+locality lemma. Another applies \cref{prop:dp}, adding a ledger accumulator to the frontier
+state, at cost $\card M\,O^*(2^{w_i})$. All auxiliary outputs accept every value; the
+designated output, in its own component, enforces acceptance. Exactness of the compiler
+makes these tables count inputs, not multiple traces. The layout bound and the component
+size estimate give, for any fixed $\delta>0$,
+\[
+  w_i\le A(s_i-m_i)+O(\delta)s_i+O_{A,\delta}(1).
+\]
+Choose the cheaper method in each component. Since
+$\min\{m_i,A(s_i-m_i)\}\le\alpha s_i$, their total work is bounded by
+$\card M\,O^*(2^{(\alpha+\eta)s_{\mathrm{ord}}})$, after rescaling $\delta$;
+$\sum_i s_i=s_{\mathrm{ord}}$. The times add over components.
+
+Combine the tables by monoid convolution:
+$(T*T')(z)=\sum_{uv=z}T(u)T'(v)$, computed by enumerating all pairs $(u,v)\in M^2$.
+Sum the resulting entries with $b(a)z=a$, and finally sum over guesses $a$.
+No cancellation or inverse is required. A guess is consistent if and only if
+$a=\ell(v(x))$: soundness identifies its run with the true trace and completeness supplies
+that guess (\lean{Frontier.Ledger.total_run_eq_iff}). Thus every accepted input is counted
+exactly once. The convolutions and the outer enumeration add only a polynomial factor in
+$\card M$. All integers have polynomially many bits in the full encoding and input size.
+Finally, fixed-monoid aggregate gates have $\log\card M=O(k)$ by \cref{prop:aggregate}.
+\end{proof}
 
 % ===========================================================================
 \section{Design notes on the formalization}
@@ -2071,9 +2661,11 @@ Mathlib's little-$o$. The linear theorems quantify over every field inside the e
 the threshold for $N$ is uniform in the field.
 
 \paragraph{One comparison.}
-The asymptotic arithmetic of every lower bound is \cref{lem:demand}, proved once, for every
+The asymptotic arithmetic of the exact lower bounds is \cref{lem:demand}, proved once, for every
 sufficiently small slack. Each application supplies a graph, a demand, and a bound on the cycle
-rank, at a fixed length, and the lemma does the rest.
+rank, at a fixed length, and the lemma does the rest. The average-case variant instead bounds
+the logarithm of the peeling residue; \lean{eventually_frontier_log_error} records the slack
+needed for every $\gamma<\min\{1,A\varepsilon\}$.
 
 \paragraph{Sets and cardinalities.}
 Sets of inputs, rectangles, cuts, and edge neighbourhoods are \lean{Set}s, and sizes are
@@ -2087,7 +2679,7 @@ reference to graphs. Messages are arbitrary functions into an arbitrary type, an
 sets need not be nested.
 
 \paragraph{One sweep along a layout.}
-Every sweep in the development is built by a single constructor
+The initial network sweeps are built by a single constructor
 (\lean{Frontier.Network.frontierSweep}), whose messages pair an extra message with the values on
 the frontier, encoded as functions $E \to \mathrm{Option}\ U$ that are \texttt{none} off the
 frontier. The sweep of a network has no extra message, and the ledger sweep carries the guess
@@ -2122,10 +2714,13 @@ absorbs constants into other gates is needed.
 
 \paragraph{Witnesses and uniqueness.}
 The sweep of a network chooses a satisfying assignment for each accepted input with Hilbert's
-choice operator, and the lower bound for decision problems never uses its uniqueness, so it
+choice operator, and the exact lower bound for decision problems never uses its uniqueness, so it
 applies verbatim to nondeterministic constraint systems. The lower bounds for linear maps and
 ledgers do use uniqueness, in the form of \cref{lem:outputs-cut} and of the run of a closed set,
 because there the spliced assignment must be recognized as the run of the spliced input.
+The average-case proof uses it for coherence of the full frontier trace. It then deletes
+message classes through \lean{Sweep.erase}; the remaining sweep stays coherent, and the
+weighted induction never assumes the false converse from arbitrary sweeps to programs.
 
 \paragraph{Linearization through dual numbers.}
 Mathlib, at the pinned version, has partial derivatives of multivariate polynomials but no chain
@@ -2176,10 +2771,13 @@ measured by their number of edges the method cannot exceed the coefficient
 $1 + 1/0.20659 \approx 5.8405$ for fan-in two. What is the least $A$ for which $\LB_3(A)$ holds?
 
 \paragraph{Beyond edge counts.}
-Going past the $5.8405\ldots\,n$ limit of the universal layout route could use a sharper bound
-for the graphs produced by this compiler, a frontier measure finer than the number of edges,
-or a compiler producing sparser graphs. For example, a finer measure might charge junction
-edges less than gate edges.
+\Cref{prop:signal-capacity,prop:signal-dp} supply a concrete alternative capacity: distinct
+signals on adjacent frontiers. A bound with $A_{\mathrm{sig}}<A$ would improve both headline
+constants. The random-cubic bisection obstruction above concerns raw edge counts and does not
+by itself bound signal capacity. What universal signal-layout theorem holds for compiled graphs?
+For the present Gaussian process, \cref{prop:tree-sharpness} shows that sharpening the local
+straddling estimate alone cannot improve its limiting constant. A different score process,
+a stronger global layout argument, or signal compression would be needed.
 
 \paragraph{Larger fan-in.}
 For fan-in $r \ge 3$ the method gives $(r-1)s > (1 + 1/A_{r+1} - \varepsilon)n$ under
@@ -2187,13 +2785,12 @@ $\LB_{r+1}(A_{r+1})$. We do not know good layout coefficients for maximum degree
 compression as in \cref{sec:cubic} should again reduce the question to graphs of minimum degree
 three.
 
-\paragraph{Nondeterministic circuits and other capacities.}
-Witness inputs can be read anywhere in the network and existentially quantified. Since the
-lower bound for decision problems never uses uniqueness, the same argument should give the same
-bound for nondeterministic circuits, counting only the ordinary inputs. More generally, the
-demand of a problem says what a frontier must carry and the capacity of a model what it can
-carry: counting and rank are two instances, and information for distributions over inputs, or
-dimension for continuous operations over the reals (\cref{rem:continuous}), are others.
+\paragraph{Other capacities.}
+The nondeterministic extension is proved in \cref{thm:nondeterministic}, and
+\cref{thm:weighted-circuit} handles input distributions through min-entropy and rectangle
+bias. Beyond these, rank, and distinct signals, can entropy at a frontier or dimension for
+continuous operations over the reals (\cref{rem:continuous}) supply other demands and
+capacities? Such a capacity must still support a splicing or injectivity theorem at the cut.
 
 \paragraph{Explicit hard sets in the formalization.}
 The formalization takes the hard sets as hypotheses. A formal construction of a sumset
@@ -2216,7 +2813,7 @@ named in each group of the table, except for the upstreaming candidates in
 Paper & Lean declaration \\
 \midrule
 \endhead
-\multicolumn{2}{l}{\emph{Introduction}} \\
+\multicolumn{2}{l}{\emph{Introduction}} \\*
 Thm.~\ref{thm:main} & \lean{lowerBound} \\
 Thm.~\ref{thm:layout-intro} & \lean{layoutBound_gaussian}, \lean{layoutBound_one_third} \\
 Cor.~\ref{cor:fanin-two} & \lean{lowerBound_gaussian}, \lean{lowerBound_four} \\
@@ -2225,7 +2822,7 @@ Thm.~\ref{thm:linear-intro} & \lean{lowerBound_linear_finite}, \lean{lowerBound_
 Cor.~\ref{cor:cauchy-intro} & \lean{arith_cauchy_gaussian}, \lean{cauchyZMod_gaussian} \\
 Thm.~\ref{thm:ledger-intro} & \lean{lowerBound_aggregate}, \lean{lowerBound_aggregate_gaussian} \\
 \midrule
-\multicolumn{2}{l}{\emph{Rectangles} (\lean{Rectangle.lean}, \lean{Extractor.lean})} \\
+\multicolumn{2}{l}{\emph{Rectangles} (\lean{Rectangle.lean}, \lean{Extractor.lean})} \\*
 Def.~\ref{def:rectangle} & \lean{rectangle} \\
 Def.~\ref{def:rectangle-free} & \lean{RectangleFree} \\
 Lem.~\ref{lem:ignored} & \lean{RectangleFree.ncard_le_of_dependsOn} \\
@@ -2234,11 +2831,11 @@ Def.~\ref{def:disperser} & \lean{SumsetDisperser} \\
 Lem.~\ref{lem:disperser} & \lean{SumsetDisperser.rectangleFree} \\
 Thm.~\ref{thm:disperser} & \lean{lowerBound_sumsetDisperser} \\
 \midrule
-\multicolumn{2}{l}{\emph{Sweeps} (\lean{Sweep.lean})} \\
+\multicolumn{2}{l}{\emph{Sweeps} (\lean{Sweep.lean})} \\*
 Def.~\ref{def:sweep} & \lean{Sweep}, \lean{Sweep.transition} \\
 Lem.~\ref{lem:counting} & \lean{Sweep.ncard_le} \\
 \midrule
-\multicolumn{2}{l}{\emph{Graphs and networks} (\lean{Multigraph.lean}, \lean{Network.lean})} \\
+\multicolumn{2}{l}{\emph{Graphs and networks} (\lean{Multigraph.lean}, \lean{Network.lean})} \\*
 Hyp.~\ref{hyp:layout} & \lean{LayoutBound} \\
 Def.~\ref{def:network} & \lean{Network}, \lean{Network.accepted} \\
 Lem.~\ref{lem:separator} & \lean{Network.Satisfies.splice} \\
@@ -2246,20 +2843,32 @@ Prop.~\ref{prop:frontier-sweep} & \lean{Network.frontierSweep}, \lean{Network.nc
  & \lean{Network.ncard_transition_le_of_touching}, \lean{Network.sweep} \\
 Thm.~\ref{thm:network-counting} & \lean{Network.ncard_accepted_le} \\
 \midrule
-\multicolumn{2}{l}{\emph{Compiler} (\lean{Compiler.lean})} \\
+\multicolumn{2}{l}{\emph{Compiler and signals} (\lean{Compiler.lean}, \lean{Signals.lean})} \\*
 Thm.~\ref{thm:exact} & \lean{Compiler.accepted_network}, \lean{Compiler.eq_trace} \\
 Lem.~\ref{lem:outputs-cut} & \lean{Compiler.trace_out_of_cut} \\
 Prop.~\ref{prop:shape} & \lean{Compiler.maxDegreeLE}, \lean{Compiler.loopless} \\
  & \lean{Compiler.connected_of_upstream}, \lean{Compiler.connected} \\
 Prop.~\ref{prop:counting} & \lean{Compiler.card_edge_add_ncard_read_le} \\
  & \lean{Compiler.cycleRank_add_ncard_read_le}, \lean{Compiler.card_vertex_le} \\
+Prop.~\ref{prop:signal-capacity} & \lean{Compiler.ncard_accepted_le_signals} \\
 \midrule
 \multicolumn{2}{l}{\emph{Demand and supply} (\lean{Demand.lean}, \lean{Reduction.lean},
-  \lean{LowerBound.lean})} \\
+  \lean{LowerBound.lean})} \\*
 Lem.~\ref{lem:demand} & \lean{eventually_lt_of_demand} \\
 Thm.~\ref{thm:reduction} & \lean{exists_graph_of_decides} \\
 \midrule
-\multicolumn{2}{l}{\emph{Layouts} (\lean{Layouts/*.lean}, \lean{Layouts.lean}, \lean{Main.lean})} \\
+\multicolumn{2}{l}{\emph{Existential inputs} (\lean{Projection.lean}, \lean{Nondeterministic.lean})} \\*
+Lem.~\ref{lem:hide-inputs} & \lean{Network.accepted_hide} \\
+Thm.~\ref{thm:nondeterministic} & \lean{lowerBound_nondeterministic}, \lean{lowerBound_nondeterministic_gaussian} \\
+\midrule
+\multicolumn{2}{l}{\emph{Average-case bounds} (\lean{AverageCase/*.lean})} \\*
+Prop.~\ref{prop:weighted-sweep} & \lean{Sweep.Coherent}, \lean{Sweep.abs_sumOn_le_of_budget} \\
+Thm.~\ref{thm:average-case} & \lean{Network.sweep_coherent}, \lean{agreement_le_layout} \\
+ & \lean{agreement_le_unused}, \lean{averageCase}, \lean{averageCase_abs} \\
+ & \lean{averageCase_gaussian} \\
+Cor.~\ref{cor:extractor-average} & \lean{FlatSumsetBias.rectangleBias}, \lean{averageCase_sumset} \\
+\midrule
+\multicolumn{2}{l}{\emph{Layouts} (\lean{Layouts/*.lean}, \lean{Layouts.lean}, \lean{Main.lean})} \\*
 Thm.~\ref{thm:layout} & \lean{layoutBound_gaussian}, \lean{Gaussian.cubicLayoutBound_gaussian} \\
 Prop.~\ref{prop:compression} & \lean{LayoutBound.of_cubic} \\
 Lem.~\ref{lem:median} & \lean{exists_key_of_edgeScore} \\
@@ -2268,7 +2877,7 @@ Lem.~\ref{lem:sheppard} & \lean{Gaussian.gaussPi_between_le_arccos} \\
 Prop.~\ref{prop:straddle} & \lean{Gaussian.measureReal_straddleEvent_le} \\
 Cor.~\ref{cor:unconditional} & \lean{lowerBound_gaussian}, \lean{lowerBound_four} \\
 \midrule
-\multicolumn{2}{l}{\emph{Linear maps} (\lean{Linear/*.lean})} \\
+\multicolumn{2}{l}{\emph{Linear maps} (\lean{Linear/*.lean})} \\*
 Def.~\ref{def:totally-regular} & \lean{TotallyRegular}, \lean{TotallyRegular.eq_zero} \\
 Lem.~\ref{lem:cauchy} & \lean{totallyRegular_cauchy}, \lean{totallyRegular_cauchyNat} \\
 Lem.~\ref{lem:injective-cut} & \lean{exists_injective_cut} \\
@@ -2278,17 +2887,23 @@ Thm.~\ref{thm:linear} & \lean{lowerBound_linear} \\
 Lem.~\ref{lem:linearize} & \lean{exists_affine_circuit} \\
 Cor.~\ref{cor:cauchy} & \lean{linear_finite_gaussian}, \lean{linear_polynomial_gaussian} \\
 \midrule
-\multicolumn{2}{l}{\emph{Ledgers} (\lean{Ledger/*.lean}, \lean{Components.lean})} \\
+\multicolumn{2}{l}{\emph{Ledgers} (\lean{Ledger/*.lean}, \lean{Components.lean})} \\*
 Def.~\ref{def:ledger} & \lean{Ledger} \\
 Prop.~\ref{prop:aggregate} & \lean{exists_ledger_of_aggregates}, \lean{aggregates_and} \\
 Lem.~\ref{lem:guess} & \lean{Ledger.run_eq_trace}, \lean{Ledger.run_total_trace} \\
 Prop.~\ref{prop:ledger-sweep} & \lean{Ledger.sweep}, \lean{Ledger.mem_of_splice} \\
 Lem.~\ref{lem:componentwise} & \lean{LayoutBound.exists_layout_componentwise} \\
-Lem.~\ref{lem:count-closed} & \lean{Compiler.cycleRankOn_add_ncard_readIn_le} \\
+Lem.~\ref{lem:count-closed} & \lean{Compiler.cycleRankOn_add_ncard_readIn_le_local} \\
 Thm.~\ref{thm:ledger} & \lean{lowerBound_ledger}, \lean{Ledger.exists_ncard_le} \\
 \bottomrule
 \end{longtable}
 }
+
+\section*{Acknowledgments}
+\addcontentsline{toc}{section}{Acknowledgments}
+
+We thank Sam McGuire for the weighted average-case argument based on disjoint rectangle
+peeling, including asymmetric thresholds and a shared exceptional-measure bound.
 
 \bibliographystyle{alpha}
 \bibliography{references}
@@ -2303,7 +2918,11 @@ manuscript, including checking its references. Every result marked with a Lean d
 verified by the Lean kernel, using only the standard axioms; the statements of those
 declarations were read against the paper. The results that are not formalized are marked in
 the text: \cref{prop:random,prop:network-program}, the remarks, all results in
-\cref{sec:counting} including the derandomization, and the cited extractor constructions.
+\cref{sec:counting} including conditional expectations and ledger counting, the signal-state
+algorithm of \cref{prop:signal-dp}, the program partition and packing statements of
+\cref{lem:weighted-frontier,thm:weighted-distribution,thm:weighted-circuit},
+the tree-limit calculation of \cref{prop:tree-sharpness},
+and the cited extractor constructions.
 The authors take responsibility for
 all statements, proofs, and text in this paper.
 

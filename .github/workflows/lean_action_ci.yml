@@ -14,3 +14,8 @@ jobs:
       - uses: leanprover/lean-action@v1
       - name: Audit theorem axioms
         run: lake env lean scripts/Audit.lean
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check reference counting procedures
+        run: python scripts/check_algorithms.py

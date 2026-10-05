@@ -106,7 +106,7 @@ def pastSide (t : ℕ) (x : ι → U) : Set (P.revealed t → U) :=
 def futureSide (t : ℕ) (x : ι → U) : Set (↥(P.revealed t)ᶜ → U) :=
   (P.revealed t)ᶜ.domRestrict '' P.peers t x
 
-/-- The peers of an input form a rectangle inside `S`: one of its sides is small. -/
+/-- The rectangular hull of the peers lies inside `S`: one of its sides is small. -/
 theorem pastSide_lt_or_futureSide_lt {K : ℕ} (hS : RectangleFree S K) (t : ℕ) (x : ι → U) :
     (P.pastSide t x).ncard < K ∨ (P.futureSide t x).ncard < K := by
   refine hS _ _ _ fun z ⟨⟨y, ⟨hy, hyx⟩, hzy⟩, ⟨y', ⟨hy', hy'x⟩, hzy'⟩⟩ => ?_
@@ -134,53 +134,53 @@ revealed parts. -/
 noncomputable def chargeTime (K : ℕ) (x : ι → U) : ℕ :=
   sInf {t | K ≤ (P.pastSide t x).ncard}
 
-/-- **The frontier counting lemma.** A `K`-rectangle-free set with at least `K` elements has at
-most `(K - 1) ^ 2` elements per transition. -/
-theorem ncard_le [Finite ι] [Finite U] {K : ℕ} (hS : RectangleFree S K) (hK : K ≤ S.ncard) :
-    S.ncard ≤ (K - 1) ^ 2 * ∑ t ∈ Finset.range P.length, (P.transition t '' S).ncard := by
+/-- The total number of transitions used by accepted inputs. -/
+noncomputable def transitionCount : ℕ :=
+  ∑ t ∈ Finset.range P.length, (P.transition t '' S).ncard
+
+/-- Threshold charging only needs thin message classes, with asymmetric thresholds. -/
+theorem ncard_le_of_small_sides [Finite ι] [Finite U] {KL KR : ℕ}
+    (hKL : 1 < KL) (hK : KL ≤ S.ncard)
+    (hsmall : ∀ t, ∀ x ∈ S, (P.pastSide t x).ncard < KL ∨ (P.futureSide t x).ncard < KR) :
+    S.ncard ≤ (KL - 1) * (KR - 1) * P.transitionCount := by
   -- The charge time is well defined, positive, and at most the length of the sweep.
-  have hlength : ∀ x ∈ S, P.length ∈ {t | K ≤ (P.pastSide t x).ncard} := fun x hx =>
-    show K ≤ _ by rw [P.ncard_pastSide_length hx]; exact hK
-  have hcharged : ∀ x ∈ S, K ≤ (P.pastSide (P.chargeTime K x) x).ncard := fun x hx =>
+  have hlength : ∀ x ∈ S, P.length ∈ {t | KL ≤ (P.pastSide t x).ncard} := fun x hx =>
+    show KL ≤ _ by rw [P.ncard_pastSide_length hx]; exact hK
+  have hcharged : ∀ x ∈ S, KL ≤ (P.pastSide (P.chargeTime KL x) x).ncard := fun x hx =>
     Nat.sInf_mem ⟨_, hlength x hx⟩
-  have hbefore : ∀ x, ∀ t < P.chargeTime K x, (P.pastSide t x).ncard < K := fun x t ht =>
-    not_le.mp (Nat.notMem_of_lt_sInf (s := {t | K ≤ (P.pastSide t x).ncard}) ht)
-  have hle_length : ∀ x ∈ S, P.chargeTime K x ≤ P.length := fun x hx =>
+  have hbefore : ∀ x, ∀ t < P.chargeTime KL x, (P.pastSide t x).ncard < KL := fun x t ht =>
+    not_le.mp (Nat.notMem_of_lt_sInf (s := {t | KL ≤ (P.pastSide t x).ncard}) ht)
+  have hle_length : ∀ x ∈ S, P.chargeTime KL x ≤ P.length := fun x hx =>
     Nat.sInf_le (hlength x hx)
-  have hpos : ∀ x ∈ S, 0 < P.chargeTime K x := by
+  have hpos : ∀ x ∈ S, 0 < P.chargeTime KL x := by
     intro x hx
     refine Nat.pos_of_ne_zero fun h0 => ?_
     have h1 := hcharged x hx
     rw [h0] at h1
-    -- A charge at time zero would make `K ≤ 1`, but then a single input is a large rectangle.
-    have hK1 : K ≤ 1 := h1.trans (P.ncard_pastSide_zero_le x)
-    rcases P.pastSide_lt_or_futureSide_lt hS 0 x with h | h
-    · omega
-    · have : (P.futureSide 0 x).Nonempty := ⟨_, x, ⟨hx, rfl⟩, rfl⟩
-      have := (ncard_pos (toFinite _)).mpr this
-      omega
+    have h1 := h1.trans (P.ncard_pastSide_zero_le x)
+    lia
   -- Split `S` by the step `t` whose completion charges an input: `chargeTime = t + 1`.
-  let step : (ι → U) → ℕ := fun x => P.chargeTime K x - 1
+  let step : (ι → U) → ℕ := fun x => P.chargeTime KL x - 1
   calc S.ncard
       ≤ ∑ t ∈ Finset.range P.length, (S ∩ step ⁻¹' {t}).ncard :=
         ncard_le_sum_ncard_fiber (toFinite S) step P.length fun x hx => by
-          have := hle_length x hx; have := hpos x hx; simp only [step]; omega
-    _ ≤ ∑ t ∈ Finset.range P.length, (K - 1) ^ 2 * (P.transition t '' S).ncard := by
+          have := hle_length x hx; have := hpos x hx; simp only [step]; lia
+    _ ≤ ∑ t ∈ Finset.range P.length, ((KL - 1) * (KR - 1)) * (P.transition t '' S).ncard := by
         refine Finset.sum_le_sum fun t _ => ?_
         refine (ncard_le_mul_ncard_image (toFinite _) (P.transition t) _ fun τ => ?_).trans
           (Nat.mul_le_mul_left _ (ncard_le_ncard (image_mono inter_subset_left)))
-        -- The inputs charged at step `t` with transition `τ` are at most `(K - 1) ^ 2`.
+        -- The inputs charged at step `t` with transition `τ` are at most `((KL - 1) * (KR - 1))`.
         rcases (S ∩ step ⁻¹' {t} ∩ P.transition t ⁻¹' {τ}).eq_empty_or_nonempty with h | ⟨x, hx⟩
         · simp [h]
         obtain ⟨⟨hxS, hxt⟩, hxτ⟩ := hx
-        have hxcharge : P.chargeTime K x = t + 1 := by
-          have := hpos x hxS; simp only [step, mem_preimage, mem_singleton_iff] at hxt; omega
-        have hpast : (P.pastSide t x).ncard ≤ K - 1 := by
-          have := hbefore x t (by omega); omega
-        have hfuture : (P.futureSide (t + 1) x).ncard ≤ K - 1 := by
+        have hxcharge : P.chargeTime KL x = t + 1 := by
+          have := hpos x hxS; simp only [step, mem_preimage, mem_singleton_iff] at hxt; lia
+        have hpast : (P.pastSide t x).ncard ≤ KL - 1 := by
+          have := hbefore x t (by lia); lia
+        have hfuture : (P.futureSide (t + 1) x).ncard ≤ KR - 1 := by
           have := hcharged x hxS
           rw [hxcharge] at this
-          rcases P.pastSide_lt_or_futureSide_lt hS (t + 1) x with h | h <;> omega
+          rcases hsmall (t + 1) x hxS with h | h <;> lia
         calc (S ∩ step ⁻¹' {t} ∩ P.transition t ⁻¹' {τ}).ncard
             ≤ (P.pastSide t x ×ˢ P.futureSide (t + 1) x).ncard := by
               refine ncard_le_ncard_of_injOn
@@ -203,9 +203,26 @@ theorem ncard_le [Finite ι] [Finite U] {K : ℕ} (hS : RectangleFree S K) (hK :
                 · exact hnew ⟨h₂, h₁⟩
                 · exact hyy'.2 h₂
           _ = (P.pastSide t x).ncard * (P.futureSide (t + 1) x).ncard := ncard_prod
-          _ ≤ (K - 1) ^ 2 := by rw [sq]; exact Nat.mul_le_mul hpast hfuture
-    _ = (K - 1) ^ 2 * ∑ t ∈ Finset.range P.length, (P.transition t '' S).ncard :=
+          _ ≤ ((KL - 1) * (KR - 1)) := Nat.mul_le_mul hpast hfuture
+    _ = ((KL - 1) * (KR - 1)) * ∑ t ∈ Finset.range P.length, (P.transition t '' S).ncard :=
         (Finset.mul_sum ..).symm
+
+/-- **The frontier counting lemma.** A `K`-rectangle-free set with at least `K` elements has at
+most `(K - 1) ^ 2` elements per transition. -/
+theorem ncard_le [Finite ι] [Finite U] {K : ℕ} (hS : RectangleFree S K) (hK : K ≤ S.ncard) :
+    S.ncard ≤ (K - 1) ^ 2 * ∑ t ∈ Finset.range P.length, (P.transition t '' S).ncard := by
+  by_cases hK1 : 1 < K
+  · simpa only [transitionCount, sq] using P.ncard_le_of_small_sides hK1 hK
+      (fun t x _ => P.pastSide_lt_or_futureSide_lt hS t x)
+  · have hEmpty : S = ∅ := by
+      apply eq_empty_iff_forall_notMem.mpr
+      intro x hx
+      have hp : (P.pastSide 0 x).Nonempty := ⟨_, x, ⟨hx, rfl⟩, rfl⟩
+      have hf : (P.futureSide 0 x).Nonempty := ⟨_, x, ⟨hx, rfl⟩, rfl⟩
+      have hp := (ncard_pos (toFinite _)).mpr hp
+      have hf := (ncard_pos (toFinite _)).mpr hf
+      rcases P.pastSide_lt_or_futureSide_lt hS 0 x with h | h <;> lia
+    simp [hEmpty]
 
 end Sweep
 

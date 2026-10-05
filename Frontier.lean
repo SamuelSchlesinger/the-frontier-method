@@ -19,6 +19,9 @@ public import Frontier.Extractor
 public import Frontier.Linear.Main
 public import Frontier.Components
 public import Frontier.Ledger.Main
+public import Frontier.Nondeterministic
+public import Frontier.Signals
+public import Frontier.AverageCase.Extractor
 
 /-!
 # The frontier method
@@ -42,6 +45,11 @@ A circuit lower bound from graph layouts, in independent pieces:
   infinite fields with polynomial operations; Cauchy matrices and arithmetic circuits.
 * `Frontier.Ledger` and `Frontier.Components`: gates of unbounded fan-in that aggregate in a
   monoid, carried along the layout as a ledger.
+* `Frontier.Projection` and `Frontier.Nondeterministic`: existentially hiding inputs and the
+  same lower bound for nondeterministic circuits, uniformly in the number of witness inputs.
+* `Frontier.Signals`: frontier capacity measured by distinct circuit signals.
+* `Frontier.AverageCase`: coherent weighted peeling and average-case circuit hardness from
+  rectangle bias or sumset bias, with an exponentially small remainder below `L n`.
 
 The main theorem is `Frontier.lowerBound`: under `LayoutBound (r + 1) A`, circuits of fan-in at
 most `r` deciding dense rectangle-free sets satisfy `(r - 1) s > (1 + 1/A - ε) n`. For fan-in

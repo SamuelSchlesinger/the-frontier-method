@@ -37,3 +37,31 @@ Run after `lake build --wfail` with `lake env lean scripts/Audit.lean`.
 /-- info: 'Frontier.lowerBound_aggregate_gaussian' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Frontier.lowerBound_aggregate_gaussian
+
+/-- info: 'Frontier.lowerBound_nondeterministic_gaussian' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.lowerBound_nondeterministic_gaussian
+
+/-- info: 'Frontier.Compiler.ncard_accepted_le_signals' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Compiler.ncard_accepted_le_signals
+
+/-- info: 'Frontier.Compiler.cycleRankOn_add_ncard_readIn_le_local' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Compiler.cycleRankOn_add_ncard_readIn_le_local
+
+/-- info: 'Frontier.Ledger.total_run_eq_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Ledger.total_run_eq_iff
+
+/-- info: 'Frontier.Sweep.abs_sumOn_le_of_budget' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Sweep.abs_sumOn_le_of_budget
+
+/-- info: 'Frontier.averageCase_abs' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.averageCase_abs
+
+/-- info: 'Frontier.averageCase_sumset' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.averageCase_sumset

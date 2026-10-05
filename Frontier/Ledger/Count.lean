@@ -81,7 +81,7 @@ private theorem card_junction_eq {W : Set (Vertex p out)} (hW : (network p out I
   exact card_subtype_eq_add (Equiv.refl _) _
 
 /-- The reachable inner gates whose vertex lies in `W`. -/
-private abbrev InnerGateIn (W : Set (Vertex p out)) : Type :=
+abbrev InnerGateIn (W : Set (Vertex p out)) : Type :=
   {g : InnerGate p out // Vertex.signal ⟨.gate g.1, g.2.1⟩ ∈ W}
 
 omit [Finite O] in
@@ -126,6 +126,31 @@ private theorem ncard_readIn_add_card_le (W : Set (Vertex p out)) :
   exact Nat.card_le_card_of_injective (fun g => ⟨⟨g.1.1, g.1.2.1⟩, g.2⟩) fun _ _ h =>
     Subtype.ext (Subtype.ext (congrArg (fun g => g.1.1) h))
 
+/-- **The local count inside a closed set.** Only the inner gates in `W` are charged. -/
+theorem card_touching_add_ncard_readIn_le_local {r : ℕ} (hfan : p.FanInAtMost r)
+    {W : Set (Vertex p out)} (hW : (network p out I Acc).cut W = ∅) :
+    ((network p out I Acc).touching W).ncard + ((network p out I Acc).readIn W).ncard ≤
+      W.ncard + (r - 1) * Nat.card (InnerGateIn W) := by
+  have hE := ncard_touching_eq I Acc hW
+  have hJ := card_junction_eq I Acc hW
+  have hV := ncard_eq_add W
+  have hslot := card_slot_mem_le hfan W
+  have hsig := ncard_readIn_add_card_le I Acc W
+  have hr : r * Nat.card (InnerGateIn W) ≤
+      (r - 1) * Nat.card (InnerGateIn W) + Nat.card (InnerGateIn W) := by
+    cases r <;> simp [add_mul]
+  lia
+
+/-- **The local cycle count.** A connected component pays only for its own inner gates. -/
+theorem cycleRankOn_add_ncard_readIn_le_local {r : ℕ} (hfan : p.FanInAtMost r)
+    {W : Set (Vertex p out)} (hW : (network p out I Acc).cut W = ∅)
+    (hconn : W.ncard ≤ ((network p out I Acc).touching W).ncard + 1) :
+    (network p out I Acc).cycleRankOn W + ((network p out I Acc).readIn W).ncard ≤
+      (r - 1) * Nat.card (InnerGateIn W) + 1 := by
+  have := card_touching_add_ncard_readIn_le_local I Acc hfan hW
+  unfold Multigraph.cycleRankOn
+  lia
+
 /-- **The count inside a closed set.** For fan-in at most `r`, the edges at a closed set of
 vertices `W` and the inputs read in `W` number at most `(r - 1) s` more than the vertices of `W`,
 where `s` counts the inner gates. -/
@@ -133,25 +158,10 @@ theorem card_touching_add_ncard_readIn_le {r : ℕ} (hfan : p.FanInAtMost r)
     {W : Set (Vertex p out)} (hW : (network p out I Acc).cut W = ∅) :
     ((network p out I Acc).touching W).ncard + ((network p out I Acc).readIn W).ncard ≤
       W.ncard + (r - 1) * p.innerGates.card := by
-  -- Two edges per junction in `W`, and one junction per consumer whose owner is in `W`.
-  have hE := ncard_touching_eq I Acc hW
-  have hJ := card_junction_eq I Acc hW
-  -- The vertices of `W` are its signals, junctions, and outputs.
-  have hV := ncard_eq_add W
-  -- At most `r` slots per inner gate in `W`, and the signals in `W` include the inputs read in
-  -- `W` and the inner gates in `W`.
-  have hslot := card_slot_mem_le hfan W
-  have hsig := ncard_readIn_add_card_le I Acc W
-  -- `r G ≤ (r - 1) G + G`, for `G` the number of reachable inner gates in `W`.
-  have hr : r * Nat.card (InnerGateIn W) ≤
-      (r - 1) * Nat.card (InnerGateIn W) + Nat.card (InnerGateIn W) := by
-    rcases r with _ | r
-    · simp
-    · simp [add_mul]
   have hG : Nat.card (InnerGateIn W) ≤ p.innerGates.card :=
     (Finite.card_subtype_le _).trans card_innerGate_le
-  have hrs := Nat.mul_le_mul_left (r - 1) hG
-  omega
+  exact (card_touching_add_ncard_readIn_le_local I Acc hfan hW).trans
+    (Nat.add_le_add_left (Nat.mul_le_mul_left _ hG) _)
 
 /-- **The cycle rank of a closed set.** For fan-in at most `r`, the cycle rank of a closed set of
 vertices `W` with at least `|W| - 1` edges, for instance a connected component, and the number of

@@ -102,22 +102,26 @@ theorem eventually_card_mul_sq_le_ncard (S : ∀ n, Set (Fin n → U)) (K : ℕ 
     rw [Real.log_mul (by positivity) (by positivity), Real.log_pow]; push_cast; linarith
   exact_mod_cast (Real.log_le_log_iff (by positivity) hSpos).mp this
 
-/-- **The frontier lower bound.** Let `r ≥ 2` and assume the layout hypothesis for maximum
-degree `r + 1` with coefficient `A > 0`. Let `S_n ⊆ U^n` be `K_n`-rectangle-free sets over a
-finite alphabet `U` with at least two symbols, with `log K_n = o(n)` and
-`n log |U| - log |S_n| = o(n)`. Then for every `ε > 0`, for all large `n`, every circuit with
-fan-in at most `r` deciding `S_n`, over any basis and interpretation on `U`, has `s` inner gates
-with `(r - 1) s > (1 + 1/A - ε) n`. -/
-theorem lowerBound {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A) (hlayout : LayoutBound (r + 1) A)
+/-- The numerical demand--supply comparison, exposed independently of the compiler.
+Any graph with the reduction's size, cycle, and frontier-demand bounds gives the same
+lower bound on its gate budget. -/
+theorem lowerBound_of_graph {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)
+    (hlayout : LayoutBound (r + 1) A)
     (S : ∀ n, Set (Fin n → U)) (K : ℕ → ℕ)
     (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
     (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
     (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
       fun n => (n : ℝ))
     {ε : ℝ} (hε : 0 < ε) :
-    ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
-      (c : Circuit σ n 1), c.FanInAtMost r → Decides c I Acc (S n) →
-        (1 + 1 / A - ε) * n < (r - 1) * c.innerSize := by
+    ∀ᶠ n in atTop, ∀ (gates : ℕ) (V E : Type) [Finite V] [Finite E] (G : Multigraph V E),
+      G.Connected → G.Loopless → G.MaxDegreeLE (r + 1) →
+      Nat.card V ≤ 2 * r * gates + 3 →
+      (G.cycleRank : ℝ) ≤ ((r - 1) * gates : ℕ) - n + Real.logb (Nat.card U) (K n) + 1 →
+      (∀ (π : Layout V) (w : ℕ), (∀ t, (G.cut (π.initial t)).ncard ≤ w) →
+        Real.logb (Nat.card U) (S n).ncard ≤
+          w + (r + 2) + 3 * Real.logb (Nat.card U) (K n) +
+            Real.logb (Nat.card U) (Nat.card V + 1)) →
+      (1 + 1 / A - ε) * n < (r - 1) * gates := by
   set q := Nat.card U
   have hq : (1 : ℝ) < q := by exact_mod_cast Finite.one_lt_card
   have hL : 0 < Real.log q := Real.log_pos hq
@@ -141,16 +145,14 @@ theorem lowerBound {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A) (hlayout : La
   replace H := H η hη le_rfl
   have hbig := eventually_card_mul_sq_le_ncard S K hfree hK hdense
   filter_upwards [H C e he, hfree, hbig] with n hn hfreen hbign
-  intro σ I Acc c hfan hS
-  obtain ⟨V, E, _, _, G, hconn, hloop, hdeg, hV, hrank, hwidth⟩ :=
-    exists_graph_of_decides hr hfan hS hfreen hbign
+  intro gates V E _ _ G hconn hloop hdeg hV hrank hwidth
   obtain ⟨π, hπ⟩ := hC V E G hconn hloop hdeg
   set B := (A + η) * G.cycleRank + η * Nat.card V + C
   have hB : 0 ≤ B := by simpa [Layout.initial_zero] using hπ 0
   have hwidth := hwidth π ⌊B⌋₊ fun t => Nat.le_floor (hπ t)
   -- The quantities of the comparison.
-  set s : ℝ := (((r - 1) * c.innerSize : ℕ) : ℝ)
-  have hs : s = (r - 1) * c.innerSize := by
+  set s : ℝ := (((r - 1) * gates : ℕ) : ℝ)
+  have hs : s = (r - 1) * gates := by
     simp only [s]; rw [Nat.cast_mul, Nat.cast_sub (by omega), Nat.cast_one]
   have hK1 : (1 : ℝ) ≤ K n := by exact_mod_cast hfreen.pos
   have hlogK : 0 ≤ Real.logb q (K n) := Real.logb_nonneg hq hK1
@@ -169,10 +171,10 @@ theorem lowerBound {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A) (hlayout : La
           rw [div_eq_mul_one_div, mul_comm]
           exact mul_le_mul_of_nonneg_right (by simp [κ]) h0
   have hVs : (Nat.card V : ℝ) ≤ κ * (n + s + 1) := by
-    have : 2 * r * c.innerSize + 3 ≤ 4 * ((r - 1) * c.innerSize) + 4 := by
+    have : 2 * r * gates + 3 ≤ 4 * ((r - 1) * gates) + 4 := by
       have : 2 * r ≤ 4 * (r - 1) := by omega
       nlinarith
-    have h4 : (Nat.card V : ℝ) ≤ 4 * ((r - 1) * c.innerSize : ℕ) + 4 := by
+    have h4 : (Nat.card V : ℝ) ≤ 4 * ((r - 1) * gates : ℕ) + 4 := by
       exact_mod_cast hV.trans this
     have hκ4 : 4 ≤ κ := by simp only [κ]; linarith [show 0 ≤ 1 / Real.log 2 by positivity]
     have hns : 0 ≤ (n : ℝ) + s + 1 := by positivity
@@ -189,6 +191,29 @@ theorem lowerBound {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A) (hlayout : La
       simp only [e]; simp only [s]; linarith
     have := mul_le_mul_of_nonneg_left hrank' (by linarith : 0 ≤ A + η)
     linarith
+
+/-- **The frontier lower bound.** Let `r ≥ 2` and assume the layout hypothesis for maximum
+degree `r + 1` with coefficient `A > 0`. Let `S_n ⊆ U^n` be `K_n`-rectangle-free sets over a
+finite alphabet `U` with at least two symbols, with `log K_n = o(n)` and
+`n log |U| - log |S_n| = o(n)`. Then for every `ε > 0`, for all large `n`, every circuit with
+fan-in at most `r` deciding `S_n`, over any basis and interpretation on `U`, has `s` inner gates
+with `(r - 1) s > (1 + 1/A - ε) n`. -/
+theorem lowerBound {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A) (hlayout : LayoutBound (r + 1) A)
+    (S : ∀ n, Set (Fin n → U)) (K : ℕ → ℕ)
+    (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
+    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
+    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
+      fun n => (n : ℝ))
+    {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
+      (c : Circuit σ n 1), c.FanInAtMost r → Decides c I Acc (S n) →
+        (1 + 1 / A - ε) * n < (r - 1) * c.innerSize := by
+  filter_upwards [lowerBound_of_graph hr hA hlayout S K hfree hK hdense hε,
+    hfree, eventually_card_mul_sq_le_ncard S K hfree hK hdense] with n hn hf hb
+  intro σ I Acc c hfan hS
+  obtain ⟨V, E, _, _, G, hc, hl, hd, hV, hrank, hw⟩ :=
+    exists_graph_of_decides hr hfan hS hf hb
+  exact hn c.innerSize V E G hc hl hd hV hrank hw
 
 /-- **The frontier lower bound for fan-in two.** Assume the layout hypothesis for subcubic graphs
 with coefficient `A > 0`. Under the hypotheses of `Frontier.lowerBound`, for every `ε > 0` and all

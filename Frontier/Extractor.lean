@@ -19,8 +19,8 @@ is not constant on any sumset `A + B` of two large sets of inputs has rectangle-
 
 Such functions are *sumset dispersers*. A *sumset extractor* is better: its output on `X + Y`, for
 independent random inputs `X` and `Y` with enough min-entropy, is close to uniform. An extractor
-with error less than `1/2` disperses sumsets, and its fibers are dense, since `X + Y` is uniform
-when `X` and `Y` are.
+with error less than `1/2` disperses sumsets. Over a finite additive group its fibers are
+dense, since `X + Y` is uniform when `X` and `Y` are.
 
 For `U = {0, 1}` with addition modulo two, polynomial-time computable extractors for the sum of
 two independent sources of min-entropy `c log n` are known (Xin Li, *Two source extractors for

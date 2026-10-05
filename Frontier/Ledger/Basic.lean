@@ -227,6 +227,17 @@ theorem run_total_trace (x : Fin n → U) : L.run (L.total (p.trace I x)) x = p.
   change Wire.elim x ((erase special p).eval _ x) = _
   rw [← hgates, elim_trace_gate]
 
+/-- A guessed ledger is consistent exactly when it is the ledger of the unique true run.
+This is the uniqueness needed when summing counts over ledger guesses. -/
+theorem total_run_eq_iff (m : M) (x : Fin n → U) :
+    L.total (L.run m x) = m ↔ m = L.total (p.trace I x) := by
+  constructor
+  · intro h
+    rw [L.run_eq_trace h] at h
+    exact h.symm
+  · rintro rfl
+    rw [L.run_total_trace]
+
 end Ledger
 
 end Frontier

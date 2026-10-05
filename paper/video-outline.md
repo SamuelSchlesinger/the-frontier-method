@@ -12,11 +12,19 @@ only. Every statement below is in the paper; section numbers refer to `frontier.
 - Main theorem (Thm. 1.1): (r - 1) s > (1 + 1/A - ε) n.
 - Gaussian layouts (Thm. 1.2): A ≈ 0.2807, so L ≈ 4.5625 for fan-in two (Cor. 1.3).
 - An explicit language in P (Cor. 1.4), via sumset extractors (Chattopadhyay–Liao, Li).
+- Existential witness inputs preserve the same lower bound, uniformly in their number
+  (Sec. 6, theorem on nondeterministic circuits).
+- Average case: extractor error b gives agreement at most
+  1/2 + b + 2^{-Ω_ε(n)} for circuit size (L - ε)n. The weighted frontier lemma peels
+  disjoint rectangles; unambiguity prevents overlapping contributions. A fixed gap below
+  Ln is required. The weighted form uses input min-entropy and allows a shared exceptional
+  measure. Lean checks weighted coherent sweeps and the uniform average-case circuit and
+  sumset-bias theorems; the general distributional packing statements remain paper proofs.
 - Same frontiers: linear maps and arithmetic circuits (Thm. 1.5, Cor. 1.6), aggregate gates
   (Thm. 1.7), and deterministic #SAT in time and space O*(2^{(1/L + η)s}), where
   1/L = 0.219178... (Thm. 1.8). O* suppresses polynomial factors in the full input size.
-- Formally verified in Lean 4: the general lower bounds, arithmetic instantiations, and layout
-  theorem. The explicit Boolean construction and its polynomial-time evaluation are cited.
+- Formally verified in Lean 4: the exact and uniform average-case lower bounds, arithmetic
+  instantiations, and layout theorem. The explicit Boolean construction and its polynomial-time evaluation are cited.
 
 ## 2. Context (4:00–7:00)
 
@@ -59,15 +67,21 @@ only. Every statement below is in the paper; section numbers refer to `frontier.
 - Ledgers: guess the product, check it at the end; components (Sec. 9). Count only ordinary
   positive-arity gates. Modular counts have fixed moduli, or total logarithmic cost o(n).
 - Counting: dynamic program over frontier values; the minimum of brute force and the layout
-  (Sec. 10). Bounded independence preserves the local first and second moments; enumerate
-  polynomially many seeds to find the layout deterministically. These algorithms and their
-  complexity bounds are not formalized.
+  (Sec. 10). Keep m reachable inputs: exponent min(m, A(s-m)) + ηs. For 3n and 4n gates,
+  with all inputs reachable, this gives 0.5614n and 0.8421n plus arbitrarily small linear slack.
+  Finite ledgers add a polynomial factor in |M|. Fixed local precision and conditional
+  expectations give deterministic cubic layouts in f(ξ) h^3 polylog(h) time with an absolute
+  polynomial degree. These algorithms and their complexity bounds are not formalized.
+- Signal states: one value per distinct circuit signal, with a formally checked capacity
+  inequality and a paper proof of exact counting (Sec. 5).
 
 ## 6. Formalization and open problems (24:00–27:00)
 
-- Lean 4 on CSLib and Mathlib; about 8,600 lines; standard axioms only; statements read like
+- Lean 4 on CSLib and Mathlib; about 10,000 lines; standard axioms only; statements read like
   the paper; index in Appendix A.
 - Design choices worth a sentence: one frontier sweep for everything, constants free, minimal
   layout hypothesis (Sec. 11).
 - Open problems (Sec. 12): better LB_3(A); finer frontier measures beyond 5.84n; larger
-  fan-in; nondeterministic circuits; explicit hard sets inside Lean.
+  fan-in; a smaller universal signal-layout coefficient; explicit hard sets inside Lean.
+  The present local Gaussian estimate is sharp in its cubic-tree limit; this alone does not
+  show global optimality of the layout coefficient.
