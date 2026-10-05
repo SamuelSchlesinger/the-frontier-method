@@ -27,7 +27,7 @@ A circuit lower bound from graph layouts, in independent pieces:
 
 * `Frontier.Rectangle`: rectangle-free sets, the only property of the hard set, and the support
   lemma. `Frontier.Extractor`: sumset dispersers have rectangle-free fibers.
-* `Frontier.Sweep`: sweeps, an abstract read-once protocol, and the frontier counting lemma
+* `Frontier.Sweep`: abstract splicing messages and the frontier counting lemma
   `Frontier.Sweep.ncard_le`. No graphs or circuits appear.
 * `Frontier.Multigraph` and `Frontier.Network`: layouts, the layout hypothesis
   `Frontier.LayoutBound`, constraint networks, the separator lemma, and the sweep of a network
@@ -49,6 +49,6 @@ two this is `s > (L - ε) n` with `L = 1 + 1/A`. The layout bound holds with
 `A = (3/π) arccos ((1 + 2√2)/4)` (`Frontier.layoutBound_gaussian`), giving the unconditional
 `Frontier.lowerBound_gaussian`, with `L ≈ 4.5625`, and `Frontier.lowerBound_four`. The same
 coefficient holds for totally regular maps (`Frontier.lowerBound_linear`,
-`Frontier.arith_cauchy_gaussian`) and with sublinearly many aggregate gates
+`Frontier.arith_cauchy_gaussian`) and with sublinearly many fixed-monoid aggregate gates
 (`Frontier.lowerBound_ledger`, `Frontier.lowerBound_aggregate_gaussian`).
 -/

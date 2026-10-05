@@ -14,9 +14,9 @@ import Mathlib.Algebra.BigOperators.Ring.Finset
 # Sweeps and the frontier counting lemma
 
 A *sweep* of a set of inputs `S ⊆ U^ι` reveals the coordinates of an input a few at a time:
-`∅ = X 0, X 1, ..., X T = ι`. At each time `t` the revealed part of an input sends a *message*
-`μ t x` to the unrevealed part. The defining property is that messages are sufficient
-statistics for membership in `S`: if two inputs of `S` send the same message at time `t`, then
+`∅ = X 0, X 1, ..., X T = ι`. At each time `t` an input has a *message* `μ t x`, which may
+depend on the whole input. The defining property is that messages permit splicing:
+if two inputs of `S` have the same message at time `t`, then
 the revealed part of one may be spliced onto the unrevealed part of the other without leaving
 `S`. The last message, sent once everything is revealed, carries no information.
 
@@ -29,13 +29,14 @@ least `K` elements, then
 `|S| ≤ (K - 1) ^ 2 · ∑_t #{transitions taken at step t}`.
 
 The proof charges each input `x` to the first time `t + 1` at which the inputs sharing its
-message have at least `K` distinct revealed parts. Those inputs form a rectangle inside `S`, so
+message have at least `K` distinct revealed parts. Their rectangular hull lies inside `S`, so
 they have fewer than `K` distinct unrevealed parts. At time `t` the inputs sharing the message
 of `x` still had fewer than `K` distinct revealed parts. An input charged to a step is
 determined by its transition, its part revealed by time `t`, and its part unrevealed at time
 `t + 1`; hence at most `(K - 1) ^ 2` inputs share a charged step and a transition.
 
-Nothing here mentions graphs or circuits: a sweep is an abstract read-once protocol.
+Nothing here mentions graphs or circuits: a sweep is an abstract family of splicing messages.
+Its transitions alone need not form a correct branching program.
 Constraint networks swept along a vertex ordering produce sweeps whose messages are the values
 on the edges of the frontier (`Frontier.Network.sweep`).
 
@@ -69,7 +70,7 @@ structure Sweep (S : Set (ι → U)) (M : Type*) where
   revealed_zero : revealed 0 = ∅
   /-- Everything is revealed at the end. -/
   revealed_length : revealed length = univ
-  /-- The message sent at time `t` by the revealed part of an input. -/
+  /-- The message at time `t`, possibly depending on the whole input. -/
   message : ℕ → (ι → U) → M
   /-- The final message is the same for all inputs of `S`. -/
   message_length : ∀ x ∈ S, ∀ y ∈ S, message length x = message length y

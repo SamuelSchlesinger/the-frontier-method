@@ -55,9 +55,10 @@ signal's value in the run (`eq_trace`). So the satisfying assignment, if any, is
 `W + C + |O|` vertices, so its cycle rank is `C - W - |O| + 1`, the number of slots minus the
 number of signals plus one. A gate of arity `k` has `k` slots, so it contributes `k - 1` to the
 cycle rank, and a reachable input contributes `-1`. Hence the cycle rank is at most
-`(r - 1) s + 1 - m` for `s` gates of fan-in at most `r` and `m` reachable inputs. For fan-in two
-this is `s + 1 - m`: every gate beyond the `m - 1` gates of a formula contributes one
-independent cycle. Sharing creates cycles; gates create local constraints. Gates of arity zero,
+`(r - 1) s + 1 - m` for `s` gates of fan-in at most `r` and `m` reachable inputs. If all gates
+are binary and reachable and there are no constants, the rank is exactly `s + 1 - m`, compared
+with zero for a read-once binary formula on `m` distinct inputs. Sharing creates cycles;
+gates create local constraints. Gates of arity zero,
 the constants, only lower the cycle rank: the count charges only the *inner* gates, those of
 positive arity.
 
@@ -793,8 +794,7 @@ theorem card_edge_add_ncard_read_le {r : ℕ} (hfan : p.FanInAtMost r) :
 
 /-- **The cycle rank.** For fan-in at most `r`, if the network is connected, its cycle rank and
 the number of inputs it reads add up to at most `(r - 1) s + 1`, where `s` counts the inner
-gates. For fan-in two: every gate beyond the `m - 1` gates of a formula on `m` inputs adds one
-independent cycle. -/
+gates. For fan-in two, the cycle rank is at most `s + 1 - m` for `m` reachable inputs. -/
 theorem cycleRank_add_ncard_read_le {r : ℕ} (hfan : p.FanInAtMost r)
     (hconn : (network p out I Acc).Connected) :
     (network p out I Acc).cycleRank + (network p out I Acc).read.ncard ≤

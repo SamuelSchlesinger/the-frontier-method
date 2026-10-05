@@ -49,9 +49,9 @@ namespace Multigraph
 
 variable {V E : Type*} (G : Multigraph V E)
 
-/-- The cycle rank `|E(W)| + 1 - |W|` of a set of vertices `W`, where `E(W)` are the edges with
-an endpoint in `W`. For a closed, connected set it is the number of independent cycles of the
-subgraph spanned by `W`. -/
+/-- The truncated expression `|E(W)| + 1 - |W|`, where `E(W)` are the edges with an endpoint
+in `W`. For a nonempty closed, connected set it is the number of independent cycles of the
+subgraph spanned by `W`; it need not be additive over components. -/
 noncomputable def cycleRankOn (W : Set V) : ℕ :=
   (G.touching W).ncard + 1 - W.ncard
 

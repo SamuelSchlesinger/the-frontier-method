@@ -13,8 +13,10 @@ only. Every statement below is in the paper; section numbers refer to `frontier.
 - Gaussian layouts (Thm. 1.2): A ≈ 0.2807, so L ≈ 4.5625 for fan-in two (Cor. 1.3).
 - An explicit language in P (Cor. 1.4), via sumset extractors (Chattopadhyay–Liao, Li).
 - Same frontiers: linear maps and arithmetic circuits (Thm. 1.5, Cor. 1.6), aggregate gates
-  (Thm. 1.7), and #SAT in time 2^{(1/4 + η)s}, or expected 2^{(0.2192 + η)s} (Thm. 1.8).
-- Formally verified in Lean 4: all lower bounds and the layout theorem.
+  (Thm. 1.7), and deterministic #SAT in time and space O*(2^{(1/L + η)s}), where
+  1/L = 0.219178... (Thm. 1.8). O* suppresses polynomial factors in the full input size.
+- Formally verified in Lean 4: the general lower bounds, arithmetic instantiations, and layout
+  theorem. The explicit Boolean construction and its polynomial-time evaluation are cited.
 
 ## 2. Context (4:00–7:00)
 
@@ -29,12 +31,14 @@ only. Every statement below is in the paper; section numbers refer to `frontier.
 ## 3. Proof structure (7:00–17:00)
 
 1. Sweeps (Sec. 3): reveal coordinates in stages; splicing; the counting lemma
-   |S| ≤ (K - 1)^2 Σ_t |transitions at t| (Lemma 3.2). Picture: a read-once program.
+   |S| ≤ (K - 1)^2 Σ_t |transitions at t| (Lemma 3.2). Fixed-order read-once programs give
+   sweeps; the converse for abstract sweeps is false (Remark 3.3).
 2. Networks (Sec. 4): local constraints on edges; separator lemma (Lemma 4.3); sweeping along a
    layout costs q^{frontier} transitions per step (Prop. 4.4, Thm. 4.5).
-3. Compiler (Sec. 5): signals, junction chains (show the figure), exactness (Thm. 5.1);
-   counting β₁ + |read| ≤ (r - 1)s + 1 (Prop. 5.4): gates make constraints, fan-out makes
-   topology.
+3. Compiler (Sec. 5): signals, junction chains, exactness (Thm. 5.1); show the complete example
+   and its frontier before any inputs are read (Fig. 1). Local consistency gives unambiguous
+   programs directly (Prop. 5.3). Counting β₁ + |read| ≤ (r - 1)s + 1 (Prop. 5.5): gates make
+   constraints, fan-out makes topology.
 4. Demand and supply (Sec. 6): demand, a frontier carries about n values; supply, the layout
    has width about A(s - n); one comparison (Lemma 6.1) finishes every bound.
 
@@ -45,16 +49,19 @@ only. Every statement below is in the paper; section numbers refer to `frontier.
 - Gaussian edge scores from kernel rows (Lemma 7.4); Sheppard at every threshold (Lemma 7.5);
   one vertex straddles with probability (3/2π) arccos((1 + 3ρ₀)/4) (Prop. 7.6).
 - Correlation 2√2/3, as for Gaussian waves on the 3-regular tree.
-- Limit of the method (Sec. 7.4): bisection of random cubic graphs means A ≥ 0.2066,
-  coefficient at most 5.84.
+- Limit of the universal layout hypothesis (Sec. 7.4): bisection of random cubic graphs means
+  A ≥ 0.20659, coefficient at most 5.8405. A theorem restricted to compiler graphs could evade it.
 
 ## 5. Extensions (21:00–24:00)
 
 - Linear maps: totally regular, Cauchy matrices, linear capacity, linearization by dual
   numbers (Sec. 8).
-- Ledgers: guess the product, check it at the end; components (Sec. 9).
+- Ledgers: guess the product, check it at the end; components (Sec. 9). Count only ordinary
+  positive-arity gates. Modular counts have fixed moduli, or total logarithmic cost o(n).
 - Counting: dynamic program over frontier values; the minimum of brute force and the layout
-  (Sec. 10). Not formalized.
+  (Sec. 10). Bounded independence preserves the local first and second moments; enumerate
+  polynomially many seeds to find the layout deterministically. These algorithms and their
+  complexity bounds are not formalized.
 
 ## 6. Formalization and open problems (24:00–27:00)
 

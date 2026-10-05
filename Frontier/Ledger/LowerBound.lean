@@ -20,13 +20,13 @@ import Mathlib.Tactic.Ring
 `log K_n = o(n)`, as in `Frontier.lowerBound`, and let `β(n) = o(n)`. For every `ε > 0` and all
 large `n`, every circuit deciding `S_n` whose gates have fan-in at most `r`, except for special
 gates of any fan-in that have a ledger in a monoid `M` with `log |M| ≤ β(n)`, has
-`(r - 1) s > (1 + 1/A - ε) n` for its number `s` of inner gates. Constants and special gates are
-free; only the cost of the ledger is charged.
+`(r - 1) s > (1 + 1/A - ε) n` for its number `s` of ordinary inner gates. Constants and special
+gates are free; the ledger contributes only to the sublinear error.
 
 So the coefficient of the frontier method survives a sublinear amount of unbounded fan-in. For
-instance, `k` gates computing AND, OR, parity, or counts modulo `m` of any number of arguments
-have a ledger with `log |M| = O(k)` (`Frontier.exists_ledger_of_aggregates`), so `k = o(n)` such
-gates are allowed.
+instance, `k` gates computing AND, OR, parity, or counts modulo a fixed `m` of any number of
+arguments have a ledger with `log |M| = O(k)` (`Frontier.exists_ledger_of_aggregates`), so
+`k = o(n)` such gates are allowed.
 
 **Proof.** Erase the special gates and lay out the network of the erased program, one connected
 component after another (`Frontier.LayoutBound.exists_layout_componentwise`). Sweep the circuit
@@ -153,8 +153,8 @@ variable {U : Type u} [Finite U] [Nontrivial U]
 maximum degree `r + 1` with coefficient `A > 0`. Let `S_n ⊆ U^n` be dense `K_n`-rectangle-free
 sets with `log K_n = o(n)`, and let `β(n) = o(n)`. Then for every `ε > 0` and all large `n`, every
 circuit deciding `S_n`, over any basis on `U`, whose gates have fan-in at most `r` except for
-special gates of any fan-in with a ledger in a monoid `M` with `log |M| ≤ β(n)`, has `s` inner
-gates with `(r - 1) s > (1 + 1/A - ε) n`. Only the ordinary inner gates are charged. -/
+special gates of any fan-in with a ledger in a monoid `M` with `log |M| ≤ β(n)`, has `s` ordinary
+inner gates with `(r - 1) s > (1 + 1/A - ε) n`. These are the inner gates of the erased program. -/
 theorem lowerBound_ledger {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)
     (hlayout : LayoutBound (r + 1) A) (S : ∀ n, Set (Fin n → U)) (K : ℕ → ℕ)
     (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
@@ -166,7 +166,8 @@ theorem lowerBound_ledger {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)
       (c : Circuit σ n 1) (special : ℕ → Prop) (M : Type) [CommMonoid M] [Finite M],
         (∀ g : Fin c.size, ¬ special g → σ.Arity (c.program.lines g).op ≤ r) →
         Ledger c.program I special M → Real.log (Nat.card M) ≤ β n →
-        Decides c I Acc (S n) → (1 + 1 / A - ε) * n < (r - 1) * c.innerSize := by
+        Decides c I Acc (S n) →
+          (1 + 1 / A - ε) * n < (r - 1) * (erase special c.program).innerGates.card := by
   set q := Nat.card U
   have hq : (1 : ℝ) < q := by exact_mod_cast Finite.one_lt_card
   have hL : 0 < Real.log q := Real.log_pos hq
@@ -216,13 +217,12 @@ theorem lowerBound_ledger {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)
     fun t ht => union_subset (hF₀ t ht) (hF₁ t ht)
   -- The quantities of the comparison.
   set se := (erase special c.program).innerGates.card
-  have hse : se ≤ c.innerSize := Ledger.card_innerGates_erase_le c.program
   set B := (A + η) * (L.fnet 1).cycleRankOn (W t ht) + η * V + C
   set a := ((L.fnet 1).frontier π t ∪ (L.fnet 1).frontier π (t + 1)).ncard +
     ((L.fnet 1).readAt (π.symm ⟨t, ht⟩)).ncard
   set nW := ((L.fnet 1).readIn (W t ht)).ncard
-  set s : ℝ := (((r - 1) * c.innerSize : ℕ) : ℝ)
-  have hs : s = (r - 1) * c.innerSize := by
+  set s : ℝ := (((r - 1) * se : ℕ) : ℝ)
+  have hs : s = (r - 1) * (erase special c.program).innerGates.card := by
     simp only [s]; rw [Nat.cast_mul, Nat.cast_sub (by omega), Nat.cast_one]
   -- The width of the step is at most the frontier and the edges of the vertex processed.
   have ha : (a : ℝ) ≤ B + (r + 2) := by
@@ -244,10 +244,8 @@ theorem lowerBound_ledger {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)
   -- The cycle rank of the component and the inputs it reads.
   have hρ : ((L.fnet 1).cycleRankOn (W t ht) : ℝ) + nW ≤ s + 1 := by
     have h := Compiler.cycleRankOn_add_ncard_readIn_le _ _ hfan' (hWc t ht) (hWn t ht)
-    have : (L.fnet 1).cycleRankOn (W t ht) + nW ≤ (r - 1) * c.innerSize + 1 :=
-      h.trans (by gcongr)
     simp only [s]
-    exact_mod_cast this
+    exact_mod_cast h
   -- The size of the graph.
   have hV : (V : ℝ) ≤ κ * (n + s + 1) := by
     have h := Compiler.card_vertex_le (p := erase special c.program) (out := Ledger.outs c special)
@@ -256,10 +254,9 @@ theorem lowerBound_ledger {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)
       rw [Finite.card_option]
       have := Ledger.card_live_le (c := c) (special := special)
       omega
-    have : V ≤ 7 * ((r - 1) * c.innerSize) + 3 * n + 3 := by
+    have : V ≤ 7 * ((r - 1) * se) + 3 * n + 3 := by
       have h7 : 2 * r + 3 ≤ 7 * (r - 1) := by omega
-      have := Nat.mul_le_mul_left (2 * r + 3) hse
-      have := Nat.mul_le_mul_right c.innerSize h7
+      have := Nat.mul_le_mul_right se h7
       simp only [V]
       nlinarith
     have hV7 : (V : ℝ) ≤ 7 * s + 3 * n + 3 := by simp only [s]; exact_mod_cast this
@@ -334,8 +331,8 @@ theorem lowerBound_ledger {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)
 /-- **Aggregate gates.** Under the hypotheses of `Frontier.lowerBound`, let `β(n) = o(n)`. For
 every `ε > 0` and all large `n`, every circuit deciding `S_n` whose gates have fan-in at most `r`,
 except for `k` special gates of any fan-in that aggregate in a finite commutative monoid `T`,
-with `k log |T| ≤ β(n)`, has `s` inner gates with `(r - 1) s > (1 + 1/A - ε) n`. For instance, the
-special gates may compute AND, OR, parity, or counts modulo `m` of any number of arguments. -/
+with `k log |T| ≤ β(n)`, has `s` ordinary inner gates with `(r - 1) s > (1 + 1/A - ε) n`. For
+instance, the special gates may compute AND, OR, parity, or counts modulo a fixed `m`. -/
 theorem lowerBound_aggregate {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)
     (hlayout : LayoutBound (r + 1) A) (S : ∀ n, Set (Fin n → U)) (K : ℕ → ℕ)
     (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
@@ -348,7 +345,8 @@ theorem lowerBound_aggregate {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)
         (∀ g : Fin c.size, ¬ special g → σ.Arity (c.program.lines g).op ≤ r) →
         (∀ g : Fin c.size, special g → Aggregates (I (c.program.lines g).op) T) →
         Nat.card {g : Fin c.size // special g} * Real.log (Nat.card T) ≤ β n →
-        Decides c I Acc (S n) → (1 + 1 / A - ε) * n < (r - 1) * c.innerSize := by
+        Decides c I Acc (S n) →
+          (1 + 1 / A - ε) * n < (r - 1) * (erase special c.program).innerGates.card := by
   filter_upwards [lowerBound_ledger hr hA hlayout S K hfree hK hdense hβ hε] with n hn
   intro σ I Acc c special T _ _ hfan hagg hk hS
   obtain ⟨L⟩ := exists_ledger_of_aggregates c.program I special T hagg

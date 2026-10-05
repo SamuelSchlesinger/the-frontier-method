@@ -14,7 +14,7 @@ public import Frontier.Ledger.LowerBound
 Combining `Frontier.lowerBound_aggregate` with the layout bound for subcubic graphs: circuits of
 fan-in two over any basis, together with `k = o(n)` gates of unbounded fan-in that aggregate in
 a fixed finite commutative monoid, such as unbounded AND, OR, and parity, need more than
-`(L - ε) n` gates to decide a dense rectangle-free set, with
+`(L - ε) n` ordinary inner gates to decide a dense rectangle-free set, with
 `L = 1 + π / (3 arccos ((1 + 2√2)/4)) ≈ 4.5625`.
 -/
 
@@ -41,7 +41,8 @@ theorem lowerBound_aggregate_gaussian (S : ∀ n, Set (Fin n → U)) (K : ℕ �
         (∀ g : Fin c.size, special g → Aggregates (I (c.program.lines g).op) T) →
         Nat.card {g : Fin c.size // special g} * Real.log (Nat.card T) ≤ β n →
         Decides c I Acc (S n) →
-          (1 + Real.pi / (3 * Real.arccos ((1 + 2 * Real.sqrt 2) / 4)) - ε) * n < c.innerSize := by
+          (1 + Real.pi / (3 * Real.arccos ((1 + 2 * Real.sqrt 2) / 4)) - ε) * n <
+            (erase special c.program).innerGates.card := by
   filter_upwards [lowerBound_aggregate le_rfl (mul_pos two_pos Gaussian.gaussianCoefficient_pos)
     layoutBound_gaussian S K hfree hK hdense hβ hε] with n hn
   intro σ I Acc c special T _ _ hfan hagg hk hS

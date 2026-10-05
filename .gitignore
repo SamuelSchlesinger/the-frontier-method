@@ -9,3 +9,4 @@
 /paper/*.toc
 /paper/*.pdf
 /paper/build.log
+/paper/revision.tex

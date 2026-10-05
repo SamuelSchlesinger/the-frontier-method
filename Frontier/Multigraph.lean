@@ -94,8 +94,9 @@ def cut (L : Set V) : Set E :=
 def touching (L : Set V) : Set E :=
   {e | G.src e ∈ L ∨ G.tgt e ∈ L}
 
-/-- The *cycle rank* `|E| - |V| + 1`: for a connected graph, the number of independent
-cycles. -/
+/-- The connected cycle-rank expression `max (|E| - |V| + 1) 0`. For a nonempty connected
+graph, this is the number of independent cycles. On disconnected graphs it is not the sum
+of the component cycle ranks. -/
 noncomputable def cycleRank (_G : Multigraph V E) : ℕ :=
   Nat.card E + 1 - Nat.card V
 
