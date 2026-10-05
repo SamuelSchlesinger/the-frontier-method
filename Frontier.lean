@@ -10,33 +10,45 @@ public import Frontier.Sweep
 public import Frontier.Multigraph
 public import Frontier.Network
 public import Frontier.Compiler
+public import Frontier.Demand
 public import Frontier.Reduction
 public import Frontier.LowerBound
 public import Frontier.Layouts
 public import Frontier.Main
+public import Frontier.Extractor
+public import Frontier.Linear.Main
+public import Frontier.Components
+public import Frontier.Ledger.Main
 
 /-!
 # The frontier method
 
-A circuit lower bound from graph layouts, in five independent pieces:
+A circuit lower bound from graph layouts, in independent pieces:
 
 * `Frontier.Rectangle`: rectangle-free sets, the only property of the hard set, and the support
-  lemma.
+  lemma. `Frontier.Extractor`: sumset dispersers have rectangle-free fibers.
 * `Frontier.Sweep`: sweeps, an abstract read-once protocol, and the frontier counting lemma
   `Frontier.Sweep.ncard_le`. No graphs or circuits appear.
 * `Frontier.Multigraph` and `Frontier.Network`: layouts, the layout hypothesis
   `Frontier.LayoutBound`, constraint networks, the separator lemma, and the sweep of a network
   along a layout.
-* `Frontier.Compiler`: circuits of fan-in `r` over any basis become exact constraint networks
-  of maximum degree `r + 1` and cycle rank at most `(r - 1) s + 1 - |read|`.
+* `Frontier.Compiler`: circuits of fan-in `r` with any outputs, over any basis, become exact
+  constraint networks of maximum degree `r + 1` and cycle rank at most `(r - 1) s + 1 - |read|`.
+* `Frontier.Demand`: demand and supply, the comparison that ends every lower bound.
 * `Frontier.Reduction` and `Frontier.LowerBound`: a small circuit yields a graph of small cycle
   rank all of whose layouts are wide; the layout hypothesis finishes the proof.
-
 * `Frontier.Layouts`: the layout bound for subcubic graphs, proved with Gaussian edge scores.
+* `Frontier.Linear`: totally regular linear maps, over finite fields with any basis and over
+  infinite fields with polynomial operations; Cauchy matrices and arithmetic circuits.
+* `Frontier.Ledger` and `Frontier.Components`: gates of unbounded fan-in that aggregate in a
+  monoid, carried along the layout as a ledger.
 
 The main theorem is `Frontier.lowerBound`: under `LayoutBound (r + 1) A`, circuits of fan-in at
 most `r` deciding dense rectangle-free sets satisfy `(r - 1) s > (1 + 1/A - ε) n`. For fan-in
-two (`Frontier.lowerBound_fanInTwo`) this is `s > (L - ε) n` with `L = 1 + 1/A`. The layout
-bound holds with `A = (3/π) arccos ((1 + 2√2)/4)` (`Frontier.layoutBound_gaussian`), giving the
-unconditional `Frontier.lowerBound_gaussian`, with `L ≈ 4.5625`, and `Frontier.lowerBound_four`.
+two this is `s > (L - ε) n` with `L = 1 + 1/A`. The layout bound holds with
+`A = (3/π) arccos ((1 + 2√2)/4)` (`Frontier.layoutBound_gaussian`), giving the unconditional
+`Frontier.lowerBound_gaussian`, with `L ≈ 4.5625`, and `Frontier.lowerBound_four`. The same
+coefficient holds for totally regular maps (`Frontier.lowerBound_linear`,
+`Frontier.arith_cauchy_gaussian`) and with sublinearly many aggregate gates
+(`Frontier.lowerBound_ledger`, `Frontier.lowerBound_aggregate_gaussian`).
 -/

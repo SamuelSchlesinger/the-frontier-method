@@ -9,6 +9,7 @@ public import Mathlib.Basic.Real.Basic
 public import Mathlib.Data.Set.Card
 public import Mathlib.Logic.Equiv.Fin.Basic
 public import Mathlib.Logic.Relation
+public import Mathlib.Combinatorics.SimpleGraph.Acyclic
 
 /-!
 # Multigraphs, layouts, and the layout hypothesis
@@ -24,11 +25,11 @@ Trees have cycle rank zero and, in bounded degree, logarithmic cutwidth. The cir
 bound needs one fact from graph theory: that graphs of maximum degree `d` have layouts whose
 width is at most a fixed multiple `A` of their cycle rank, up to lower-order terms.
 
-`LayoutBound d A` states this as a hypothesis. For subcubic graphs (`d = 3`, the case of
-circuits of fan-in two) it is a theorem for `A = 1/3` (from the cubic pathwidth bound of Fomin
-and Høie) and for `A = (3/π) arccos((1 + 2√2)/4) ≈ 0.2807` (from Gaussian edge-score layouts);
-see the accompanying paper. The circuit lower bound takes `LayoutBound (r + 1) A` as an
-assumption and proves the coefficient `(1 + 1/A) / (r - 1)` for circuits of fan-in `r`.
+`LayoutBound d A` states this as a hypothesis, so that any layout theorem can be plugged in. For
+subcubic graphs (`d = 3`, the case of circuits of fan-in two) it is proved in `Frontier.Layouts`
+with `A = (3/π) arccos((1 + 2√2)/4) ≈ 0.2807`, from Gaussian edge-score layouts, and hence with
+`A = 1/3`. The circuit lower bounds take `LayoutBound (r + 1) A` as an assumption and prove the
+coefficient `(1 + 1/A) / (r - 1)` for circuits of fan-in `r`.
 
 ## Main definitions
 
@@ -36,6 +37,11 @@ assumption and proves the coefficient `(1 + 1/A) / (r - 1)` for circuits of fan-
   `Adj`, `Connected`, `cut`, and `cycleRank`.
 * `Frontier.Layout V`: a numbering of the vertices, with `Layout.initial`.
 * `Frontier.LayoutBound d A`: the layout hypothesis for maximum degree `d` with coefficient `A`.
+
+## Main results
+
+* `Frontier.Multigraph.Connected.card_vertex_le`: a connected graph has at least `|V| - 1`
+  edges, so its cycle rank `|E| + 1 - |V|` involves no truncation.
 -/
 
 @[expose] public section
@@ -84,6 +90,10 @@ def Connected : Prop :=
 def cut (L : Set V) : Set E :=
   {e | ¬(G.src e ∈ L ↔ G.tgt e ∈ L)}
 
+/-- The edges with an endpoint in `L`. -/
+def touching (L : Set V) : Set E :=
+  {e | G.src e ∈ L ∨ G.tgt e ∈ L}
+
 /-- The *cycle rank* `|E| - |V| + 1`: for a connected graph, the number of independent
 cycles. -/
 noncomputable def cycleRank (_G : Multigraph V E) : ℕ :=
@@ -119,6 +129,40 @@ theorem reflTransGen_adj_symm {G : Multigraph V E} {u v : V}
   induction h with
   | refl => exact .refl
   | tail _ hab ih => exact .head hab.symm ih
+
+/-- **A connected graph has at least `|V| - 1` edges**: its cycle rank `|E| + 1 - |V|` involves
+no truncation. -/
+theorem Connected.card_vertex_le {G : Multigraph V E} [Finite E] (h : G.Connected) :
+    Nat.card V ≤ Nat.card E + 1 := by
+  rcases isEmpty_or_nonempty V with hV | hV
+  · simp
+  -- The simple graph with the same adjacency is connected and has no more edges.
+  let H := SimpleGraph.fromRel G.Adj
+  have hconn : H.Connected := by
+    refine ⟨fun u v => ?_⟩
+    induction h u v with
+    | refl => rfl
+    | @tail b c _ hbc ih =>
+      by_cases hb : b = c
+      · exact hb ▸ ih
+      · exact ih.trans ((SimpleGraph.fromRel_adj _ _ _).mpr ⟨hb, Or.inl hbc⟩).reachable
+  have hedges : Nat.card H.edgeSet ≤ Nat.card E := by
+    let f : {e : E // G.src e ≠ G.tgt e} → H.edgeSet := fun e =>
+      ⟨s(G.src e, G.tgt e), (SimpleGraph.fromRel_adj _ _ _).mpr
+        ⟨e.2, Or.inl ⟨e, Or.inl ⟨rfl, rfl⟩⟩⟩⟩
+    have hf : Function.Surjective f := by
+      rintro ⟨z, hz⟩
+      induction z using Sym2.ind with
+      | h u v =>
+        obtain ⟨huv, ⟨e, he⟩ | ⟨e, he⟩⟩ := (SimpleGraph.fromRel_adj _ _ _).mp hz <;>
+        rcases he with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+        · exact ⟨⟨e, huv⟩, rfl⟩
+        · exact ⟨⟨e, huv.symm⟩, Subtype.ext Sym2.eq_swap⟩
+        · exact ⟨⟨e, huv.symm⟩, Subtype.ext Sym2.eq_swap⟩
+        · exact ⟨⟨e, huv⟩, rfl⟩
+    exact (Nat.card_le_card_of_surjective f hf).trans (Finite.card_subtype_le _)
+  have := hconn.card_vert_le_card_edgeSet_add_one
+  omega
 
 /-- A graph in which every vertex reaches one fixed vertex is connected. -/
 theorem connected_of_forall_reflTransGen {G : Multigraph V E} (root : V)

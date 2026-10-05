@@ -91,10 +91,6 @@ def readIn (L : Set V) : Set ι :=
 def read : Set ι :=
   N.readIn univ
 
-/-- The edges with an endpoint in `L`. -/
-def touching (L : Set V) : Set E :=
-  {e | N.src e ∈ L ∨ N.tgt e ∈ L}
-
 @[simp] theorem readIn_empty : N.readIn ∅ = ∅ := by
   ext i; simp [readIn]
 

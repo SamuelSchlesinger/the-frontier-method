@@ -1,69 +1,60 @@
 # The Frontier Method
 
-A self-contained, machine-checked account of a circuit lower bound from graph layouts.
+A self-contained, machine-checked account of circuit lower bounds from graph layouts.
 
 **Theorem.** Assume that graphs of maximum degree `r + 1` have layouts whose frontiers carry at
 most `(A + o(1)) β₁ + o(|V|)` edges, where `β₁` is the cycle rank. Let `S_n ⊆ U^n` be dense,
-`K_n`-rectangle-free sets with `log K_n = o(n)`. Then every circuit of size `s` and fan-in at
-most `r`, over *any* basis on the finite alphabet `U`, deciding `S_n` satisfies
+`K_n`-rectangle-free sets with `log K_n = o(n)`. Then every circuit with `s` gates of fan-in at
+most `r` (constants are free), over *any* basis on the finite alphabet `U`, deciding `S_n`
+satisfies
 
 ```
 (r - 1) s > (1 + 1/A - ε) n        for all large n.
 ```
 
-For fan-in two this is `s > (L - ε) n` with `L = 1 + 1/A`: the known layout coefficients
-`A = 1/3` and `A ≈ 0.2807` give `(4 - ε) n` and `(4.5625 - ε) n`.
+The layout bound is proved for subcubic graphs with `A = (3/π) arccos((1 + 2√2)/4) ≈ 0.2807`
+(Gaussian edge scores), so circuits of fan-in two need more than `(L - ε) n` gates with
+`L = 1 + 1/A ≈ 4.5625`, and in particular `(4 - ε) n`. The same frontiers give:
 
-In Lean (`Frontier/LowerBound.lean`):
-
-```lean
-theorem lowerBound {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A) (hlayout : LayoutBound (r + 1) A)
-    (S : ∀ n, Set (Fin n → U)) (K : ℕ → ℕ)
-    (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
-    {ε : ℝ} (hε : 0 < ε) :
-    ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
-      (c : Circuit σ n 1), c.FanInAtMost r → Decides c I Acc (S n) →
-        (1 + 1 / A - ε) * n < (r - 1) * c.size
-```
-
-The layout bound is the single graph-theoretic input, stated as the hypothesis
-`Frontier.LayoutBound` so that any layout theorem can be plugged in. It is proved for subcubic
-graphs with `A = (3/π) arccos((1 + 2√2)/4)` by Gaussian edge scores (`Frontier.layoutBound_gaussian`),
-which gives the unconditional theorems (`Frontier/Main.lean`):
-
-```lean
-theorem lowerBound_gaussian ... :
-    ∀ᶠ n in atTop, ∀ σ I Acc (c : Circuit σ n 1), c.FanInAtMost 2 → Decides c I Acc (S n) →
-      (1 + Real.pi / (3 * Real.arccos ((1 + 2 * Real.sqrt 2) / 4)) - ε) * n < c.size
-theorem lowerBound_four ... : ... (4 - ε) * n < c.size
-```
+* **Explicit sets**: the fibers of sumset dispersers are rectangle-free, so the bound applies to
+  balanced sumset dispersers, such as extractors for the sum of two sources
+  (`Frontier.lowerBound_sumsetDisperser`).
+* **Linear maps and arithmetic circuits**: circuits computing a totally regular map `x ↦ M x`,
+  over finite fields with any basis and over infinite fields with polynomial operations, need
+  `(L - ε) N` gates; over every field of characteristic zero, arithmetic circuits computing the
+  Cauchy map need `(L - ε) N` additions and multiplications (`Frontier.lowerBound_linear`,
+  `Frontier.arith_cauchy_gaussian`, `Frontier.cauchyZMod_gaussian`).
+* **Gates of unbounded fan-in**: the bound survives special gates with a *ledger* in a monoid `M`
+  with `log |M| = o(n)`, for instance `o(n)` unbounded AND, OR, parity, or modular-count gates
+  (`Frontier.lowerBound_ledger`, `Frontier.lowerBound_aggregate_gaussian`).
 
 Everything is proved, with no `sorry`, using only the standard axioms
-(`propext`, `Classical.choice`, `Quot.sound`).
+(`propext`, `Classical.choice`, `Quot.sound`). The accompanying paper also describes a counting
+algorithm based on the same frontiers; its running time is not formalized.
 
 ## How the proof is factored
 
 | Module | Content |
 | --- | --- |
 | `Frontier/Rectangle.lean` | Rectangle-free sets and the support lemma |
+| `Frontier/Extractor.lean` | Sumset dispersers have rectangle-free fibers |
 | `Frontier/Sweep.lean` | Sweeps (abstract read-once protocols) and the frontier counting lemma |
 | `Frontier/Multigraph.lean` | Multigraphs, layouts, cycle rank, and the layout hypothesis |
 | `Frontier/Network.lean` | Constraint networks, the separator lemma, and sweeping along a layout |
-| `Frontier/Compiler.lean` | Circuits of fan-in `r` as exact networks of degree `r + 1` |
-| `Frontier/Reduction.lean` | Small circuit ⇒ graph of small cycle rank with only wide layouts |
-| `Frontier/LowerBound.lean` | The main theorem |
+| `Frontier/Compiler.lean` | Circuits of fan-in `r` with any outputs as exact networks of degree `r + 1` |
+| `Frontier/Demand.lean` | Demand and supply: the comparison that ends every lower bound |
+| `Frontier/Reduction.lean`, `Frontier/LowerBound.lean` | The main theorem |
 | `Frontier/Layouts/*.lean`, `Frontier/Layouts.lean` | The layout bound: kernels, Sheppard's bound, concentration, median layouts, Gaussian scores, compression |
 | `Frontier/Main.lean` | The unconditional `(L - ε) n` and `(4 - ε) n` bounds |
+| `Frontier/Linear/*.lean` | Totally regular maps, Cauchy matrices, linear capacity, linearization, arithmetic circuits |
+| `Frontier/Components.lean`, `Frontier/Ledger/*.lean` | Layouts of disconnected graphs; ledgers for gates of unbounded fan-in |
 | `Frontier/ForMathlib`, `Frontier/ForCslib` | Upstreaming candidates |
 
 ## The paper
 
 `paper/frontier.tex` is the accompanying exposition: the proof, the design decisions behind the
-formal statements, the graph theory behind the layout coefficients, and an index from the paper
-to the Lean declarations. Build it with
+formal statements, the graph theory behind the layout coefficients, related work, and an index
+from the paper to the Lean declarations. Build it with
 
 ```
 cd paper && latexmk -pdf frontier.tex

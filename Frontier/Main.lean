@@ -21,6 +21,9 @@ every circuit with fan-in at most two deciding `S_n`, over any basis on `U`, has
 * `(L - ε) n` gates, with `L = 1 + π / (3 arccos ((1 + 2√2)/4)) ≈ 4.5625`
   (`lowerBound_gaussian`), and in particular
 * `(4 - ε) n` gates (`lowerBound_four`).
+
+Constant gates are free: the bounds hold for the number of gates of positive arity
+(`Cslib.Circuits.Circuit.innerSize`), and so for the size.
 -/
 
 @[expose] public section
@@ -42,7 +45,7 @@ theorem lowerBound_gaussian (S : ∀ n, Set (Fin n → U)) (K : ℕ → ℕ)
     {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ n 1), c.FanInAtMost 2 → Decides c I Acc (S n) →
-        (1 + Real.pi / (3 * Real.arccos ((1 + 2 * Real.sqrt 2) / 4)) - ε) * n < c.size := by
+        (1 + Real.pi / (3 * Real.arccos ((1 + 2 * Real.sqrt 2) / 4)) - ε) * n < c.innerSize := by
   have h := lowerBound_fanInTwo (mul_pos two_pos Gaussian.gaussianCoefficient_pos)
     layoutBound_gaussian S K hfree hK hdense hε
   rwa [Gaussian.one_add_inv_two_mul_gaussianCoefficient] at h
@@ -56,7 +59,7 @@ theorem lowerBound_four (S : ∀ n, Set (Fin n → U)) (K : ℕ → ℕ)
     {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ n 1), c.FanInAtMost 2 → Decides c I Acc (S n) →
-        (4 - ε) * n < c.size := by
+        (4 - ε) * n < c.innerSize := by
   have h := lowerBound_fanInTwo (by norm_num) layoutBound_one_third S K hfree hK hdense hε
   rwa [show (1 : ℝ) + 1 / (1 / 3) = 4 by norm_num] at h
 

@@ -18,10 +18,10 @@ This file combines the three ingredients of the frontier method for a single inp
 * the support lemma for rectangle-free sets (`Frontier.RectangleFree.pow_ncard_compl_lt`).
 
 **The reduction theorem** (`Frontier.exists_graph_of_decides`). Let `c` be a circuit with `s`
-gates of fan-in at most `r ≥ 2`, over any basis on a finite alphabet `U` with `q ≥ 2` symbols,
-that decides a `K`-rectangle-free set `S ⊆ U^n` with `|S| ≥ q K^2`. Then there is a connected,
-loopless multigraph `G` of maximum degree `r + 1` with at most `n + (r + 1) s + 2` vertices and
-cycle rank
+inner gates (gates of positive arity; constants are free) of fan-in at most `r ≥ 2`, over any
+basis on a finite alphabet `U` with `q ≥ 2` symbols, that decides a `K`-rectangle-free set
+`S ⊆ U^n` with `|S| ≥ q K^2`. Then there is a connected, loopless multigraph `G` of maximum
+degree `r + 1` with at most `2 r s + 3` vertices and cycle rank
 
 `β₁(G) ≤ (r - 1) s - n + log_q K + 1`,
 
@@ -71,13 +71,14 @@ theorem RectangleFree.pos {ι : Type*} {S : Set (ι → U)} {K : ℕ} (h : Recta
 /-- The constraint network of a one-output circuit. -/
 noncomputable abbrev constraintNetwork (I : Interpretation σ U) (Acc : Set U)
     (c : Circuit σ n 1) :=
-  Compiler.network c.program (c.outputs 0) I Acc
+  Compiler.network c.program c.outputs I fun _ => Acc
 
 theorem accepted_constraintNetwork {I : Interpretation σ U} {Acc : Set U} {c : Circuit σ n 1}
     {S : Set (Fin n → U)} (hS : Decides c I Acc S) : (constraintNetwork I Acc c).accepted = S := by
   rw [Compiler.accepted_network]
   ext x
-  exact (hS x).symm
+  rw [hS x]
+  exact ⟨fun h => h 0, fun h o => Subsingleton.elim o 0 ▸ h⟩
 
 section Reduction
 
@@ -93,14 +94,15 @@ theorem pow_ncard_unread_lt (hS : Decides c I Acc S) (hfree : RectangleFree S K)
   exact hfree.pow_ncard_compl_lt (constraintNetwork I Acc c).dependsOn_read hbig
 
 /-- **The cycle rank of the constraint graph** is at most `(r - 1) s - n + log_q K + 1` for
-fan-in at most `r`. -/
+fan-in at most `r`, where `s` counts the inner gates. -/
 theorem cycleRank_le (hfan : c.FanInAtMost r) (hS : Decides c I Acc S)
     (hfree : RectangleFree S K) (hbig : Nat.card U * K ^ 2 ≤ S.ncard) :
     ((constraintNetwork I Acc c).cycleRank : ℝ) ≤
-      ((r - 1) * c.size : ℕ) - n + Real.logb (Nat.card U) K + 1 := by
+      ((r - 1) * c.innerSize : ℕ) - n + Real.logb (Nat.card U) K + 1 := by
   set N := constraintNetwork I Acc c
   have hq : (1 : ℝ) < Nat.card U := by exact_mod_cast Finite.one_lt_card
-  have hrank := Compiler.cycleRank_add_ncard_read_le (out := c.outputs 0) I Acc hfan
+  have hrank := Compiler.cycleRank_add_ncard_read_le (out := c.outputs) I (fun _ => Acc) hfan
+    (Compiler.connected I _)
   have hunread : (N.readᶜ.ncard : ℝ) < Real.logb (Nat.card U) K := by
     rw [Real.lt_logb_iff_rpow_lt hq (by exact_mod_cast hfree.pos), Real.rpow_natCast]
     exact_mod_cast pow_ncard_unread_lt hS hfree hbig
@@ -109,7 +111,7 @@ theorem cycleRank_le (hfan : c.FanInAtMost r) (hS : Decides c I Acc S)
     have := ncard_le_card N.read
     rw [Nat.card_eq_fintype_card, Fintype.card_fin] at this
     omega
-  have : (N.cycleRank : ℝ) + N.read.ncard ≤ ((r - 1) * c.size : ℕ) + 1 := by
+  have : (N.cycleRank : ℝ) + N.read.ncard ≤ ((r - 1) * c.innerSize : ℕ) + 1 := by
     exact_mod_cast hrank
   have : (N.readᶜ.ncard : ℝ) + N.read.ncard = n := by exact_mod_cast hcompl
   linarith
@@ -119,14 +121,14 @@ frontiers of a layout have at most `w` edges, then
 `log_q |S| ≤ w + (r + 2) + 3 log_q K + log_q (|V| + 1)`. -/
 theorem logb_ncard_le (hr : 2 ≤ r) (hfan : c.FanInAtMost r) (hS : Decides c I Acc S)
     (hfree : RectangleFree S K) (hbig : Nat.card U * K ^ 2 ≤ S.ncard)
-    (π : Layout (Compiler.Vertex c.program (c.outputs 0))) {w : ℕ}
+    (π : Layout (Compiler.Vertex c.program c.outputs)) {w : ℕ}
     (hw : ∀ t, ((constraintNetwork I Acc c).cut (π.initial t)).ncard ≤ w) :
     Real.logb (Nat.card U) S.ncard ≤
       w + (r + 2) + 3 * Real.logb (Nat.card U) K +
-        Real.logb (Nat.card U) (Nat.card (Compiler.Vertex c.program (c.outputs 0)) + 1) := by
+        Real.logb (Nat.card U) (Nat.card (Compiler.Vertex c.program c.outputs) + 1) := by
   set N := constraintNetwork I Acc c
   set q := Nat.card U
-  set V := Nat.card (Compiler.Vertex c.program (c.outputs 0))
+  set V := Nat.card (Compiler.Vertex c.program c.outputs)
   have hq1 : 1 < q := Finite.one_lt_card
   have hK := hfree.pos
   have hacc := accepted_constraintNetwork hS
@@ -134,7 +136,7 @@ theorem logb_ncard_le (hr : 2 ≤ r) (hfan : c.FanInAtMost r) (hS : Decides c I 
   have hcount := N.ncard_accepted_le π (hacc ▸ hfree)
     (hacc ▸ (Nat.le_mul_of_pos_left K (by positivity)).trans
       ((Nat.mul_le_mul_left _ (Nat.le_self_pow two_ne_zero K)).trans hbig))
-    hw (Compiler.maxDegreeLE I Acc hr hfan) (Compiler.ncard_readAt_le I Acc)
+    hw (Compiler.maxDegreeLE I _ hr hfan) (Compiler.ncard_readAt_le I _)
   rw [hacc] at hcount
   -- The unread inputs carry fewer than `K` assignments.
   have hunread := pow_ncard_unread_lt hS hfree hbig
@@ -161,24 +163,25 @@ theorem logb_ncard_le (hr : 2 ≤ r) (hfan : c.FanInAtMost r) (hS : Decides c I 
         push_cast
         ring
 
-/-- **The reduction theorem.** A circuit of size `s` with fan-in at most `r ≥ 2`, over any basis
-on `U`, deciding a `K`-rectangle-free set `S ⊆ U^n` with `|S| ≥ q K^2`, yields a connected,
-loopless multigraph of maximum degree `r + 1` with at most `n + (r + 1) s + 2` vertices and
+/-- **The reduction theorem.** A circuit with `s` inner gates of fan-in at most `r ≥ 2`, over
+any basis on `U`, deciding a `K`-rectangle-free set `S ⊆ U^n` with `|S| ≥ q K^2`, yields a
+connected, loopless multigraph of maximum degree `r + 1` with at most `2 r s + 3` vertices and
 cycle rank at most `(r - 1) s - n + log_q K + 1`, every layout of which has width at least
 `log_q |S| - 3 log_q K - log_q (|V| + 1) - (r + 2)`. -/
 theorem exists_graph_of_decides (hr : 2 ≤ r) (hfan : c.FanInAtMost r) (hS : Decides c I Acc S)
     (hfree : RectangleFree S K) (hbig : Nat.card U * K ^ 2 ≤ S.ncard) :
     ∃ (V E : Type) (_ : Finite V) (_ : Finite E) (G : Multigraph V E),
       G.Connected ∧ G.Loopless ∧ G.MaxDegreeLE (r + 1) ∧
-      Nat.card V ≤ n + (r + 1) * c.size + 2 ∧
-      (G.cycleRank : ℝ) ≤ ((r - 1) * c.size : ℕ) - n + Real.logb (Nat.card U) K + 1 ∧
+      Nat.card V ≤ 2 * r * c.innerSize + 3 ∧
+      (G.cycleRank : ℝ) ≤ ((r - 1) * c.innerSize : ℕ) - n + Real.logb (Nat.card U) K + 1 ∧
       ∀ (π : Layout V) (w : ℕ), (∀ t, (G.cut (π.initial t)).ncard ≤ w) →
         Real.logb (Nat.card U) S.ncard ≤
           w + (r + 2) + 3 * Real.logb (Nat.card U) K +
             Real.logb (Nat.card U) (Nat.card V + 1) :=
   ⟨_, _, inferInstance, inferInstance, (constraintNetwork I Acc c).toMultigraph,
-    Compiler.connected I Acc, Compiler.loopless I Acc, Compiler.maxDegreeLE I Acc hr hfan,
-    Compiler.card_vertex_le hfan, cycleRank_le hfan hS hfree hbig,
+    Compiler.connected I _, Compiler.loopless I _, Compiler.maxDegreeLE I _ hr hfan,
+    by simpa [Circuit.innerSize] using Compiler.card_vertex_le (out := c.outputs) hfan,
+    cycleRank_le hfan hS hfree hbig,
     fun π _ hw => logb_ncard_le hr hfan hS hfree hbig π hw⟩
 
 end Reduction

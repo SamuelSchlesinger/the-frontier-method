@@ -14,15 +14,17 @@ public import Mathlib.SetTheory.Cardinal.NatCard
 /-!
 # Compiling a circuit into a constraint network
 
-Fix a straight-line program `p` over any signature, an *output* wire `out`, an interpretation
-`I` of the signature in an alphabet `U`, and a set `Acc ⊆ U` of *accepting* values. We build a
-constraint network whose accepted inputs are exactly those on which the output lies in `Acc`.
+Fix a straight-line program `p` over any signature, *output* wires `out o` indexed by a finite
+type `O`, an interpretation `I` of the signature in an alphabet `U`, and for each output a set
+`Acc o ⊆ U` of *accepting* values. We build a constraint network whose accepted inputs are
+exactly those on which every output `o` lies in `Acc o`. A circuit deciding a set has one output;
+a circuit computing a function accepts every value at each of its outputs.
 
-Only the *reachable* wires matter: the output and, recursively, the arguments of reachable
+Only the *reachable* wires matter: the outputs and, recursively, the arguments of reachable
 gates. We call them *signals*. A signal is *consumed* by each argument slot of a reachable gate
-that reads it, and the output is also consumed by the *acceptor*. A circuit has unbounded
-fan-out, but a bounded-degree network cannot give a signal one edge per consumer. So each
-signal `w` with consumers `c₀, c₁, ...` is routed through a chain of *junctions*
+that reads it, and each output is also consumed by its own *output vertex*. A circuit has
+unbounded fan-out, but a bounded-degree network cannot give a signal one edge per consumer. So
+each signal `w` with consumers `c₀, c₁, ...` is routed through a chain of *junctions*
 `j₀, j₁, ...`, one per consumer:
 
 ```
@@ -38,24 +40,26 @@ Each junction has one *feed* edge from its predecessor in the chain (the signal 
 * a signal vertex for a gate `g` puts `g` applied to its incoming argument edges on its
   outgoing edge;
 * a junction puts its incoming value on both of its outgoing edges;
-* the acceptor requires its incoming value to lie in `Acc`.
+* the output vertex of `o` requires its incoming value to lie in `Acc o`.
 
 Every vertex has degree at most `r + 1` when the gates have fan-in at most `r ≥ 2`; for fan-in
-two the graph is subcubic. The network
-records gates as *relations*: it never evaluates anything, and the constraint of a gate does
-not care which of its edges a sweep reaches first.
+two the graph is subcubic. The network records gates as *relations*: it never evaluates
+anything, and the constraint of a gate does not care which of its edges a sweep reaches first.
 
 **Exactness** (`accepted_network`). The values of a run of the program satisfy the network.
 Conversely, in a satisfying assignment the junction constraints force all edges of a signal to
 carry one value, and the gate constraints, read in program order, force that value to be the
-signal's value in the run. So the satisfying assignment, if any, is unique.
+signal's value in the run (`eq_trace`). So the satisfying assignment, if any, is unique.
 
-**Counting.** With `C` consumers, `W` signals, `s'` reachable gates, and `m` reachable inputs,
-the network has `2C` edges and `W + C + 1` vertices, so its cycle rank is `C - W`. With fan-in
-at most `r`, each gate has at most `r` slots, so `C ≤ r s' + 1`, while `W = s' + m`. Hence the
-cycle rank is at most `(r - 1) s' + 1 - m`. For fan-in two this is `s' + 1 - m`: every gate
-beyond the `m - 1` gates of a formula contributes one independent cycle. Sharing creates
-cycles; gates create local constraints.
+**Counting.** With `C` consumers, `W` signals, and `|O|` outputs, the network has `2C` edges and
+`W + C + |O|` vertices, so its cycle rank is `C - W - |O| + 1`, the number of slots minus the
+number of signals plus one. A gate of arity `k` has `k` slots, so it contributes `k - 1` to the
+cycle rank, and a reachable input contributes `-1`. Hence the cycle rank is at most
+`(r - 1) s + 1 - m` for `s` gates of fan-in at most `r` and `m` reachable inputs. For fan-in two
+this is `s + 1 - m`: every gate beyond the `m - 1` gates of a formula contributes one
+independent cycle. Sharing creates cycles; gates create local constraints. Gates of arity zero,
+the constants, only lower the cycle rank: the count charges only the *inner* gates, those of
+positive arity.
 
 ## Main definitions
 
@@ -63,12 +67,13 @@ cycles; gates create local constraints.
 
 ## Main results
 
-* `Frontier.Compiler.accepted_network`: exactness.
-* `Frontier.Compiler.connected`, `loopless`: the graph is connected and loopless.
+* `Frontier.Compiler.accepted_network`, `Frontier.Compiler.eq_trace`: exactness.
+* `Frontier.Compiler.connected_of_upstream`, `loopless`: the graph is loopless, and connected
+  when some wire is upstream of every output, in particular when there is one output.
 * `Frontier.Compiler.maxDegreeLE`: for fan-in at most `r ≥ 2`, the degrees are at most `r + 1`.
 * `Frontier.Compiler.cycleRank_add_ncard_read_le`: the cycle rank is at most
-  `(r - 1) s + 1 - |read|`.
-* `Frontier.Compiler.card_vertex_le`: there are at most `n + (r + 1) s + 2` vertices.
+  `(r - 1) s + 1 - |read|`, where `s` counts the inner gates.
+* `Frontier.Compiler.card_vertex_le`: there are at most `2 r s + 3 |O|` vertices.
 -/
 
 @[expose] public section
@@ -79,14 +84,14 @@ namespace Compiler
 
 open Cslib.Circuits Set
 
-variable {σ : Signature} {n s : ℕ} (p : Program σ n s) (out : Wire n s)
+variable {σ : Signature} {n s : ℕ} {O : Type*} [Finite O] (p : Program σ n s) (out : O → Wire n s)
 
 /-! ### Signals, consumers, and junctions -/
 
-/-- A wire is *reachable* when it is the output or an argument of a reachable gate. -/
+/-- A wire is *reachable* when it is an output or an argument of a reachable gate. -/
 inductive Reach : Wire n s → Prop
-  /-- The output is reachable. -/
-  | out : Reach out
+  /-- The outputs are reachable. -/
+  | out (o : O) : Reach (out o)
   /-- The arguments of a reachable gate are reachable. -/
   | arg {g : Fin s} (a : Fin (σ.Arity (p.lines g).op)) :
       Reach (.gate g) → Reach ((p.lines g).wires a)
@@ -99,16 +104,16 @@ abbrev Signal : Type :=
 abbrev Slot : Type :=
   {t : Σ g : Fin s, Fin (σ.Arity (p.lines g).op) // Reach p out (.gate t.1)}
 
-/-- A *consumer*: an argument slot of a reachable gate, or the acceptor (`none`). -/
-abbrev Consumer : Type :=
-  Option (Slot p out)
+/-- A *consumer*: an argument slot of a reachable gate, or an output. -/
+abbrev Consumer :=
+  Slot p out ⊕ O
 
 variable {p out}
 
 /-- The signal read by a consumer. -/
 def consumed : Consumer p out → Signal p out
-  | none => ⟨out, .out⟩
-  | some t => ⟨(p.lines t.1.1).wires t.1.2, .arg t.1.2 t.2⟩
+  | .inl t => ⟨(p.lines t.1.1).wires t.1.2, .arg t.1.2 t.2⟩
+  | .inr o => ⟨out o, .out o⟩
 
 variable (p out)
 
@@ -144,21 +149,21 @@ theorem fanout_pos (w : Signal p out) : 0 < fanout p out w := by
   obtain ⟨w, hw⟩ := w
   refine Nat.card_pos_iff.mpr ⟨?_, inferInstance⟩
   cases hw with
-  | out => exact ⟨⟨none, rfl⟩⟩
-  | arg a hg => exact ⟨⟨some ⟨⟨_, a⟩, hg⟩, rfl⟩⟩
+  | out o => exact ⟨⟨.inr o, rfl⟩⟩
+  | arg a hg => exact ⟨⟨.inl ⟨⟨_, a⟩, hg⟩, rfl⟩⟩
 
 /-! ### The graph -/
 
 variable (p out)
 
-/-- The vertices: one per signal, one per junction, and the acceptor. -/
-inductive Vertex : Type
+/-- The vertices: one per signal, one per junction, and one per output. -/
+inductive Vertex
   /-- The vertex of a signal: an input vertex or a gate vertex. -/
   | signal (w : Signal p out)
   /-- A junction. -/
   | junction (j : Junction p out)
-  /-- The acceptor, which consumes the output. -/
-  | accept
+  /-- The vertex of an output, which consumes it. -/
+  | output (o : O)
 
 /-- The edges: two per junction. -/
 inductive Edge : Type
@@ -169,18 +174,18 @@ inductive Edge : Type
 
 variable {p out}
 
-/-- Vertices are signals, junctions, and the acceptor. -/
-def Vertex.equiv : Vertex p out ≃ Signal p out ⊕ Junction p out ⊕ Unit where
+/-- Vertices are signals, junctions, and outputs. -/
+def Vertex.equiv : Vertex p out ≃ Signal p out ⊕ Junction p out ⊕ O where
   toFun
     | .signal w => .inl w
     | .junction j => .inr (.inl j)
-    | .accept => .inr (.inr ())
+    | .output o => .inr (.inr o)
   invFun
     | .inl w => .signal w
     | .inr (.inl j) => .junction j
-    | .inr (.inr ()) => .accept
+    | .inr (.inr o) => .output o
   left_inv v := by cases v <;> rfl
-  right_inv v := by rcases v with w | j | ⟨⟩ <;> rfl
+  right_inv v := by rcases v with w | j | o <;> rfl
 
 /-- Edges are two copies of the junctions. -/
 def Edge.equiv : Edge p out ≃ Junction p out ⊕ Junction p out where
@@ -197,10 +202,10 @@ instance : Finite (Vertex p out) := Finite.of_equiv _ Vertex.equiv.symm
 
 instance : Finite (Edge p out) := Finite.of_equiv _ Edge.equiv.symm
 
-/-- The vertex that consumes through a consumer: a gate vertex or the acceptor. -/
+/-- The vertex that consumes through a consumer: a gate vertex or an output vertex. -/
 def owner : Consumer p out → Vertex p out
-  | none => .accept
-  | some t => .signal ⟨.gate t.1.1, t.2⟩
+  | .inl t => .signal ⟨.gate t.1.1, t.2⟩
+  | .inr o => .output o
 
 /-- The vertex feeding a junction: the signal itself for its first junction, and the previous
 junction otherwise. -/
@@ -208,6 +213,7 @@ def feeder (j : Junction p out) : Vertex p out :=
   if j.2.val = 0 then .signal j.1
   else .junction ⟨j.1, ⟨j.2.val - 1, lt_of_le_of_lt (Nat.sub_le _ _) j.2.isLt⟩⟩
 
+omit [Finite O] in
 /-- No junction feeds itself. -/
 theorem feeder_ne_junction_self (j : Junction p out) : feeder j ≠ .junction j := by
   obtain ⟨w, k⟩ := j
@@ -239,11 +245,11 @@ def Edge.signal : Edge p out → Signal p out
 /-- The edge delivering argument `a` to the reachable gate `g`. -/
 noncomputable def argEdge {g : Fin s} (hg : Reach p out (.gate g))
     (a : Fin (σ.Arity (p.lines g).op)) : Edge p out :=
-  .deliver ((junctionEquiv p out).symm (some ⟨⟨g, a⟩, hg⟩))
+  .deliver ((junctionEquiv p out).symm (.inl ⟨⟨g, a⟩, hg⟩))
 
-/-- The edge delivering the output to the acceptor. -/
-noncomputable def outEdge : Edge p out :=
-  .deliver ((junctionEquiv p out).symm none)
+/-- The edge delivering an output to its output vertex. -/
+noncomputable def outEdge (o : O) : Edge p out :=
+  .deliver ((junctionEquiv p out).symm (.inr o))
 
 /-- The first edge of a signal: the feed edge of its first junction. -/
 def head (w : Signal p out) : Edge p out :=
@@ -254,14 +260,14 @@ def head (w : Signal p out) : Edge p out :=
     (argEdge hg a).signal = ⟨(p.lines g).wires a, .arg a hg⟩ := by
   simp [argEdge, Edge.signal, consumed]
 
-@[simp] theorem signal_outEdge : (outEdge : Edge p out).signal = ⟨out, .out⟩ := by
+@[simp] theorem signal_outEdge (o : O) : (outEdge o : Edge p out).signal = ⟨out o, .out o⟩ := by
   simp [outEdge, Edge.signal, consumed]
 
 @[simp] theorem tgt_argEdge {g : Fin s} (hg : Reach p out (.gate g))
     (a : Fin (σ.Arity (p.lines g).op)) : tgt (argEdge hg a) = .signal ⟨.gate g, hg⟩ := by
   simp [argEdge, tgt, owner]
 
-@[simp] theorem tgt_outEdge : tgt (outEdge : Edge p out) = .accept := by
+@[simp] theorem tgt_outEdge (o : O) : tgt (outEdge o : Edge p out) = .output o := by
   simp [outEdge, tgt, owner]
 
 /-- An edge leaving a signal vertex is the first edge of that signal. -/
@@ -275,6 +281,7 @@ theorem eq_head_of_src_eq_signal {e : Edge p out} {w : Signal p out}
     exact Fin.ext hk
   · cases h
 
+omit [Finite O] in
 /-- An edge leaving a junction carries the junction's signal. -/
 theorem signal_of_src_eq_junction {e : Edge p out} {j : Junction p out}
     (h : src e = .junction j) : e.signal = j.1 := by
@@ -288,7 +295,7 @@ theorem signal_of_src_eq_junction {e : Edge p out} {j : Junction p out}
 
 /-! ### The network -/
 
-variable {U : Type*} (I : Interpretation σ U) (Acc : Set U)
+variable {U : Type*} (I : Interpretation σ U) (Acc : O → Set U)
 
 /-- The value a signal vertex puts on its outgoing edge: the input itself for an input wire,
 and the gate's operation applied to its incoming argument edges for a gate wire. -/
@@ -300,26 +307,29 @@ noncomputable def emit : (w : Wire n s) → Reach p out w → (Fin n → U) → 
 noncomputable def check : Vertex p out → (Fin n → U) → (Edge p out → U) → Prop
   | .signal w, x, α => ∀ e, src e = .signal w → α e = emit I w.1 w.2 x α
   | .junction j, _, α => ∀ e, src e = .junction j → α e = α (.feed j)
-  | .accept, _, α => α outEdge ∈ Acc
+  | .output o, _, α => α (outEdge o) ∈ Acc o
 
 open Classical in
 /-- Each reachable input is read at its signal vertex. -/
 noncomputable def site (i : Fin n) : Option (Vertex p out) :=
   if h : Reach p out (.input i) then some (.signal ⟨.input i, h⟩) else none
 
+omit [Finite O] in
 theorem site_eq_some {i : Fin n} {v : Vertex p out} (h : site i = some v) :
     ∃ hi : Reach p out (.input i), v = .signal ⟨.input i, hi⟩ := by
   unfold site at h
   split_ifs at h with hi
   exact ⟨hi, (Option.some_injective _ h).symm⟩
 
+omit [Finite O] in
 theorem site_of_reach {i : Fin n} (hi : Reach p out (.input i)) :
     site i = some (.signal ⟨.input i, hi⟩ : Vertex p out) := by
   simp [site, hi]
 
 variable (p out)
 
-/-- **The constraint network of a program** with output `out`, accepting the values in `Acc`. -/
+/-- **The constraint network of a program** with outputs `out`, accepting at the output `o` the
+values in `Acc o`. -/
 noncomputable def network : Network U (Fin n) (Vertex p out) (Edge p out) where
   src := src
   tgt := tgt
@@ -342,9 +352,9 @@ noncomputable def network : Network U (Fin n) (Vertex p out) (Edge p out) where
       intro e he
       rw [← hα e (Or.inl he), hc e he]
       exact hα _ (Or.inr rfl)
-    | accept =>
-      change α' outEdge ∈ Acc
-      rw [← hα _ (Or.inr tgt_outEdge)]
+    | output o =>
+      change α' (outEdge o) ∈ Acc o
+      rw [← hα _ (Or.inr (tgt_outEdge o))]
       exact hc
 
 variable {p out}
@@ -352,7 +362,7 @@ variable {p out}
 /-! ### Exactness -/
 
 /-- The run of the program puts the value of each signal on each of its edges. -/
-theorem trace_satisfies {x : Fin n → U} (hx : p.trace I x out ∈ Acc) :
+theorem trace_satisfies {x : Fin n → U} (hx : ∀ o, p.trace I x (out o) ∈ Acc o) :
     (network p out I Acc).Satisfies x fun e => p.trace I x e.signal.1 := by
   intro v
   cases v with
@@ -369,9 +379,9 @@ theorem trace_satisfies {x : Fin n → U} (hx : p.trace I x out ∈ Acc) :
     intro e he
     change p.trace I x e.signal.1 = p.trace I x j.1.1
     rw [signal_of_src_eq_junction he]
-  | accept =>
-    change p.trace I x outEdge.signal.1 ∈ Acc
-    simpa using hx
+  | output o =>
+    change p.trace I x (outEdge o).signal.1 ∈ Acc o
+    simpa using hx o
 
 section Satisfying
 
@@ -415,16 +425,57 @@ decreasing_by
   | input => simp
   | gate g' => simpa using p.lines_wires_eq_gate_lt g a hw'
 
+/-- **Uniqueness.** A satisfying assignment puts on every edge the value of its signal in the
+run of the program. -/
+theorem eq_trace (e : Edge p out) : α e = p.trace I x e.signal.1 := by
+  rw [eq_head hα, head_eq_trace hα]
+
 end Satisfying
 
-/-- **Exactness.** The network accepts exactly the inputs on which the output lies in `Acc`. -/
-theorem accepted_network : (network p out I Acc).accepted = {x | p.trace I x out ∈ Acc} := by
+/-- **Exactness.** The network accepts exactly the inputs on which every output `o` lies in
+`Acc o`. -/
+theorem accepted_network :
+    (network p out I Acc).accepted = {x | ∀ o, p.trace I x (out o) ∈ Acc o} := by
   ext x
   constructor
-  · rintro ⟨α, hα⟩
-    have hacc : α outEdge ∈ Acc := hα .accept
-    rwa [eq_head hα, signal_outEdge, head_eq_trace hα] at hacc
+  · rintro ⟨α, hα⟩ o
+    have hacc : α (outEdge o) ∈ Acc o := hα (.output o)
+    rwa [eq_trace hα, signal_outEdge] at hacc
   · exact fun hx => ⟨_, trace_satisfies I Acc hx⟩
+
+/-! ### Outputs across a cut -/
+
+/-- **Outputs across a cut.** In the network of a program computing a function (every value
+accepted at every output), let the runs on two inputs `x` and `y` agree on the cut of a set of
+vertices `P`, and let `z` read like `x` at `P` and like `y` elsewhere. Then the outputs of `z`
+are those of `x` at the output vertices in `P` and those of `y` at the others. -/
+theorem trace_out_of_cut {P : Set (Vertex p out)} {x y z : Fin n → U}
+    (hcut : ∀ e ∈ (network p out I fun _ => univ).cut P,
+      p.trace I x e.signal.1 = p.trace I y e.signal.1)
+    (hzx : EqOn z x ((network p out I fun _ => univ).readIn P))
+    (hzy : EqOn z y ((network p out I fun _ => univ).readIn P)ᶜ) (o : O) :
+    (Vertex.output o ∈ P → p.trace I z (out o) = p.trace I x (out o)) ∧
+      (Vertex.output o ∉ P → p.trace I z (out o) = p.trace I y (out o)) := by
+  have hx := trace_satisfies (p := p) (out := out) (x := x) I (fun _ => univ) fun _ => trivial
+  have hy := trace_satisfies (p := p) (out := out) (x := y) I (fun _ => univ) fun _ => trivial
+  obtain ⟨γ, hγ, hγx, hγy⟩ := hx.splice hy (fun e he => hcut e he) hzx hzy
+  have hz : p.trace I z (out o) = γ (outEdge o) := by
+    rw [eq_trace hγ, signal_outEdge]
+  rw [hz]
+  refine ⟨fun ho => ?_, fun ho => ?_⟩
+  · rw [hγx (Or.inr (by simpa [network] using ho))]
+    simp only [signal_outEdge]
+  · by_cases ht : outEdge o ∈ (network p out I fun _ => univ).touching P
+    · -- The edge reaches into `P` from outside, so it lies on the cut.
+      have hc : outEdge o ∈ (network p out I fun _ => univ).cut P := by
+        rcases ht with ht | ht
+        · simp only [Multigraph.mem_cut, ht, true_iff]
+          simpa [network] using ho
+        · exact absurd (by simpa [network] using ht) ho
+      rw [hγx ht]
+      simpa only [signal_outEdge] using hcut _ hc
+    · rw [hγy ht]
+      simp only [signal_outEdge]
 
 /-! ### The shape of the graph -/
 
@@ -433,14 +484,15 @@ theorem loopless : (network p out I Acc).Loopless := by
   rintro (⟨w, k⟩ | j) h
   · exact feeder_ne_junction_self _ h
   · simp only [network, src, tgt] at h
-    rcases hj : junctionEquiv p out j with _ | t <;> rw [hj] at h <;> cases h
+    rcases hj : junctionEquiv p out j with t | o <;> rw [hj] at h <;> cases h
 
 /-! ### Degrees -/
 
 /-- The edge delivering a slot's signal to its gate. -/
 noncomputable def slotEdge (t : Slot p out) : Edge p out :=
-  .deliver ((junctionEquiv p out).symm (some t))
+  .deliver ((junctionEquiv p out).symm (.inl t))
 
+omit [Finite O] in
 /-- A gate has at most `r` slots when the fan-in is at most `r`. -/
 theorem ncard_slots_le {r : ℕ} (hfan : p.FanInAtMost r) (w : Wire n s) :
     {t : Slot p out | Wire.gate t.1.1 = w}.ncard ≤ r := by
@@ -462,11 +514,12 @@ theorem exists_slot_of_tgt_eq_signal {e : Edge p out} {w : Signal p out}
   rcases e with j | j
   · cases h
   · simp only [tgt] at h
-    rcases hj : junctionEquiv p out j with _ | t <;> rw [hj] at h
-    · cases h
+    rcases hj : junctionEquiv p out j with t | o <;> rw [hj] at h
     · simp only [owner, Vertex.signal.injEq] at h
       exact ⟨t, congrArg Subtype.val h, by simp [slotEdge, ← hj]⟩
+    · cases h
 
+omit [Finite O] in
 /-- Two junctions fed by the same junction are equal. -/
 theorem eq_of_feeder_eq_junction {j₁ j₂ j : Junction p out} (h₁ : feeder j₁ = .junction j)
     (h₂ : feeder j₂ = .junction j) : j₁ = j₂ := by
@@ -488,7 +541,7 @@ theorem eq_of_feeder_eq_junction {j₁ j₂ j : Junction p out} (h₁ : feeder j
 
 /-- **The degrees are bounded.** When the gates have fan-in at most `r ≥ 2`, every vertex has
 degree at most `r + 1`: a gate vertex has its argument edges and one outgoing edge, a junction
-has three edges, and input vertices and the acceptor have one. For fan-in two the graph is
+has three edges, and input vertices and output vertices have one. For fan-in two the graph is
 subcubic. -/
 theorem maxDegreeLE {r : ℕ} (hr : 2 ≤ r) (hfan : p.FanInAtMost r) :
     (network p out I Acc).MaxDegreeLE (r + 1) := by
@@ -520,7 +573,7 @@ theorem maxDegreeLE {r : ℕ} (hr : 2 ≤ r) (hfan : p.FanInAtMost r) :
           · rcases e with j' | j'
             · cases he; exact Or.inl rfl
             · simp only [network, tgt] at he
-              rcases hj : junctionEquiv p out j' with _ | t <;> rw [hj] at he <;> cases he
+              rcases hj : junctionEquiv p out j' with t | o <;> rw [hj] at he <;> cases he
       _ ≤ {e | ∃ j', feeder j' = .junction j ∧ e = (.feed j' : Edge p out)}.ncard + 1 + 1 :=
           (ncard_insert_le _ _).trans (by gcongr; exact ncard_insert_le _ _)
       _ ≤ r + 1 := by
@@ -528,10 +581,10 @@ theorem maxDegreeLE {r : ℕ} (hr : 2 ≤ r) (hfan : p.FanInAtMost r) :
             (ncard_le_one (toFinite _)).mpr fun _ ⟨j₁, h₁, he₁⟩ _ ⟨j₂, h₂, he₂⟩ =>
               he₁.trans ((eq_of_feeder_eq_junction h₁ h₂) ▸ he₂.symm)
           omega
-  | accept =>
-    -- Only the output edge.
-    calc ((network p out I Acc).edgesAt .accept).ncard
-        ≤ ({outEdge} : Set (Edge p out)).ncard := by
+  | output o =>
+    -- Only the edge delivering the output.
+    calc ((network p out I Acc).edgesAt (.output o)).ncard
+        ≤ ({outEdge o} : Set (Edge p out)).ncard := by
           refine ncard_le_ncard (fun e he => ?_) (toFinite _)
           rcases he with he | he
           · rcases e with j | j
@@ -540,9 +593,9 @@ theorem maxDegreeLE {r : ℕ} (hr : 2 ≤ r) (hfan : p.FanInAtMost r) :
           · rcases e with j | j
             · cases he
             · simp only [network, tgt] at he
-              rcases hj : junctionEquiv p out j with _ | t <;> rw [hj] at he
-              · simp [outEdge, ← hj]
+              rcases hj : junctionEquiv p out j with t | o' <;> rw [hj] at he
               · cases he
+              · cases he; simp [outEdge, ← hj]
       _ ≤ r + 1 := by simp
 
 /-! ### Connectivity -/
@@ -560,28 +613,82 @@ theorem reflTransGen_junction (j : Junction p out) :
     Relation.ReflTransGen (network p out I Acc).Adj (.junction j) (.signal j.1) :=
   reflTransGen_junction_signal I Acc j.1 j.2.val j.2.isLt
 
-/-- Every signal reaches the acceptor: follow its chain to a consumer, and that consumer's
-gate onward. -/
-theorem reflTransGen_signal_accept {w : Wire n s} (hw : Reach p out w) :
-    Relation.ReflTransGen (network p out I Acc).Adj (.signal ⟨w, hw⟩) .accept := by
-  induction hw with
-  | out =>
-    have hj := reflTransGen_junction I Acc ((junctionEquiv p out).symm none)
-    rw [fst_junctionEquiv_symm] at hj
-    exact (Multigraph.reflTransGen_adj_symm hj).tail ⟨outEdge, Or.inl ⟨rfl, tgt_outEdge⟩⟩
-  | @arg g a hg ih =>
-    have hj := reflTransGen_junction I Acc ((junctionEquiv p out).symm (some ⟨⟨g, a⟩, hg⟩))
-    rw [fst_junctionEquiv_symm] at hj
-    exact ((Multigraph.reflTransGen_adj_symm hj).tail
-      ⟨argEdge hg a, Or.inl ⟨rfl, tgt_argEdge hg a⟩⟩).trans ih
+/-- Each output signal is joined to its output vertex. -/
+theorem reflTransGen_out (o : O) :
+    Relation.ReflTransGen (network p out I Acc).Adj (.signal ⟨out o, .out o⟩) (.output o) := by
+  have hj := reflTransGen_junction I Acc ((junctionEquiv p out).symm (.inr o))
+  rw [fst_junctionEquiv_symm] at hj
+  exact (Multigraph.reflTransGen_adj_symm hj).tail ⟨outEdge o, Or.inl ⟨rfl, tgt_outEdge o⟩⟩
 
-/-- **The graph is connected.** -/
-theorem connected : (network p out I Acc).Connected := by
-  refine Multigraph.connected_of_forall_reflTransGen .accept fun v => ?_
-  cases v with
-  | signal w => exact reflTransGen_signal_accept I Acc w.2
-  | junction j => exact (reflTransGen_junction I Acc j).trans (reflTransGen_signal_accept I Acc _)
-  | accept => exact .refl
+/-- Each argument of a reachable gate is joined to the gate, along its chain. -/
+theorem reflTransGen_arg {g : Fin s} (hg : Reach p out (.gate g))
+    (a : Fin (σ.Arity (p.lines g).op)) :
+    Relation.ReflTransGen (network p out I Acc).Adj (.signal ⟨_, .arg a hg⟩)
+      (.signal ⟨.gate g, hg⟩) := by
+  have hj := reflTransGen_junction I Acc ((junctionEquiv p out).symm (.inl ⟨⟨g, a⟩, hg⟩))
+  rw [fst_junctionEquiv_symm] at hj
+  exact (Multigraph.reflTransGen_adj_symm hj).tail ⟨argEdge hg a, Or.inl ⟨rfl, tgt_argEdge hg a⟩⟩
+
+omit [Finite O] in
+/-- A wire upstream of an output is reachable. -/
+theorem reach_of_upstream {o : O} {w : Wire n s} (h : p.Upstream (out o) w) : Reach p out w := by
+  induction h with
+  | refl => exact .out o
+  | arg a _ ih => exact .arg a ih
+
+/-- A wire upstream of an output is joined to the output vertex. -/
+theorem reflTransGen_of_upstream {o : O} {w : Wire n s} (h : p.Upstream (out o) w)
+    (hw : Reach p out w) :
+    Relation.ReflTransGen (network p out I Acc).Adj (.signal ⟨w, hw⟩) (.output o) := by
+  induction h with
+  | refl => exact reflTransGen_out I Acc o
+  | @arg g a hg ih =>
+    have hg' := reach_of_upstream hg
+    exact (reflTransGen_arg I Acc hg' a).trans (ih hg')
+
+omit [Finite O] in
+/-- Every reachable wire is upstream of some output. -/
+theorem exists_upstream {w : Wire n s} (hw : Reach p out w) : ∃ o, p.Upstream (out o) w := by
+  induction hw with
+  | out o => exact ⟨o, .refl⟩
+  | arg a _ ih => obtain ⟨o, ho⟩ := ih; exact ⟨o, .arg a ho⟩
+
+/-- **The graph is connected** when some wire is upstream of every output. -/
+theorem connected_of_upstream {w₀ : Wire n s} (h₀ : ∀ o, p.Upstream (out o) w₀) :
+    (network p out I Acc).Connected := by
+  -- Every vertex is joined to some output vertex, and every output vertex to `w₀`.
+  have hout : ∀ v : Vertex p out, ∃ o, Relation.ReflTransGen (network p out I Acc).Adj v
+      (.output o) := by
+    intro v
+    cases v with
+    | signal w =>
+      obtain ⟨o, ho⟩ := exists_upstream w.2
+      exact ⟨o, reflTransGen_of_upstream I Acc ho w.2⟩
+    | junction j =>
+      obtain ⟨o, ho⟩ := exists_upstream j.1.2
+      exact ⟨o, (reflTransGen_junction I Acc j).trans (reflTransGen_of_upstream I Acc ho _)⟩
+    | output o => exact ⟨o, .refl⟩
+  have hw₀ : ∀ o, Reach p out w₀ := fun o => reach_of_upstream (h₀ o)
+  intro u v
+  obtain ⟨o, hu⟩ := hout u
+  obtain ⟨o', hv⟩ := hout v
+  exact (hu.trans (Multigraph.reflTransGen_adj_symm
+    (reflTransGen_of_upstream I Acc (h₀ o) (hw₀ o)))).trans
+    ((reflTransGen_of_upstream I Acc (h₀ o') (hw₀ o')).trans (Multigraph.reflTransGen_adj_symm hv))
+
+/-- **The graph of a circuit with one output is connected.** -/
+theorem connected [Subsingleton O] : (network p out I Acc).Connected := by
+  rcases isEmpty_or_nonempty O with hO | ⟨⟨o₀⟩⟩
+  · intro u v
+    cases u with
+    | signal w =>
+      obtain ⟨o, -⟩ := exists_upstream w.2
+      exact isEmptyElim o
+    | junction j =>
+      obtain ⟨o, -⟩ := exists_upstream j.1.2
+      exact isEmptyElim o
+    | output o => exact isEmptyElim o
+  · exact connected_of_upstream I Acc (w₀ := out o₀) fun o => Subsingleton.elim o₀ o ▸ .refl
 
 /-! ### Counting -/
 
@@ -614,29 +721,54 @@ def signalEquiv :
   left_inv w := by rcases w with ⟨w | w, h⟩ <;> rfl
   right_inv w := by rcases w with w | w <;> rfl
 
-/-- There are at most `r` slots per reachable gate. -/
+variable (p out) in
+/-- The reachable inner gates: reachable gates of positive arity. -/
+abbrev InnerGate : Type :=
+  {g : Fin s // Reach p out (.gate g) ∧ σ.Arity (p.lines g).op ≠ 0}
+
+omit [Finite O] in
+theorem card_innerGate_le : Nat.card (InnerGate p out) ≤ p.innerGates.card := by
+  calc Nat.card (InnerGate p out)
+      ≤ Nat.card p.innerGates :=
+        Nat.card_le_card_of_injective (fun g => ⟨g.1, by simpa [Program.innerGates] using g.2.2⟩)
+          fun _ _ h => Subtype.ext (by simpa using h)
+    _ = p.innerGates.card := Nat.card_eq_finsetCard _
+
+omit [Finite O] in
+/-- There are at most `r` slots per reachable inner gate; constant gates have none. -/
 theorem card_slot_le {r : ℕ} (hfan : p.FanInAtMost r) :
-    Nat.card (Slot p out) ≤ r * Nat.card {g : Fin s // Reach p out (.gate g)} := by
+    Nat.card (Slot p out) ≤ r * Nat.card (InnerGate p out) := by
   calc Nat.card (Slot p out)
-      ≤ Nat.card ({g : Fin s // Reach p out (.gate g)} × Fin r) := by
+      ≤ Nat.card (InnerGate p out × Fin r) := by
         refine Nat.card_le_card_of_injective
-          (fun t => (⟨t.1.1, t.2⟩, ⟨t.1.2.val, t.1.2.isLt.trans_le (hfan.arity_le t.1.1)⟩)) ?_
+          (fun t => (⟨t.1.1, t.2, Nat.pos_iff_ne_zero.mp (Nat.zero_lt_of_lt t.1.2.isLt)⟩,
+            ⟨t.1.2.val, t.1.2.isLt.trans_le (hfan.arity_le t.1.1)⟩)) ?_
         rintro ⟨⟨g, a⟩, hg⟩ ⟨⟨g', a'⟩, hg'⟩ h
         simp only [Prod.mk.injEq, Subtype.mk.injEq, Fin.mk.injEq] at h
         obtain ⟨rfl, haa'⟩ := h
         obtain rfl : a = a' := Fin.ext haa'
         rfl
-    _ = r * Nat.card {g : Fin s // Reach p out (.gate g)} := by
+    _ = r * Nat.card (InnerGate p out) := by
         rw [Nat.card_prod, Nat.card_eq_fintype_card (α := Fin r), Fintype.card_fin, mul_comm]
+
+omit [Finite O] in
+/-- There are at least as many reachable gates as reachable inner gates. -/
+theorem card_innerGate_le_card_gate :
+    Nat.card (InnerGate p out) ≤ Nat.card {g : Fin s // Reach p out (.gate g)} :=
+  Nat.card_le_card_of_injective (fun g => ⟨g.1, g.2.1⟩) fun _ _ h =>
+    Subtype.ext (by simpa using h)
 
 /-- The cardinalities of the network, in terms of signals and consumers. -/
 theorem card_edge : Nat.card (Edge p out) = 2 * Nat.card (Consumer p out) := by
   rw [Nat.card_congr Edge.equiv, Nat.card_sum, Nat.card_congr (junctionEquiv p out), two_mul]
 
 theorem card_vertex :
-    Nat.card (Vertex p out) = Nat.card (Signal p out) + Nat.card (Consumer p out) + 1 := by
+    Nat.card (Vertex p out) = Nat.card (Signal p out) + Nat.card (Consumer p out) + Nat.card O := by
   rw [Nat.card_congr Vertex.equiv, Nat.card_sum, Nat.card_sum, Nat.card_congr (junctionEquiv p out),
-    Nat.card_unique (α := Unit), add_assoc]
+    add_assoc]
+
+theorem card_consumer : Nat.card (Consumer p out) = Nat.card (Slot p out) + Nat.card O :=
+  Nat.card_sum
 
 /-- Every signal has a consumer, so there are at least as many consumers as signals. -/
 theorem card_signal_le_card_consumer : Nat.card (Signal p out) ≤ Nat.card (Consumer p out) := by
@@ -644,48 +776,52 @@ theorem card_signal_le_card_consumer : Nat.card (Signal p out) ≤ Nat.card (Con
   exact Nat.card_le_card_of_injective (fun w => ⟨w, ⟨0, fanout_pos w⟩⟩) fun w w' h =>
     congrArg Sigma.fst h
 
-/-- **The cycle rank.** For fan-in at most `r`, the cycle rank of the network and the number
-of inputs it reads add up to at most `(r - 1) s + 1`. For fan-in two: every gate beyond the
-`m - 1` gates of a formula on `m` inputs adds one independent cycle. -/
-theorem cycleRank_add_ncard_read_le {r : ℕ} (hfan : p.FanInAtMost r) :
-    (network p out I Acc).cycleRank + (network p out I Acc).read.ncard ≤ (r - 1) * s + 1 := by
+/-- **The edge count.** For fan-in at most `r`, the edges of the network and the inputs it reads
+number at most `(r - 1) s` more than its vertices, where `s` counts the inner gates. -/
+theorem card_edge_add_ncard_read_le {r : ℕ} (hfan : p.FanInAtMost r) :
+    Nat.card (Edge p out) + (network p out I Acc).read.ncard ≤
+      Nat.card (Vertex p out) + (r - 1) * p.innerGates.card := by
   have hread :
       (network p out I Acc).read.ncard = Nat.card {i : Fin n // Reach p out (.input i)} := by
     rw [read_network, ← Nat.card_coe_set_eq]; rfl
   have hsig := Nat.card_congr (signalEquiv (p := p) (out := out))
   rw [Nat.card_sum] at hsig
-  have hcons : Nat.card (Consumer p out) = Nat.card (Slot p out) + 1 := Finite.card_option
+  have hcons := card_consumer (p := p) (out := out)
   have hslot := card_slot_le (out := out) hfan
-  have hgates : Nat.card {g : Fin s // Reach p out (.gate g)} ≤ s := by
-    simpa using Finite.card_subtype_le (p := fun g : Fin s => Reach p out (.gate g))
-  have := card_signal_le_card_consumer (p := p) (out := out)
-  -- `r G ≤ (r - 1) G + G ≤ (r - 1) s + G`, for `G` the number of reachable gates.
-  have hr : r * Nat.card {g : Fin s // Reach p out (.gate g)} ≤
-      (r - 1) * Nat.card {g : Fin s // Reach p out (.gate g)} +
-        Nat.card {g : Fin s // Reach p out (.gate g)} := by
+  have hinner := card_innerGate_le_card_gate (p := p) (out := out)
+  -- `r G ≤ (r - 1) G + G`, for `G` the number of reachable inner gates.
+  have hr : r * Nat.card (InnerGate p out) ≤
+      (r - 1) * Nat.card (InnerGate p out) + Nat.card (InnerGate p out) := by
     rcases r with _ | r
     · simp
     · simp [add_mul]
-  have hrs := Nat.mul_le_mul_left (r - 1) hgates
-  unfold Multigraph.cycleRank
+  have hrs := Nat.mul_le_mul_left (r - 1) (card_innerGate_le (p := p) (out := out))
   rw [hread, card_edge, card_vertex]
   omega
 
-/-- **The number of vertices** is at most `n + (r + 1) s + 2` for fan-in at most `r`. -/
+/-- **The cycle rank.** For fan-in at most `r`, if the network is connected, its cycle rank and
+the number of inputs it reads add up to at most `(r - 1) s + 1`, where `s` counts the inner
+gates. For fan-in two: every gate beyond the `m - 1` gates of a formula on `m` inputs adds one
+independent cycle. -/
+theorem cycleRank_add_ncard_read_le {r : ℕ} (hfan : p.FanInAtMost r)
+    (hconn : (network p out I Acc).Connected) :
+    (network p out I Acc).cycleRank + (network p out I Acc).read.ncard ≤
+      (r - 1) * p.innerGates.card + 1 := by
+  have h := card_edge_add_ncard_read_le (out := out) I Acc hfan
+  have hV : Nat.card (Vertex p out) ≤ Nat.card (Edge p out) + 1 := hconn.card_vertex_le
+  unfold Multigraph.cycleRank
+  omega
+
+/-- **The number of vertices** is at most `2 r s + 3 |O|` for fan-in at most `r`, where `s`
+counts the inner gates. -/
 theorem card_vertex_le {r : ℕ} (hfan : p.FanInAtMost r) :
-    Nat.card (Vertex p out) ≤ n + (r + 1) * s + 2 := by
-  have hsig := Nat.card_congr (signalEquiv (p := p) (out := out))
-  rw [Nat.card_sum] at hsig
-  have hcons : Nat.card (Consumer p out) = Nat.card (Slot p out) + 1 := Finite.card_option
+    Nat.card (Vertex p out) ≤ 2 * r * p.innerGates.card + 3 * Nat.card O := by
+  have hcons := card_consumer (p := p) (out := out)
   have hslot := card_slot_le (out := out) hfan
-  have hgates : Nat.card {g : Fin s // Reach p out (.gate g)} ≤ s := by
-    simpa using Finite.card_subtype_le (p := fun g : Fin s => Reach p out (.gate g))
-  have hinputs : Nat.card {i : Fin n // Reach p out (.input i)} ≤ n := by
-    simpa using Finite.card_subtype_le (p := fun i : Fin n => Reach p out (.input i))
-  have hrs : r * Nat.card {g : Fin s // Reach p out (.gate g)} +
-      Nat.card {g : Fin s // Reach p out (.gate g)} ≤ (r + 1) * s := by
-    rw [← Nat.succ_mul]; exact Nat.mul_le_mul_left _ hgates
-  rw [card_vertex]
+  have := card_signal_le_card_consumer (p := p) (out := out)
+  have hrs : r * Nat.card (InnerGate p out) ≤ r * p.innerGates.card :=
+    Nat.mul_le_mul_left r (card_innerGate_le (p := p) (out := out))
+  rw [card_vertex, mul_assoc]
   omega
 
 end Compiler
