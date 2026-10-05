@@ -138,6 +138,7 @@ theorem lowerBound {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A) (hlayout : La
   have hκ : 0 ≤ κ := by positivity
   obtain ⟨η, hη, H⟩ := eventually_lt_of_demand hA hκ hε
   obtain ⟨C, hC⟩ := hlayout η hη
+  replace H := H η hη le_rfl
   have hbig := eventually_card_mul_sq_le_ncard S K hfree hK hdense
   filter_upwards [H C e he, hfree, hbig] with n hn hfreen hbign
   intro σ I Acc c hfan hS
@@ -187,10 +188,7 @@ theorem lowerBound {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A) (hlayout : La
     have hrank' : (G.cycleRank : ℝ) ≤ s - n + e n := by
       simp only [e]; simp only [s]; linarith
     have := mul_le_mul_of_nonneg_left hrank' (by linarith : 0 ≤ A + η)
-    have hV0 : (0 : ℝ) ≤ Nat.card V := Nat.cast_nonneg _
-    have hlog : 0 ≤ (A + η) * (κ * Real.log (Nat.card V + 1)) :=
-      mul_nonneg (by linarith) (mul_nonneg hκ (Real.log_nonneg (by linarith)))
-    nlinarith
+    linarith
 
 /-- **The frontier lower bound for fan-in two.** Assume the layout hypothesis for subcubic graphs
 with coefficient `A > 0`. Under the hypotheses of `Frontier.lowerBound`, for every `ε > 0` and all

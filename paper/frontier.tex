@@ -1,6 +1,6 @@
 \documentclass[11pt]{article}
 
-\usepackage[margin=1.15in]{geometry}
+\usepackage[letterpaper,margin=1in]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{microtype}
@@ -19,6 +19,7 @@
 % ---------------------------------------------------------------------------
 % Lean declarations are typeset in typewriter type and may break at dots.
 \DeclareUrlCommand\lean{\urlstyle{tt}}
+\makeatletter\g@addto@macro\UrlBreaks{\do\_}\makeatother
 \newcommand{\leanref}[1]{{\unskip\nobreak\hfil\penalty50\hskip1em\null\nobreak\hfil
   {\normalfont\small\lean{#1}}\parfillskip=0pt\finalhyphendemerits=0\par}}
 
@@ -60,64 +61,71 @@
 
 \title{The Frontier Method\\[0.4em]
 \large Circuit lower bounds from graph layouts, with a formal proof}
-\author{Samuel Schlesinger}
-\date{Draft of October 2026}
+\author{Samuel Schlesinger\\[0.2em] \normalsize Google\\ \normalsize\texttt{sgschlesinger@gmail.com}
+  \and Ryan Williams\\[0.2em] \normalsize MIT}
+\date{}
+
+\setlength{\emergencystretch}{3em}
 
 \begin{document}
+\pagenumbering{gobble}
 \maketitle
 
 \begin{abstract}
-Lay the wiring graph of a circuit out on a line and cut the line anywhere. Whatever the inputs
-on one side tell the computation on the other side must cross the cut, carried by the wires
-that span it. We make this picture exact. A circuit with $s$ gates of fan-in at most $r$, over
-any basis on any finite alphabet, compiles into a constraint network of maximum degree $r+1$
-whose cycle rank is at most $(r-1)s - n + o(n)$, and a layout of the network is a read-once
+We prove that circuits of fan-in two over \emph{any} basis need more than
+$(L - \varepsilon)\,n$ gates to decide explicit sets in $\mathsf{P}$, where
+\[
+  L \;=\; 1 + \frac{\pi}{3\arccos\frac{1+2\sqrt2}{4}} \;\approx\; 4.5625 .
+\]
+The best previous lower bound for an explicit function over the full binary basis was
+$(3.1 - o(1))\,n$. The same coefficient holds for circuits over every finite field, with any
+basis, and for arithmetic circuits over every field of characteristic zero, counting additions
+and multiplications, that compute the Cauchy map $x \mapsto \bigl(\sum_j x_j/(i - N - j)\bigr)_i$;
+and it survives $o(n)$ gates of unbounded fan-in computing AND, OR, parity, or modular counts.
+
+The method is not gate elimination. Lay the wiring graph of a circuit out on a line and cut it
+anywhere: whatever the inputs on one side tell the computation on the other must cross the cut.
+A circuit with $s$ gates of fan-in $r$ compiles into a constraint network of maximum degree $r+1$
+and cycle rank about $(r-1)s - n$, and a layout of the network is an unambiguous read-once
 protocol whose messages are the values on its frontiers. A problem imposes a \emph{demand} on
-these frontiers; a layout theorem of the form
-$\cw(G) \le (A + o(1))\,\beta_1(G) + o(\card{V(G)})$ provides a \emph{supply}; comparing the
-two gives $(r-1)s \ge (1 + 1/A - o(1))\,n$. We prove such a layout theorem for subcubic graphs
-with $A = \frac{3}{\pi}\arccos\frac{1+2\sqrt2}{4} \approx 0.2807$, by ordering the vertices of
-a cubic graph by the median of correlated Gaussian edge scores, and obtain, with
-$L = 1 + 1/A \approx 4.5625$:
-\begin{itemize}[leftmargin=1.5em, itemsep=0.1em]
-\item circuits of fan-in two, over any basis, deciding dense rectangle-free sets, such as the
-  supports of extractors for the sum of two sources, have more than $(L - \varepsilon)n$
-  gates; with a known extractor, this holds for a language in $\mathsf P$;
-\item the same holds for circuits computing totally regular linear maps, such as Cauchy
-  matrices, over every finite field and any basis, and over every field of characteristic
-  zero for arithmetic circuits, counting only additions and multiplications;
-\item the bound survives $o(n)$ gates of unbounded fan-in that aggregate in a finite monoid,
-  such as unbounded AND, OR, and parity, whose state is carried along as a ledger.
-\end{itemize}
-Run the same frontiers forward as a dynamic program and they count satisfying assignments:
-for circuits of fan-in two with $s$ gates, in randomized time $2^{(0.2192 + o(1))s}$.
-Everything except the running time of this algorithm is formalized in Lean~4 on CSLib and
-Mathlib.
+these frontiers: about $n$ values for dense rectangle-free sets, such as the supports of
+extractors for the sum of two sources, and exactly $N$ for totally regular linear maps. A layout
+theorem $\mathrm{cw}(G) \le (A + o(1))\,\beta_1(G) + o(\card{V(G)})$ provides a \emph{supply}.
+Comparing the two gives $(r-1)s \ge (1 + 1/A - o(1))\,n$. We prove the layout theorem for
+subcubic graphs with $A = \frac{3}{\pi}\arccos\frac{1+2\sqrt2}{4} \approx 0.2807$, by listing the
+vertices of a cubic graph by the median of correlated Gaussian edge scores. Run forward as a
+dynamic program, the same frontiers count the satisfying assignments of a circuit of fan-in two
+with $s$ gates in randomized time $2^{(0.2192 + o(1))\,s}$.
+
+All lower bounds, and the layout theorem, are formally verified in Lean~4.
 \end{abstract}
 
-\tableofcontents
+\newpage
+{\setcounter{tocdepth}{1}\tableofcontents}
+\newpage
+\pagenumbering{arabic}
 
 % ===========================================================================
 \section{Introduction}
 \label{sec:intro}
 
-\subsection{The theorem}
+\subsection{Results}
 
 A \emph{circuit} over a finite alphabet $U$ is a straight-line program: each gate applies an
-operation $U^{a} \to U$ of some arity $a$ to inputs and earlier gates. Its \emph{size} is the
-number of gates; its \emph{fan-in} is the largest arity. Gates of arity zero are constants,
-and we never need to count them: we write $s$ for the number of \emph{inner} gates, those of
-positive arity. A circuit with a designated output \emph{decides} a set $S \subseteq U^n$ if,
-for some set $\Acc \subseteq U$ of accepting values, an input lies in $S$ exactly when the
-output lies in $\Acc$. No assumption is made about which operations are available: the basis
-may be any set of operations, including all of them.
+operation $U^{a} \to U$ of some arity $a$ to inputs and earlier gates. Its \emph{fan-in} is the
+largest arity. Gates of arity zero are constants, and we never need to count them: we write
+$s$ for the number of \emph{inner} gates, those of positive arity. A circuit with a designated
+output \emph{decides} a set $S \subseteq U^n$ if, for some set $\Acc \subseteq U$ of accepting
+values, an input lies in $S$ exactly when the output lies in $\Acc$. No assumption is made
+about the available operations: the basis may be any set of operations, including all of them.
 
 A set $S \subseteq U^n$ is \emph{$K$-rectangle-free} if, however the $n$ coordinates are split
 into two groups, every combinatorial rectangle contained in $S$ has a side with fewer than $K$
-elements (\cref{def:rectangle-free}). The theorem needs one fact from graph theory, a
-\emph{layout bound}: graphs of maximum degree $d$ can be laid out on a line so that every cut
-between an initial segment and the rest is crossed by at most $A\,\beta_1 + o(\card V)$ edges,
-where $\beta_1 = \card E - \card V + 1$ is the cycle rank (\cref{hyp:layout}).
+elements (\cref{def:rectangle-free}). Our main theorem reduces circuit lower bounds for such
+sets to one fact from graph theory, a \emph{layout bound}: graphs of maximum degree $d$ can be
+laid out on a line so that every cut between an initial segment and the rest is crossed by at
+most $A\,\beta_1 + o(\card V)$ edges, where $\beta_1 = \card E - \card V + 1$ is the cycle rank
+(\cref{hyp:layout}).
 
 \begin{theorem}[Main theorem]
 \label{thm:main}
@@ -134,42 +142,31 @@ gates of fan-in at most $r$ that decides $S_n$, over any basis on $U$, satisfies
 \leanref{Frontier.lowerBound}
 \end{theorem}
 
+\begin{theorem}[Gaussian layouts]
+\label{thm:layout-intro}
+$\LB_3(A)$ holds for $A = \frac{3}{\pi}\arccos\frac{1+2\sqrt2}{4} \approx 0.2807$, and hence for
+$A = 1/3$.
+\leanref{Frontier.layoutBound_gaussian}
+\end{theorem}
+
 We call $L = 1 + 1/A$ the \emph{circuit coefficient} of the layout coefficient $A$. For fan-in
-two the graphs are subcubic, and the bound is on the number of gates itself. We prove the
-layout bound for subcubic graphs in \cref{sec:layouts}.
+two the bound is on the number of gates itself.
 
 \begin{corollary}[Fan-in two]
 \label{cor:fanin-two}
 Every circuit of fan-in at most two deciding $S_n$, over any basis, has more than
-$(L - \varepsilon)\,n$ gates for all large $n$, where
-\begin{center}
-\begin{tabular}{lcc}
-\toprule
-layout theorem & $A$ & $L = 1 + 1/A$ \\
-\midrule
-Gaussian edge scores (\cref{thm:layout}) & $\frac{3}{\pi}\arccos\frac{1+2\sqrt2}{4} \approx 0.2807$ & $\approx 4.5625$ \\
-weakening ($2p \le 9/32$) & $1/3$ & $4$ \\
-\bottomrule
-\end{tabular}
-\end{center}
+$(L - \varepsilon)\,n$ inner gates for all large $n$, where
+$L = 1 + \pi \big/ \bigl(3\arccos\frac{1+2\sqrt2}{4}\bigr) \approx 4.5625$; in particular more
+than $(4 - \varepsilon)n$.
 \leanref{Frontier.lowerBound_gaussian}
 \end{corollary}
 
-For the full binary basis $B_2$ the strongest previously published lower bound for an explicit
-function is $(3.1 - o(1))\,n$, due to Li and Yang~\cite{LiYang2022}, improving the
-$(3 + 1/86)\,n$ of Find, Golovnev, Hirsch, and Kulikov~\cite{FGHK2016}.
-
-\subsection{Explicit hard sets}
-
-The hypotheses on $S_n$ are satisfiable: a uniformly random subset of $\{0,1\}^n$ is
-$(n+2)$-rectangle-free with high probability (\cref{prop:random}). A random set has no small
-circuit at all, of course; the content of \cref{thm:main} is for explicit sets. Over an
-alphabet with an addition, a rectangle is a \emph{sumset}: the inputs with parts $a$ on $X$
-and $b$ on $X^c$ are the sums of an input supported on $X$ and one supported on $X^c$. So the
-fibers of a function that is never constant on the sum $A + B$ of two large sets of inputs are
-rectangle-free (\cref{lem:disperser}). Extractors for the sum of two independent sources are
-such functions, and their fibers are dense. Chattopadhyay and Liao~\cite{ChattopadhyayLiao2022}
-constructed explicit extractors for the sum of two sources, and Li~\cite{Li2023} brought their
+\paragraph{Explicit sets.}
+Over an alphabet with an addition, a rectangle is a sumset, so the fibers of a function that is
+never constant on the sum $A + B$ of two large sets of inputs are rectangle-free
+(\cref{lem:disperser}). Extractors for the sum of two independent sources are such functions,
+and their fibers are dense. Explicit extractors for the sum of two sources were constructed by
+Chattopadhyay and Liao~\cite{ChattopadhyayLiao2022}, and Li~\cite{Li2023} brought their
 min-entropy down to $c \log n$, with polynomial-time evaluation.
 
 \begin{corollary}[An explicit language]
@@ -180,21 +177,15 @@ $(L - \varepsilon)\,n$ gates, where $L \approx 4.5625$.
 \leanref{Frontier.lowerBound_sumsetDisperser}
 \end{corollary}
 
-The formal statement is \cref{thm:disperser}: it applies to every balanced family of sumset
-dispersers with $\log K_n = o(n)$. That Li's extractor is such a family is a citation, not a
-formal proof.
+The formal statement (\cref{thm:disperser}) applies to every balanced family of sumset
+dispersers with $\log K_n = o(n)$; that Li's extractor is one is a citation, not part of the
+formalization.
 
-\subsection{Linear maps and arithmetic circuits}
-
-Nothing in the method is specific to deciding a set. A circuit computing a function has many
-outputs, and the compiler gives each output a vertex of its own. For a linear map
+\paragraph{Linear maps and arithmetic circuits.}
+Nothing in the method is specific to deciding a set. For a circuit computing a linear map
 $x \mapsto Mx$ the demand comes from linear algebra: if $M$ is \emph{totally regular}, that is,
-every square submatrix is nonsingular, then every layout has a frontier whose values determine
-the input (\cref{lem:injective-cut}). Such a frontier carries at least $N$ values whenever each
-wire carries at most one element of the field, which holds over finite fields for every basis,
-and over every field for affine operations. Over an infinite field a circuit of polynomial
-operations computing a linear map can be replaced by its \emph{linearization}
-(\cref{lem:linearize}).
+every square submatrix is nonsingular, every layout has a frontier whose values determine the
+input (\cref{lem:injective-cut}).
 
 \begin{theorem}[Linear maps]
 \label{thm:linear-intro}
@@ -206,50 +197,111 @@ with any coefficients. The threshold for $N$ does not depend on $\F$.
 \leanref{Frontier.lowerBound_linear}
 \end{theorem}
 
-In particular, over every field of characteristic zero, such as $\Q$, $\R$, or $\C$, every
-arithmetic circuit computing the Cauchy map
-$x \mapsto \bigl(\sum_j x_j / (i - N - j)\bigr)_{i < N}$ uses more than $(L - \varepsilon)N$
-additions and multiplications, constants being free (\cref{cor:cauchy}).
+\begin{corollary}[Cauchy maps]
+\label{cor:cauchy-intro}
+Over every field of characteristic zero, such as $\Q$, $\R$, or $\C$, every arithmetic circuit
+computing $x \mapsto \bigl(\sum_j x_j / (i - N - j)\bigr)_{i < N}$ uses more than
+$(L - \varepsilon)N$ additions and multiplications, constants being free. Over $\Z/q$, for every
+prime $q \ge 2N$, every circuit of fan-in two over any basis computing the same map has more than
+$(L - \varepsilon)N$ inner gates.
+\leanref{Frontier.arith_cauchy_gaussian}
+\end{corollary}
 
-\subsection{Gates of unbounded fan-in}
-
+\paragraph{Gates of unbounded fan-in.}
 A gate of fan-in $k$ costs $k - 1$ in the cycle rank, so the method cannot afford gates of
-unbounded fan-in in general. But a gate that \emph{aggregates}, computing a function of a
-product of contributions of its arguments in a commutative monoid, can be removed from the
+unbounded fan-in in general. A gate that \emph{aggregates}, computing a function of a product
+of contributions of its arguments in a commutative monoid, can however be removed from the
 graph: guess its output, and check the guess against the product of the contributions,
 accumulated along the layout in one global register, a \emph{ledger}
-(\cref{sec:ledgers}). The ledger costs $2\log\card M$ in the messages.
+(\cref{sec:ledgers}).
 
 \begin{theorem}[Aggregate gates]
 \label{thm:ledger-intro}
 In \cref{thm:main}, let the circuit also have $k$ gates of any fan-in that aggregate in a finite
-commutative monoid $T$, with $k \log\card T = o(n)$. Then $(r-1)s > (1 + 1/A - \varepsilon)n$,
-where now $s$ counts all gates.
+commutative monoid $T$, with $k \log\card T = o(n)$. Then $(r-1)s > (1 + 1/A - \varepsilon)n$.
+In particular $o(n)$ gates computing unbounded AND, OR, parity, or residues of counts are free.
 \leanref{Frontier.lowerBound_aggregate}
 \end{theorem}
 
-Unbounded AND, OR, and parity aggregate in a monoid with two elements, and counting modulo $m$
-in $\Z/m$, so $o(n)$ such gates are free.
-
-\subsection{Counting}
-
-The frontier counting lemma has an algorithmic twin. Sweeping a layout of width $w$ as a
-dynamic program over frontier values counts the satisfying assignments of the network in time
-$\card V q^{w + O(1)}$, and for a compiled circuit these are its accepting inputs.
-
-\begin{theorem}[Counting satisfying assignments; not formalized]
-\label{thm:sat-intro}
-For every $\eta > 0$, the number of satisfying assignments of a Boolean circuit of fan-in two
-with $s$ gates can be computed by a randomized algorithm in time $2^{(0.2192 + \eta)s}$, and
-deterministically in time $2^{(1/4 + \eta)s}$.
-\end{theorem}
-
-The exponents are $A/(1+A)$ for the two layout coefficients of \cref{cor:fanin-two}
+\paragraph{Counting.}
+Run forward as a dynamic program over frontier values, a layout of width $w$ counts the
+satisfying assignments of a network in time $\card V q^{w + O(1)}$
 (\cref{sec:counting}).
 
-\subsection{The idea}
+\begin{theorem}[Counting satisfying assignments]
+\label{thm:sat-intro}
+For every $\eta > 0$, the number of satisfying assignments of a Boolean circuit of fan-in two with
+$s$ gates can be computed deterministically in time $2^{(1/4 + \eta)s}$, and by a randomized
+algorithm in expected time $2^{(A/(1+A) + \eta)s} \le 2^{(0.2192 + \eta)s}$, where
+$A \approx 0.2807$ is the coefficient of \cref{thm:layout-intro}.
+\end{theorem}
 
-Three sentences carry the proof.
+\subsection{Comparison with previous work}
+\label{sec:related}
+
+\paragraph{Circuit lower bounds for explicit functions.}
+Over the full binary basis, the known lower bounds for explicit functions come from gate
+elimination: $2n$ by Schnorr~\cite{Schnorr1974}, $2.5n$ by Paul~\cite{Paul1977}, $3n - o(n)$ by
+Blum~\cite{Blum1984}, with a simpler proof for affine dispersers by Demenkov and
+Kulikov~\cite{DemenkovKulikov2011}, $(3 + 1/86)n - o(n)$ by Find, Golovnev, Hirsch, and
+Kulikov~\cite{FGHK2016}, and $3.1n - o(n)$ by Li and Yang~\cite{LiYang2022}. Gate elimination
+simplifies a circuit by fixing inputs, and charges each restriction to the gates it removes. The
+frontier method never simplifies the circuit: it charges a circuit for the cycle rank of its
+wiring graph and asks only one combinatorial property of the hard function, rectangle-freeness.
+It applies verbatim to every basis, and the coefficient is determined by graph theory alone.
+
+\paragraph{Read-once programs and extractors.}
+The counting lemma at the heart of the method (\cref{lem:counting}) is a lower bound for
+unambiguous read-once programs (\cref{rem:programs}). For deterministic read-once branching
+programs, Andreev, Baskakov, Clementi, and Rolim~\cite{ABCR1999} gave a function in $\mathsf P$
+requiring size $2^{n - O(\log^2 n)}$; for nondeterministic read-$k$ programs, Borodin, Razborov,
+and Smolensky~\cite{BRS1993} proved exponential lower bounds. Sumset sources were introduced by
+Chattopadhyay and Li~\cite{ChattopadhyayLi2016}; extractors for the sum of two sources were
+constructed by Chattopadhyay and Liao~\cite{ChattopadhyayLiao2022}, building on the two-source
+extractors of Chattopadhyay and Zuckerman~\cite{ChattopadhyayZuckerman2019}, and brought to
+min-entropy $O(\log n)$ by Li~\cite{Li2023}. Chattopadhyay and Liao~\cite{ChattopadhyayLiao2023}
+showed that sumset extractors are hard for strongly read-once linear branching programs, a model
+of Gryaznov, Pudl{\'a}k, and Talebanfard~\cite{GPT2022}; see also Li and
+Zhong~\cite{LiZhong2024}.
+
+\paragraph{Cuts, width, and layouts.}
+Converting circuits into ordered decision diagrams through small cuts goes back at least to
+Berman~\cite{Berman1991}, who bounded the size of ordered binary decision diagrams by
+$2^{w(C)}$ for a circuit width $w(C)$, and Morizumi~\cite{Morizumi2023} proposed converting
+circuits into nondeterministic bounded-width circuits and branching programs as an approach to
+circuit lower bounds. There the cuts follow the order of evaluation. Here they are cuts of the
+undirected constraint graph in an arbitrary order, so the relevant width is cutwidth, and the
+relevant size of a circuit is the cycle rank of its graph. Relations between treewidth,
+pathwidth, and cutwidth are due to Korach and Solel~\cite{KorachSolel1993}. Fomin and
+H{\o}ie~\cite{FominHoie2006} proved that cubic graphs on $h$ vertices have pathwidth
+$(1/6 + o(1))h$, through the bisection bound of Monien and Preis~\cite{MonienPreis2006}; this
+gives the layout coefficient $A = 1/3$ and the circuit coefficient $4$. Our Gaussian layouts
+improve the coefficient to $A \approx 0.2807$; their correlation $2\sqrt2/3$ is that of Gaussian
+waves on the $3$-regular tree~\cite{CGHV2015,Lyons2017}. Random cubic graphs have bisection
+width at least $0.103295\,h$~\cite{LichevMitsche2020}, so no layout bound can have $A < 0.2066$.
+
+\paragraph{Linear maps.}
+Valiant~\cite{Valiant1977} observed that the graph of a linear circuit computing a totally
+regular map is a superconcentrator, and size bounds for superconcentrators~\cite{LevValiant1983}
+give linear lower bounds for such circuits of bounded in-degree. Superlinear lower bounds for
+unrestricted linear circuits are known for matrices whose entries generate number fields of
+large degree; see Lokam's survey~\cite{Lokam2009}. \Cref{lem:injective-cut} plays the role of the
+superconcentrator property, at a single frontier of a layout rather than through
+vertex-disjoint paths, and the circuit is charged for its cycle rank rather than its edges.
+
+\paragraph{Satisfiability algorithms.}
+Circuit SAT over the full binary basis with $s$ gates can be solved in time $2^{0.4058 s}$, by an
+algorithm of Nurk~\cite{Nurk2009}. Golovnev, Kulikov, Smal, and Tamaki~\cite{GKST2016} gave a
+framework in which gate elimination yields both lower bounds and algorithms counting satisfying
+assignments, and Williams~\cite{Williams2013} showed that improving exhaustive search implies
+superpolynomial lower bounds for larger classes. \Cref{thm:sat-intro} is the algorithmic
+counterpart of the frontier method: the frontiers that are small in the lower bound are
+enumerated by the algorithm.
+
+\subsection{Technical overview}
+\label{sec:overview}
+
+Three sentences carry the proof of \cref{thm:main}.
 
 \paragraph{Gates create local constraints.}
 Forget that a circuit computes. Put a value on every wire and ask only that each gate's output
@@ -260,9 +312,10 @@ nothing ever needs to invert $g$.
 
 \paragraph{Fan-out creates topology.}
 To make every constraint see a bounded number of values, a wire read by many gates is routed
-through a chain of copy vertices. The resulting constraint graph has maximum degree $r+1$, and
-its cycle rank is about $(r-1)s - n$. A formula, in which every wire is read once, compiles to a
-tree. Every gate beyond those of a formula adds an independent cycle.
+through a chain of copy vertices, one per reader. The resulting constraint graph has maximum
+degree $r+1$, and its cycle rank is about $(r-1)s - n$ (\cref{prop:counting}): a formula, in
+which every wire is read once, compiles to a tree, and every gate beyond those of a formula adds
+an independent cycle.
 
 \paragraph{A frontier value is exactly the message sent by the past to the future.}
 Lay the constraint graph out on a line, in any order whatsoever, unrelated to the order of
@@ -272,80 +325,79 @@ the constraint system are independent (\cref{lem:separator}). So the frontier va
 message from the inputs read so far to the inputs not yet read, and the sequence of frontiers
 is a read-once protocol.
 
-\medskip
-The proof then compares two numbers. The \emph{demand}: a rectangle-free set needs messages of
-about $n$ symbols at some step (\cref{lem:counting}), and a totally regular map needs a
-frontier of exactly $N$ values (\cref{lem:injective-cut}). The \emph{supply}: a layout bound
-produces frontiers of about $A\,\beta_1 \approx A((r-1)s - n)$ edges. Demand cannot exceed
-supply, so $n \lesssim A((r-1)s - n)$ (\cref{lem:demand}).
+\paragraph{Demand.}
+A set $S$ swept by such a protocol cannot be both large and rectangle-free unless some message
+is long. The \emph{frontier counting lemma} (\cref{lem:counting}) makes this exact: charge each
+input to the first time at which the inputs sharing its message have at least $K$ distinct
+revealed parts. Those inputs form a rectangle inside $S$, so they have fewer than $K$ distinct
+unrevealed parts, while just before, they still had fewer than $K$ revealed parts. An input is
+therefore determined by its transition and by two parts with fewer than $K$ values each, so
+$\card S \le (K - 1)^2$ times the number of transitions. For a dense set
+$\log_q\card S \ge n - o(n)$, so some frontier carries $n - o(n)$ values.
 
-\subsection{How the paper is organized}
+\paragraph{Supply, and the comparison.}
+The layout bound applied to the constraint graph gives a layout whose frontiers have at most
+about $A\beta_1 \approx A((r-1)s - n)$ edges. Demand cannot exceed supply:
+$n \le A((r-1)s - n) + o(n)$, that is, $(r-1)s \ge (1 + 1/A - o(1))n$. One lemma
+(\cref{lem:demand}) makes this comparison, with every lower-order term, for all three lower
+bounds of this paper.
 
+\paragraph{Layouts from Gaussian scores.}
+\Cref{thm:layout-intro} is proved in three steps (\cref{sec:layouts}). Compressing a subcubic
+multigraph to its cubic core costs a factor two, since the core has at most $2\beta_1$ vertices.
+A cubic graph is laid out by giving every edge a real score and listing the vertices by the
+median of their three scores: every frontier of this \emph{median layout} is bounded by the
+number of vertices whose scores straddle a threshold, plus a few edges near it
+(\cref{lem:median}). The scores are correlated Gaussians: for a standard Gaussian vector
+$\omega$, the score of an edge is $\langle y_e, \omega\rangle$ for unit vectors $y_e$ built
+from distance kernels on the graph, whose neighbouring correlations approach $2\sqrt2/3$. By
+Sheppard's formula two scores with correlation $\rho$ are separated by a threshold with
+probability at most $\arccos(\rho)/\pi$, and a vertex straddles a threshold with probability at
+most $\frac{3}{2\pi}\arccos\frac{1+2\sqrt2}{4} \approx 0.1404$. The counts concentrate, because
+every event depends on a bounded neighbourhood.
+
+\paragraph{Other demands.}
+For a linear map, the compiler gives every output a vertex of its own. Splicing the runs on two
+inputs with the same frontier values shows that the outputs on each side of the frontier do not
+see the inputs on the other side; for a totally regular map, at the moment when the inputs read
+and the outputs held add up to $N$, this forces the frontier values to determine the input, so
+the frontier carries $N$ field elements (\cref{lem:injective-cut}). Over a finite field this is
+counting; over an infinite field, where a single element can encode anything, it needs the
+operations to be polynomials, and then the circuit can be replaced by its linearization at the
+origin (\cref{lem:linearize}). For aggregate gates, the global register is a single extra
+message, and the only new difficulty is that removing the gates may disconnect the graph: the
+counting lemma itself then finds one component that reads almost all inputs
+(\cref{thm:ledger}).
+
+\subsection{Formal verification}
+\label{sec:formal}
+
+All theorems of this paper except \cref{prop:random} and the running times of
+\cref{sec:counting} are formalized in Lean~4~\cite{Lean4} (toolchain \texttt{v4.35.0-rc3}),
+using Mathlib~\cite{Mathlib} (commit \texttt{9a6fbe0}) and CSLib~\cite{CSLib} (commit
+\texttt{89dc6fb}), in about 8,600 lines including documentation, available at
 \begin{center}
-\begin{tikzpicture}[
-  box/.style={draw, rounded corners, align=center, font=\small, minimum height=2.6em,
-    minimum width=6.8em, inner sep=4pt},
-  arr/.style={-latex, thick}]
-\node[box] (rect) at (0, 0) {Rectangles\\ \S\ref{sec:rectangles}};
-\node[box] (sweep) at (3.4, 0) {Sweeps\\ \S\ref{sec:sweeps}};
-\node[box] (net) at (6.8, 0) {Networks\\ \S\ref{sec:networks}};
-\node[box] (comp) at (10.2, 0) {Compiler\\ \S\ref{sec:compiler}};
-\node[box] (dem) at (5.1, -2) {Demand and supply,\\ main theorem, \S\ref{sec:lowerbound}};
-\node[box] (lay) at (10.2, -2) {Layout bounds\\ \S\ref{sec:layouts}};
-\node[box] (lin) at (1.7, -4) {Linear maps\\ \S\ref{sec:linear}};
-\node[box] (led) at (5.1, -4) {Ledgers\\ \S\ref{sec:ledgers}};
-\node[box] (cnt) at (8.5, -4) {Counting\\ \S\ref{sec:counting}};
-\draw[arr] (rect) -- (sweep);
-\draw[arr] (sweep) -- (net);
-\draw[arr] (net) -- (comp);
-\draw[arr] (rect) -- (dem);
-\draw[arr] (comp) -- (dem);
-\draw[arr] (lay) -- (dem);
-\draw[arr] (dem) -- (lin);
-\draw[arr] (dem) -- (led);
-\draw[arr] (net) -- (cnt);
-\end{tikzpicture}
+\url{https://github.com/SamuelSchlesinger/the-frontier-method}.
 \end{center}
-
-\begin{description}[leftmargin=1.5em, itemsep=0.2em]
-\item[Rectangles (\cref{sec:rectangles}).] The only property of the hard set, the support
-  lemma, and hard sets from sumset dispersers.
-\item[Sweeps (\cref{sec:sweeps}).] An abstract read-once protocol and the \emph{frontier
-  counting lemma}: a $K$-rectangle-free set has at most $(K-1)^2$ elements per transition. No
-  graphs or circuits appear.
-\item[Networks (\cref{sec:networks}).] Constraint networks, the separator lemma, and the sweep
-  of a network along a layout, with $\card U^{w + O(1)}$ transitions per step.
-\item[Compiler (\cref{sec:compiler}).] Circuits of fan-in $r$ with any number of outputs, over
-  any basis, become exact constraint networks of maximum degree $r+1$ and cycle rank at most
-  $(r-1)s + 1 - \card{\rd}$.
-\item[Demand and supply (\cref{sec:lowerbound}).] The comparison that ends every proof, and
-  the main theorem.
-\item[Layout bounds (\cref{sec:layouts}).] The graph theory: compressing to cubic graphs,
-  median layouts, and Gaussian edge scores give the coefficient $A \approx 0.2807$.
-\item[Linear maps (\cref{sec:linear}), ledgers (\cref{sec:ledgers}).] Two more demands: the
-  rank of a totally regular map, and rectangle-free sets with a few aggregate gates.
-\item[Counting (\cref{sec:counting}).] The algorithmic side of the frontier.
-\end{description}
-
-Each piece has a one-line interface, and each could be replaced independently. A better hard
-set improves nothing (the coefficient depends only on $A$), a better layout theorem improves
-every coefficient at once, and a new demand, such as rank in place of counting, transfers the
-whole argument to a new model.
-
-\subsection{The formalization}
-
-Everything in this paper except \cref{prop:random}, the construction of extractors, and the
-running times of \cref{sec:counting} is formalized in Lean~4~\cite{Lean4} (toolchain
-\texttt{v4.35.0-rc3}), using Mathlib~\cite{Mathlib} (commit \texttt{9a6fbe0}) and
-CSLib~\cite{CSLib} (commit \texttt{89dc6fb}), in about 8,400 lines including documentation.
-The circuit model is CSLib's: signatures, interpretations, straight-line programs, and
-circuits. Every result below is tagged with the Lean declaration that proves it. All theorems
-depend only on Lean's standard axioms (\texttt{propext}, \texttt{Classical.choice},
-\texttt{Quot.sound}); there is no \texttt{sorry}. The layout bound $\LB_d(A)$ is a Lean
-definition (\lean{Frontier.LayoutBound}): the general theorems take it as a hypothesis, so that
-any layout theorem can be plugged in, and \cref{thm:layout} proves it for $d = 3$.
-\Cref{sec:design} records the design decisions behind the formal statements, and
+This includes the layout theorem (\cref{thm:layout-intro}), with its probabilistic and
+geometric content. The circuit model is CSLib's: signatures, interpretations, straight-line
+programs, and circuits. Every result below is tagged with the Lean declaration that proves it.
+All theorems depend only on Lean's standard axioms (\texttt{propext},
+\texttt{Classical.choice}, \texttt{Quot.sound}); there is no \texttt{sorry}. The formal
+statements quantify over every signature, interpretation, acceptance set and circuit, and their
+hypotheses are exactly those stated here. The extractors behind \cref{cor:explicit} are cited,
+not formalized. \Cref{sec:design} records the design decisions behind the formal statements, and
 \cref{app:index} is an index from the paper to the code.
+
+\subsection{Organization}
+
+\Cref{sec:rectangles,sec:sweeps} contain the combinatorics of rectangles and the frontier
+counting lemma, with no graphs or circuits. \Cref{sec:networks} introduces constraint networks
+and sweeps along layouts, and \cref{sec:compiler} compiles circuits into networks.
+\Cref{sec:lowerbound} compares demand and supply and proves \cref{thm:main}, and
+\cref{sec:layouts} proves the layout bound. \Cref{sec:linear,sec:ledgers} treat linear maps and
+aggregate gates, and \cref{sec:counting} the counting algorithm. \Cref{sec:design} discusses the
+formalization and \cref{sec:open} open problems.
 
 % ===========================================================================
 \section{Rectangles}
@@ -657,29 +709,52 @@ for $(y, \beta)$.
 Taking $L$ to be all vertices shows that acceptance depends only on the inputs that are read
 (\lean{Frontier.Network.dependsOn_read}).
 
-\subsection{Sweeping a network}
+\subsection{Sweeping along a layout}
 
-Fix a layout $\pi$ of a network with $N$ vertices, and for each accepted input $x$ fix a
-satisfying assignment $\alpha_x$. Process the vertices in the order of $\pi$:
-\begin{itemize}
-\item at time $t \le N$ the revealed inputs are $X_t = \rd(P_t)$, those read by the first $t$
-  vertices; at time $N+1$ all inputs are revealed, $X_{N+1} = \iota$;
-\item the message at time $t$ is the frontier value $\mu_t(x) = \restr{\alpha_x}{C_t}$.
-\end{itemize}
+Fix a layout $\pi$ of a network with $N$ vertices. Process the vertices in the order of $\pi$;
+at time $t \le N$ the revealed inputs are $X_t = \rd(P_t)$, those read by the first $t$
+vertices, and at time $N+1$ all inputs are revealed, $X_{N+1} = \iota$, including those that no
+vertex reads. Messages pair an arbitrary \emph{extra} message with the values on the frontier.
 
-\begin{proposition}[The sweep of a network]
-\label{prop:network-sweep}
-This is a sweep of the accepted set, of length $N + 1$.
-\leanref{Frontier.Network.sweep}
+\begin{proposition}[Sweeps along a layout]
+\label{prop:frontier-sweep}
+Let $S \subseteq U^\iota$. For every input $x$ fix values $\alpha_x \colon E \to U$ on the
+edges, and an extra message $\epsilon_t(x)$ at each time $t \le N + 1$, constant on $S$ at
+time $N+1$. Suppose that whenever $x, y \in S$ have $\epsilon_t(x) = \epsilon_t(y)$ and
+$\alpha_x = \alpha_y$ on $C_t$, the input that agrees with $x$ on $X_t$ and with $y$ elsewhere
+lies in $S$. Then the messages $\mu_t(x) = (\epsilon_t(x), \restr{\alpha_x}{C_t})$ form a sweep of
+$S$ of length $N + 1$. At a step $t < N$, processing the vertex $v = \pi^{-1}(t)$,
+\begin{enumerate}[label=(\alph*)]
+\item the number of transitions is at most $\card{\epsilon} \cdot q^{\card{C_t \cup C_{t+1}} +
+  \card{\rd(v)}}$, where $\card\epsilon$ is the number of values of the pair
+  $(\epsilon_t, \epsilon_{t+1})$ on $S$;
+\item if $v$ lies in a set $W$ of vertices whose edges contain $C_t \cup C_{t+1}$, and the values
+  of $\alpha_x$ on the edges at $W$ are determined by the pair $(\epsilon_t(x),
+  \epsilon_{t+1}(x))$ and the inputs read in $W$, the number of transitions is at most
+  $\card{\epsilon} \cdot q^{\card{\rd(W)}}$.
+\end{enumerate}
+At the last step it is at most $\card\epsilon \cdot q^{\#\text{unread inputs}}$.
+\leanref{Frontier.Network.frontierSweep}
 \end{proposition}
 
 \begin{proof}
-At time $0$ nothing is read; at time $N+1$ everything is revealed. The final frontier
-$C_{N+1} = \cut(V)$ is empty, so the final message is constant. Splicing at $t \le N$ is the
-separator lemma with $L = P_t$; at $t = N+1$ it is trivial.
+At time $0$ nothing is read and at time $N+1$ everything is revealed; the final frontier
+$C_{N+1} = \cut(V)$ is empty and the final extra message is constant, so the final message is
+constant on $S$. Splicing at $t \le N$ is the hypothesis; at $t = N + 1$ it is trivial. The
+transition at step $t$ consists of the two messages and the inputs revealed during the step,
+which are read at $v$ (\lean{Frontier.Network.newly_subset_readAt}). The two messages are
+determined by the two extra messages and the values on $C_t \cup C_{t+1}$, which gives~(a)
+(\lean{Frontier.Network.ncard_transition_le}). Under the hypothesis of~(b), the values on
+$C_t \cup C_{t+1}$ and the inputs read at $v$ are determined by the extra messages and the
+inputs read in $W$ (\lean{Frontier.Network.ncard_transition_le_of_touching}). At the last step
+both frontiers are empty and the inputs revealed are the unread ones
+(\lean{Frontier.Network.ncard_transition_last_le}).
 \end{proof}
 
-The extra step at the end reveals the inputs that the network does not read at all.
+For a network, take for $\alpha_x$ a satisfying assignment on each accepted input, and no extra
+message at all. Splicing is then the separator lemma with $L = P_t$, and
+\cref{prop:frontier-sweep} gives \emph{the sweep of the network}
+(\lean{Frontier.Network.sweep}).
 
 \begin{theorem}[Frontier counting for networks]
 \label{thm:network-counting}
@@ -693,15 +768,9 @@ vertex reads at most $m$ inputs. Then
 \end{theorem}
 
 \begin{proof}
-Apply \cref{lem:counting} to the sweep of \cref{prop:network-sweep}. At a step $t < N$ the
-vertex $v = \pi^{-1}(t)$ is processed. The two messages $\mu_t(x), \mu_{t+1}(x)$ are determined by
-the values of $\alpha_x$ on $C_t \cup C_{t+1}$, and the newly revealed inputs are read at $v$
-(\lean{Frontier.Network.newly_subset_readAt}), so there are at most
-$q^{\card{C_t \cup C_{t+1}} + m}$ transitions (\lean{Frontier.Network.ncard_transition_le}).
-Adding the vertex $v$ changes the cut only at its own edges, so
-$C_{t+1} \subseteq C_t \cup E(v)$ and $\card{C_t \cup C_{t+1}} \le w + d$. At the last step both
-frontiers are empty and the transition is the part on the unread inputs
-(\lean{Frontier.Network.ncard_transition_last_le}).
+Apply \cref{lem:counting} to the sweep of the network and bound the transitions by
+\cref{prop:frontier-sweep}(a). Adding the vertex $v$ changes the cut only at its own edges, so
+$C_{t+1} \subseteq C_t \cup E(v)$ and $\card{C_t \cup C_{t+1}} \le w + d$.
 \end{proof}
 
 The memory of the sweep is the frontier plus one local constraint: this is the source of the
@@ -885,12 +954,12 @@ cycle rank, which is about $s - n$. The following lemma keeps every lower-order 
 
 \begin{lemma}[Demand and supply]
 \label{lem:demand}
-Let $A > 0$, $\varepsilon > 0$ and $\kappa \ge 0$. There is $\eta > 0$ such that for every constant
-$C$ and every function $e(n) = o(n)$, for all large $n$ the following holds. If real numbers
-$s, v, w \ge 0$ satisfy $v \le \kappa(n + s + 1)$,
+Let $A > 0$, $\varepsilon > 0$ and $\kappa \ge 0$. There is $\eta_0 > 0$ such that for every
+$\eta \in (0, \eta_0]$, every constant $C$, and every function $e(n) = o(n)$, for all large $n$
+the following holds. If real numbers $s, v \ge 0$ and $w$ satisfy $v \le \kappa(n + s + 1)$,
 \begin{align*}
   n &\le w + e(n) + \kappa\log(v+1) && \text{(demand)},\\
-  w &\le (A + \eta)\bigl(s - n + e(n) + \kappa\log(v+1)\bigr) + \eta\,v + C && \text{(supply)},
+  w &\le (A + \eta)\bigl(s - n + e(n)\bigr) + \eta\,v + C && \text{(supply)},
 \end{align*}
 then $s > (1 + 1/A - \varepsilon)\,n$.
 \leanref{Frontier.eventually_lt_of_demand}
@@ -900,15 +969,19 @@ In applications $v$ is the number of vertices of the graph, $w$ the width of a l
 is $(r-1)$ times the number of gates.
 
 \begin{proof}
-Let $B = 1/A + \kappa(2 + 1/A)$ and choose $\eta$ with $\eta B \le A\varepsilon/2$. Suppose
-$s \le (1 + 1/A - \varepsilon)n$. Then $v = O(n)$, so $\log(v + 1) = o(n)$. Combining demand
-and supply and using $(A + \eta)(s - n) \le (1 - A\varepsilon + \eta/A)\,n$ and
-$\eta v \le \eta\kappa(2 + 1/A)\,n + \eta\kappa$,
+Let $B = 1/A + \kappa(2 + 1/A)$ and $\eta_0 = A\varepsilon/(2B + 2)$, so that
+$\eta B \le A\varepsilon/2$ for $\eta \le \eta_0$, and let $\delta = A\varepsilon/10$. For large
+$n$ we have $(A + \eta + 1)\card{e(n)} \le \delta n$, $\card C + \eta\kappa \le \delta n$, and
+$(\kappa + 1)\log\bigl(\kappa(2 + 1/A)n + \kappa + 1\bigr) \le \delta n$. Suppose
+$s \le (1 + 1/A - \varepsilon)n$. Then $s \le (1 + 1/A)n$, so
+$v \le \kappa(2 + 1/A)n + \kappa$ and $\kappa\log(v+1) \le \delta n$. From
+$s - n \le (1/A - \varepsilon)n$ we get $(A + \eta)(s - n) \le (1 - A\varepsilon + \eta/A)\,n$,
+and $\eta v \le \eta\kappa(2 + 1/A)\,n + \eta\kappa$. Adding demand and supply,
 \[
-  A\varepsilon\, n \;\le\; \eta B\, n + O\bigl(\card{e(n)} + \log(v+1) + 1\bigr)
-  \;\le\; \tfrac{A\varepsilon}{2}\, n + o(n),
+  n \;\le\; n - A\varepsilon n + \eta B n + (A + \eta + 1)\card{e(n)} + \card C + \eta\kappa
+    + \kappa\log(v+1) \;\le\; n - \tfrac{A\varepsilon}{2}n + 3\delta n,
 \]
-which fails for large $n$.
+that is, $A\varepsilon n/2 \le 3A\varepsilon n/10$, which is false.
 \end{proof}
 
 The order of the quantifiers matters: the slack $\eta$ of the layout bound is chosen first,
@@ -958,11 +1031,11 @@ Let $s$ now denote $(r-1)$ times the number of inner gates, and set
   \kappa = 4 + 1/\log 2 .
 \]
 By hypothesis $e(n) = o(n)$, and for large $n$ we have $\card{S_n} \ge qK_n^2$
-(\lean{Frontier.eventually_card_mul_sq_le_ncard}). Let $\eta$ be given by \cref{lem:demand},
-and $C$ by $\LB_{r+1}(A)$ for this $\eta$. Apply the layout bound to the graph $G$ of
+(\lean{Frontier.eventually_card_mul_sq_le_ncard}). Let $\eta = \eta_0$ be given by
+\cref{lem:demand}, and $C$ by $\LB_{r+1}(A)$ for this $\eta$. Apply the layout bound to the graph $G$ of
 \cref{thm:reduction}, and let $w$ be the width of the resulting layout. With $s_0$ inner gates,
-the graph has $v \le 2r s_0 + 3 \le 4s + 3 \le \kappa(n + s + 1)$ vertices, as $r \ge 2$. The reduction theorem gives
-the demand, since $\log_q(v+1) \le \kappa\log(v+1)$ and $n - \log_q\card{S_n}$ is part of
+the graph has $v \le 2r s_0 + 3 \le 4s + 3 \le \kappa(n + s + 1)$ vertices, as $r \ge 2$. The
+reduction theorem gives the demand, since $\log_q(v+1) \le \kappa\log(v+1)$ and $n - \log_q\card{S_n}$ is part of
 $e(n)$; the layout bound gives the supply, since $\beta_1(G) \le s - n + e(n)$.
 \Cref{lem:demand} concludes.
 \end{proof}
@@ -1011,21 +1084,47 @@ If large cubic graphs are $c$-layable, then $\LB_3(2c)$ holds.
 \leanref{Frontier.LayoutBound.of_cubic}
 \end{proposition}
 
-\begin{proof}[Proof sketch]
-Let $G$ be connected, loopless, and subcubic. Partition its vertices into \emph{blocks}, each
-an ordered list, starting from singletons, and repeatedly merge two adjacent blocks when one
-has at most two edges leaving it or they are joined by parallel edges, listing the larger block
-first. Three invariants are kept: every block has at most three edges leaving it; every proper
-prefix of a block of size $b$ has at most $3\lceil\log_2 b\rceil$ edges leaving it, because a
-prefix of a merged block is a prefix of the larger part or the larger part followed by a prefix
-of the smaller part, which has at most half the size; and the number of blocks plus the number
-of edges inside blocks is at least $\card V$, since every merge absorbs an edge. When no merge
-applies and at least two blocks remain, the quotient graph $H$ on the blocks is simple and
-cubic, and the last invariant gives $h + 2\card V \le 2\card E$, that is,
-$h \le 2(\beta_1(G) - 1)$. Lay out $G$ block by block in the order of a layout of $H$, each
-block in its recorded order. A frontier is then a frontier of $H$ together with the boundary of
-one partial block, so it has at most $(c + \xi)\,2\beta_1(G) + 3\log_2\card V + O(1)$ edges, and
-the logarithm is absorbed into $\eta\card V + C$.
+\begin{proof}
+Let $G$ be connected, loopless, and subcubic, with $N$ vertices and $M$ edges, and write
+$\partial X$ for the set of edges with exactly one endpoint in a set $X$ of vertices. A
+\emph{block} is a nonempty set of vertices listed in some order. A \emph{compression} is a
+partition of the vertices into blocks such that
+\begin{enumerate}[label=(\roman*)]
+\item $\card{\partial B} \le 3$ for every block $B$;
+\item $\card{\partial P} \le 3\log_2\card B$ for every proper prefix $P$ of a block $B$;
+\item the number of blocks plus the number of edges with both endpoints in one block is at
+  least $N$.
+\end{enumerate}
+The singletons form a compression. If two distinct blocks $B_1, B_2$, with
+$\card{B_1} \ge \card{B_2}$, are joined by an edge and $\card{\partial(B_1 \cup B_2)} \le 3$,
+\emph{merge} them into the block $B_1 \cup B_2$ that lists $B_1$ first and then $B_2$. The result
+is again a compression: (i) holds by assumption; (iii) holds because one block is lost and at
+least one edge moves inside a block; and a proper prefix of the merged block is a proper prefix
+of $B_1$, or $B_1$ followed by a proper prefix $P$ of $B_2$, whose boundary has at most
+$3 + 3\log_2\card{B_2} = 3\log_2(2\card{B_2}) \le 3\log_2\card{B_1 \cup B_2}$ edges, which gives
+(ii). Since $\card{\partial(B_1 \cup B_2)} = \card{\partial B_1} + \card{\partial B_2} - 2e$ for the
+number $e$ of edges joining them, a merge is possible whenever one of the blocks has at most two
+edges leaving it, or two edges join them. Merging until no merge is possible gives a \emph{final}
+compression (\lean{Frontier.Multigraph.Compression.exists_final}).
+
+If the final compression has a single block, list the vertices in its order: every frontier is
+the boundary of a proper prefix, of at most $3\log_2 N$ edges. Otherwise, by connectivity every
+block has a neighbouring block, so in a final compression every block has exactly three edges
+leaving it and two blocks are joined by at most one edge: the \emph{quotient} $H$, whose
+vertices are the blocks, adjacent when an edge joins them, is a simple cubic graph, and its
+edges correspond to the edges of $G$ between blocks
+(\lean{Frontier.Multigraph.Compression.isRegularOfDegree}). With $h$ blocks there are $3h/2$ edges between
+blocks, and (iii) gives $h + (M - 3h/2) \ge N$, that is, $h \le 2(M - N) = 2(\beta_1(G) - 1)$
+(\lean{Frontier.Multigraph.Compression.card_add_two_mul_le}).
+
+Fix $\xi > 0$, let $H$ have a layout whose frontiers have at most $(c + \xi)h + 2$ edges (for the
+finitely many small $h$, every frontier has at most $3h/2$ edges), and list the vertices of $G$
+block by block in the order of that layout, each block in its own order. A prefix of this
+layout is the union of a prefix $Q$ of the layout of $H$ and a proper prefix $P$ of the next
+block, and its cut consists of edges of $H$ crossing the frontier after $Q$ and edges of
+$\partial P$. So every frontier has at most
+$(c + \xi)\,2\beta_1(G) + 3\log_2 N + O_\xi(1)$ edges, and since $3\log_2 N \le \eta N + O_\eta(1)$,
+this is $\LB_3(2c)$ (\lean{Frontier.Multigraph.Compression.exists_layout}).
 \end{proof}
 
 \subsection{Median layouts}
@@ -1090,13 +1189,25 @@ $\langle x_u, x_v\rangle \ge 2\lambda/(1+\lambda^2) - 3(2\lambda^2)^R$.
 \leanref{Frontier.Gaussian.sum_unitKernel_mul_ge}
 \end{lemma}
 
-\begin{proof}[Proof sketch]
-For adjacent $u, v$ the distances $d_u = \mathrm{dist}(u,z)$ and $d_v = \mathrm{dist}(v,z)$
-differ by at most one, so
-$\lambda^{d_u} \lambda^{d_v} \ge \frac{2\lambda}{1+\lambda^2}\cdot\frac{\lambda^{2d_u} +
-\lambda^{2d_v}}{2}$, which needs no girth assumption. Summing over $z$ gives the bound up to the
-vertices at the truncation radius: the sphere of radius $R$ has at most $3 \cdot 2^{R}$
-vertices in maximum degree three, and they contribute at most $3(2\lambda^2)^R$.
+\begin{proof}
+Let $k_v$ be the kernel row of $v$, so $x_v = k_v/\lVert k_v\rVert$ and $\lVert k_v\rVert \ge 1$,
+since $k_v(v) = 1$. Let $\kappa = 2\lambda/(1 + \lambda^2) \le 1$, and let $u, v$ be adjacent. For
+every vertex $z$ the distances $d_u = \mathrm{dist}(u, z)$ and $d_v = \mathrm{dist}(v, z)$ differ
+by at most one. If both are at most $R$, the entries $a = k_u(z)$ and $b = k_v(z)$ are equal or
+differ by the factor $\lambda$, and in either case $ab \ge \kappa(a^2 + b^2)/2$; this needs no
+girth assumption. If exactly one is at most $R$, it equals $R$, so $z$ lies on the sphere of
+radius $R$ around $u$ or around $v$; the nonzero entry is $\lambda^R$ and the product is zero. In
+maximum degree three a vertex at distance $d + 1$ has a neighbour at distance $d$, and a vertex at
+positive distance $d$ has at most two neighbours at distance $d + 1$, so a sphere of radius $R$
+has at most $3\cdot 2^{R}$ vertices (\lean{Frontier.Gaussian.card_sphere_le}). There are thus at
+most $6\cdot 2^R$ vertices of the second kind, each costing at most $\lambda^{2R}/2$. Summing over
+$z$,
+\[
+  \langle k_u, k_v\rangle \;\ge\; \kappa\,\frac{\lVert k_u\rVert^2 + \lVert k_v\rVert^2}{2}
+    - 3 \cdot 2^R \lambda^{2R}
+  \;\ge\; \kappa\,\lVert k_u\rVert\,\lVert k_v\rVert - 3(2\lambda^2)^R ,
+\]
+and dividing by $\lVert k_u\rVert\,\lVert k_v\rVert \ge 1$ gives the claim.
 \end{proof}
 
 \begin{lemma}[Sheppard's bound at every threshold]
@@ -1129,33 +1240,63 @@ probability is at most a quarter of the sum, over the six ordered pairs, of the 
 probabilities, each at most $\arccos(\rho')/\pi$ by \cref{lem:sheppard}. Each edge vector at
 $v$ has correlation $\sqrt{(1+\rho)/2} \ge \kappa = \sqrt{(1+\rho_0)/2}$ with $x_v$. Since
 $\lVert\sum_e y_e\rVert \ge \langle \sum_e y_e, x_v\rangle \ge 3\kappa$, the pairwise correlations
-average at least $(3\kappa^2 - 1)/2 = (1 + 3\rho_0)/4$, and as $\arccos$ is concave and decreasing
-on $[0,1]$, the six angles sum to at most $6\arccos\frac{1+3\rho_0}{4}$
-(\lean{Frontier.Gaussian.sum_arccos_star_le}).
+average at least $(3\kappa^2 - 1)/2 = (1 + 3\rho_0)/4$. Each pairwise correlation is at least
+$2\kappa^2 - 1 = \rho_0 \ge 0$, by the triangle inequality for angles, and as $\arccos$ is
+concave and decreasing on $[0,1]$, the six angles sum to at most $6\arccos\frac{1+3\rho_0}{4}$
+(\lean{Frontier.Gaussian.sum_arccos_star_le}). So the probability is at most
+$\frac14 \cdot 6 \cdot \frac1\pi\arccos\frac{1+3\rho_0}{4}$.
 \end{proof}
 
 \begin{proof}[Proof of \cref{thm:layout}]
-Fix thresholds $-T + i\delta$ for $i \le M$, with $\delta = 2T/M$. The number of straddling
-vertices at a threshold, the number of edges scoring in a window, and the number of edges in
-each tail are sums of events, each depending only on the coordinates of $\omega$ in a ball of
-radius $R + 1$. Each ball meets boundedly many others, so each count has variance $O(h)$ and,
-by Chebyshev's inequality, lies within $\varepsilon h$ of its mean except with probability
-$O(1/(\varepsilon^2 h))$ (\lean{Frontier.Gaussian.pi_deviation_le}). The means are at most
-$\frac{3}{2\pi}\arccos\frac{1+3\rho_0}{4}\,h$ for straddlers (\cref{prop:straddle}),
-$\frac32 h \cdot \delta/\sqrt{2\pi}$ for window edges, and $\frac32 h/T^2$ for each tail. For
-large $h$ a union bound over the $2M + 2$ counts leaves some $\omega$ for which all of them are
-near their means, and \cref{lem:median} bounds every frontier of its median layout by
+Let $H$ be a simple cubic graph on $h$ vertices, and let $\lambda \ge 0$, $R$, and
+$\rho_0 \ge 17/32$ satisfy $\rho_0 \le 2\lambda/(1+\lambda^2) - 3(2\lambda^2)^R$, so that adjacent
+unit kernel rows have correlation at least $\rho_0$ (\cref{lem:kernel}). Fix $T > 0$, an integer
+$M \ge 1$, $\delta = 2T/M$, $\varepsilon > 0$, and the thresholds $\theta_i = -T + i\delta$ for
+$i \le M$. Consider the $2M + 2$ counts
+\begin{itemize}
+\item the number $Y_i$ of vertices straddling $\theta_i$, for $i < M$;
+\item the number $Z_i$ of edges scoring in the window $[\theta_i, \theta_{i+1})$, for $i < M$;
+\item the numbers $Z_-$ and $Z_+$ of edges scoring below $-T$ and at least $T$.
+\end{itemize}
+\emph{Means.} Every score is a standard Gaussian, since $y_e$ is a unit vector. So
+$\mathbb{E} Y_i \le \frac{3}{2\pi}\arccos\frac{1+3\rho_0}{4}\,h$ (\cref{prop:straddle}),
+$\mathbb{E} Z_i \le \frac{3h}{2}\cdot\frac{\delta}{\sqrt{2\pi}}$, and
+$\mathbb{E} Z_\pm \le \frac{3h}{2}\cdot\frac{1}{T^2}$ by Chebyshev's inequality.
+
+\emph{Concentration.} The kernel row of $v$ is supported on the ball of radius $R$ around $v$, so
+the score of an edge $uv$ depends only on the coordinates of $\omega$ in the ball of radius $R + 1$
+around $u$, and the event that a vertex straddles a threshold only on those in the ball of radius
+$R + 1$ around it (\lean{Frontier.Gaussian.dependsOn_straddleEvent}). Each such ball meets at most
+$D$ others, where $D$ depends only on $R$, since balls of radius $2R + 2$ have boundedly many
+vertices (\lean{Frontier.Gaussian.card_ball_le}). Events depending on disjoint sets of
+independent coordinates are independent, so a count $Y$ of $F$ such events has
+$\mathrm{Var}\,Y \le \card F\, D$, and by Chebyshev's inequality
+$\Pr[\card{Y - \mathbb E Y} \ge \varepsilon h] \le \card F\, D/(\varepsilon h)^2$
+(\lean{Frontier.Gaussian.pi_deviation_le}). Every count has $\card F \le 3h/2$ events, so all
+$2M + 2$ counts lie within $\varepsilon h$ of their means except with probability at most
+$(3M + 3)D/(\varepsilon^2 h)$, which is less than one for $h > (3M+3)D/\varepsilon^2$.
+
+\emph{The layout.} For such a sample, \cref{lem:median} with $a = -T$ bounds every frontier of
+the median layout by
 \[
   h\cdot\max\Bigl(\tfrac{9}{2T^2} + 3\varepsilon,\
   \tfrac{3}{2\pi}\arccos\tfrac{1+3\rho_0}{4} + \tfrac{9\delta}{2\sqrt{2\pi}} + 4\varepsilon\Bigr)
 \]
-(\lean{Frontier.Gaussian.exists_good_sample}). Let $\lambda \uparrow 1/\sqrt2$ and
-$R \to \infty$: the correlation of \cref{lem:kernel} tends to $2\sqrt2/3$, the neighbour
-correlation of Gaussian waves on the $3$-regular tree~\cite{CGHV2015,Lyons2017}, and
-$(1 + 3\cdot 2\sqrt2/3)/4 = (1 + 2\sqrt2)/4$. Choosing $T$, $M$ and $\varepsilon$ to make the
-other terms small shows that large cubic graphs are $p$-layable
+(\lean{Frontier.Gaussian.exists_good_sample}).
+
+\emph{The parameters.} As $\lambda \uparrow 1/\sqrt2$ the correlation $2\lambda/(1 + \lambda^2)$
+increases to $2\sqrt2/3$, the neighbour correlation of Gaussian waves on the $3$-regular
+tree~\cite{CGHV2015,Lyons2017}, and for fixed $\lambda < 1/\sqrt2$ the error $3(2\lambda^2)^R$
+tends to zero as $R \to \infty$ (\lean{Frontier.Gaussian.exists_decay_radius}). So for every
+$\rho_0 < 2\sqrt2/3$ there are admissible $\lambda$ and $R$. As $\rho_0 \uparrow 2\sqrt2/3$,
+$(1 + 3\rho_0)/4 \to (1 + 2\sqrt2)/4$. Given $\xi > 0$, choose $\rho_0$ with
+$\frac{3}{2\pi}\arccos\frac{1+3\rho_0}{4} \le p + \xi/3$, then $T = 20$, $\varepsilon \le \xi/12$
+and $M$ large enough that the bound above is at most $(p + \xi)h$
+(\lean{Frontier.Gaussian.exists_parameters}). This shows that large cubic graphs are $p$-layable
 (\lean{Frontier.Gaussian.cubicLayoutBound_gaussian}), and \cref{prop:compression} gives
-$\LB_3(2p)$. The bound $2p \le 9/32$ follows from $\cos(3\pi/32) \le (1 + 2\sqrt2)/4$.
+$\LB_3(2p)$. Finally $\cos(3\pi/32) \le (1 + 2\sqrt2)/4$, so
+$\arccos\frac{1+2\sqrt2}{4} \le 3\pi/32$ and $2p \le 9/32$
+(\lean{Frontier.Gaussian.two_mul_gaussianCoefficient_le}).
 \end{proof}
 
 \begin{corollary}[The unconditional bounds]
@@ -1222,11 +1363,13 @@ characteristic zero, and over $\Z/q$ for every prime $q \ge 2N$.
 
 \begin{proof}
 A square submatrix of a Cauchy matrix is a Cauchy matrix, so it suffices that square Cauchy
-matrices are nonsingular. If $\sum_j v_j/(a_i - b_j) = 0$ for $k$ indices $i$, let $P$ be the
-polynomial of degree less than $k$ that interpolates the values $v_j/\prod_{l \ne j}(b_j - b_l)$
-at the nodes $b_j$. Then $P(t) = \prod_l (t - b_l) \sum_j v_j / (t - b_j)$ for $t$ different from
-all $b_j$, so $P$ vanishes at the $k$ points $a_i$; hence $P = 0$, and $v = 0$
-(\lean{Frontier.det_cauchy_ne_zero}).
+matrices are nonsingular. Let $a_1, \dots, a_k$ be distinct, $b_1, \dots, b_k$ distinct, and
+$a_i \ne b_j$, and suppose that $\sum_j v_j/(a_i - b_j) = 0$ for every $i$. The polynomial
+$P(t) = \sum_j v_j \prod_{l \ne j}(t - b_l)$ has degree less than $k$ and satisfies
+$P(t) = \prod_l (t - b_l)\sum_j v_j/(t - b_j)$ for $t \notin \{b_1, \dots, b_k\}$, so it vanishes at
+the $k$ points $a_i$. Hence $P = 0$, and $0 = P(b_j) = v_j\prod_{l \ne j}(b_j - b_l)$ gives
+$v_j = 0$ (\lean{Frontier.det_cauchy_ne_zero}). For $M_N$, the nodes $i$ and $N + j$ are distinct
+integers below $2N$, which remain distinct in characteristic zero and modulo a prime $q \ge 2N$.
 \end{proof}
 
 \begin{lemma}[Some frontier determines the input]
@@ -1347,9 +1490,10 @@ With $L \approx 4.5625$, for every $\varepsilon > 0$ and all large $N$:
 \begin{proof}
 Combine \cref{thm:linear} with \cref{thm:layout}, \cref{lem:capacity,lem:linearize}, and
 \cref{lem:cauchy} (\lean{Frontier.linear_finite_gaussian},
-\lean{Frontier.cauchyZMod_gaussian}, \lean{Frontier.linear_polynomial_gaussian}). Arithmetic circuits, with addition and multiplication of arity two and a
-constant of arity zero for every element of the field, have fan-in two and polynomial
-operations, and their inner gates are the additions and multiplications.
+\lean{Frontier.cauchyZMod_gaussian}, \lean{Frontier.linear_polynomial_gaussian}). Arithmetic
+circuits, with addition and multiplication of arity two and a constant of arity zero for every
+element of the field, have fan-in two and polynomial operations, and their inner gates are the
+additions and multiplications.
 \end{proof}
 
 \begin{remark}
@@ -1421,62 +1565,74 @@ satisfies the equations of the erased program with the guess $\prod_w \phi_w(\te
 by the same identity (\lean{Frontier.Ledger.run_total_trace}).
 \end{proof}
 
-Compile the erased program with outputs the output of the circuit, accepting $\Acc$, and every
-wire, accepting every value, so that every wire is a signal and carries its contribution at its
-vertex. For each guess $m$ this gives a network; the graph and the sites do not depend on $m$,
-only the constraints at the placeholders do.
+A wire of the erased program is \emph{live} if it is an input or a gate of positive arity; the
+other wires, the constants and the placeholders, take values that depend on the guess but not on
+the input. Compile the erased program with outputs the output of the circuit, accepting $\Acc$,
+and every live wire, accepting every value, so that every live wire is a signal and carries its
+contribution at its vertex. For each guess $m$ this gives a network; the graph and the sites do
+not depend on $m$, only the constraints at the placeholders do. The network has at most
+$2rs + 3(n + s + 1)$ vertices, where $s$ counts the inner gates of the erased program
+(\cref{prop:counting}).
 
 \subsection{The ledger sweep}
 
-Lay out this graph. At time $t$, the message of an input $x$ of $S$ consists of the consistent
-guess $m_x$, the product $\lambda_t(x)$ of the contributions of the wires whose vertices come
-first (the \emph{ledger so far}), and the values of the run on the frontier.
+Lay out this graph. For an input $x$ of $S$, let $\alpha_x$ put on every edge the value of its
+signal in the true run, and let the extra message at time $t$ be the pair $(m_x, \lambda_t(x))$
+of the consistent guess $m_x$ and the product $\lambda_t(x)$ of the contributions of the signals
+whose vertices are among the first $t$ (the \emph{ledger so far}); after the last vertex the
+extra message is empty.
 
 \begin{proposition}[The ledger sweep]
 \label{prop:ledger-sweep}
-This is a sweep of $S$.
+These data satisfy the hypothesis of \cref{prop:frontier-sweep}, and so define a sweep of $S$.
 \leanref{Frontier.Ledger.sweep}
 \end{proposition}
 
 \begin{proof}
-Let $x, y \in S$ have the same message at time $t$, and let $z$ agree with $x$ on the inputs read
-by the first $t$ vertices and with $y$ elsewhere. The runs of $x$ and $y$ satisfy the network of
-the common guess $m$, and they agree on the frontier, so the separator lemma gives an assignment
-satisfying it on $z$, which is the run of $z$ with the guess $m$ (\cref{thm:exact}). Its ledger
-is the ledger of $x$ on the first $t$ vertices times that of $y$ on the others, that is,
-$\lambda_t(y)$ times the rest of $y$'s ledger, which is $m$. So the guess is consistent for $z$,
-the run is the true run of $z$ by \cref{lem:guess}, and its output lies in $\Acc$
+Let $x, y \in S$ have the same extra message at time $t$ and the same values on the frontier,
+and let $z$ agree with $x$ on the inputs read by the first $t$ vertices and with $y$ elsewhere.
+The runs of $x$ and $y$ satisfy the network of the common guess $m$ (\cref{lem:guess}), and they
+agree on the frontier, so the separator lemma gives an assignment satisfying it on $z$, which is
+the run of $z$ with the guess $m$ (\cref{thm:exact}). On the signals among the first $t$
+vertices it agrees with the run of $x$, on the other signals with the run of $y$, and on the
+remaining wires, which are constants, with both. So its ledger is $\lambda_t(x) = \lambda_t(y)$
+times the rest of the ledger of $y$, which is $m$: the guess is consistent for $z$, the run is
+the true run of $z$ by \cref{lem:guess}, and its output lies in $\Acc$
 (\lean{Frontier.Ledger.mem_of_splice}).
 \end{proof}
 
-A transition is determined by the guess, the two ledgers, the values on the two frontiers, and
-the input read at the vertex processed, so there are at most $\card M^3 q^{w + d + 1}$ of them
-(\lean{Frontier.Ledger.ncard_transition_le_width}). The cost of the ledger is the term
-$3\log_q\card M$.
+The pair of extra messages before and after a step takes at most $\card M^3$ values, so by
+\cref{prop:frontier-sweep}(a) there are at most $\card M^3 q^{w + d + 1}$ transitions at a step
+with frontiers of size at most $w$ (\lean{Frontier.Ledger.ncard_transition_le_width}). The cost of
+the ledger is the term $3\log_q\card M$.
 
 \subsection{Components}
 
 The erased program has lost the edges into the special gates, and its graph may fall apart into
-components. Their cycle ranks add up, but the count of \cref{prop:counting} charges one input
-per component, so the cycle rank of the whole graph may be much larger than $(r-1)s - n$. The
-remedy is to look at one component at a time.
+components. Their cycle ranks add up, but the count of \cref{prop:counting} gains one for every
+component, so the cycle rank of the whole graph may be much larger than $(r-1)s - n$. The remedy
+is to look at one component at a time.
 
 A set $W$ of vertices is \emph{closed} if no edge leaves it, and its cycle rank is
 $\card{E(W)} - \card W + 1$, where $E(W)$ are the edges at $W$.
 
 \begin{lemma}[Layouts of disconnected graphs]
 \label{lem:componentwise}
-Under $\LB_d(A)$, every loopless graph of maximum degree $d$ has a layout in which the vertex
-processed at each step lies in a closed set $W$ with at least $\card W - 1$ edges, a connected
-component, containing both frontiers of the step, and both have at most
-$(A + \eta)\,\beta_1(W) + \eta\card V + C$ edges.
+Under $\LB_d(A)$, every loopless graph of maximum degree $d$ has a layout with the following
+property. At each step, the vertex processed lies in a closed set $W$ (a connected component)
+with at least $\card W - 1$ edges, whose edges contain both frontiers of the step, and both
+frontiers have at most $(A + \eta)\,\beta_1(W) + \eta\card V + C$ edges.
 \leanref{Frontier.LayoutBound.exists_layout_componentwise}
 \end{lemma}
 
 \begin{proof}
-Lay out the components one after another, each by the layout bound. A prefix is then a union of
-whole components together with a prefix of the current component, and its cut is the cut of
-that prefix inside the component.
+The connected component of a vertex is closed, and the subgraph it induces is connected,
+loopless, of maximum degree $d$, and has cycle rank $\beta_1(W)$; a connected graph has at least
+$\card W - 1$ edges. Lay out the components one after another, each by the layout bound, which
+applies with the same constant $C$ to every component, and $\eta\card W \le \eta\card V$. A
+prefix of the resulting layout is the union of some whole components, which are closed, and a
+prefix of the current component; since no edge leaves a closed set, its cut is the cut of that
+prefix inside the current component (\lean{Frontier.Multigraph.cut_union_of_cut_eq_empty}).
 \end{proof}
 
 \begin{lemma}[Counting inside a closed set]
@@ -1493,10 +1649,9 @@ in $W$, which are the junctions of the slots of the gates in $W$ and of the outp
 \end{proof}
 
 Inside a closed set the run depends only on the guess and on the inputs read there, by the
-separator lemma with an empty cut (\lean{Frontier.Ledger.run_eq_of_eqOn_readIn}). So at a step
-inside $W$ a transition is also determined by the guess, the two ledgers, and the inputs read in
-$W$: there are at most $\card M^3 q^{\card{\rd(W)}}$ transitions
-(\lean{Frontier.Ledger.ncard_transition_le_closed}). A component that reads few inputs has few
+separator lemma with an empty cut (\lean{Frontier.Ledger.run_eq_of_eqOn_readIn}). So
+\cref{prop:frontier-sweep}(b) applies at a step inside $W$: there are at most
+$\card M^3 q^{\card{\rd(W)}}$ transitions (\lean{Frontier.Ledger.ncard_transition_le_closed}). A component that reads few inputs has few
 transitions, however wide its layout.
 
 \begin{theorem}[Ledgers]
@@ -1504,22 +1659,32 @@ transitions, however wide its layout.
 Assume $\LB_{r+1}(A)$, let $S_n$ be as in \cref{thm:main}, and let $\beta(n) = o(n)$. For every
 $\varepsilon > 0$ and all large $n$, every circuit deciding $S_n$ whose gates have fan-in at most
 $r$, except for special gates of any fan-in with a ledger in a monoid $M$ with
-$\log\card M \le \beta(n)$, has $(r-1)s > (1 + 1/A - \varepsilon)\,n$, where $s$ counts all
-gates.
+$\log\card M \le \beta(n)$, has $(r-1)s > (1 + 1/A - \varepsilon)\,n$, where $s$ counts the inner
+gates. The proof charges only the inner gates that are not special.
 \leanref{Frontier.lowerBound_ledger}
 \end{theorem}
 
 \begin{proof}
 Lay out the network of the erased program by \cref{lem:componentwise}. By the two transition
-bounds and \cref{lem:counting}, some step $t$, inside a closed set $W$, has
+bounds, the bound $\card M^3$ at the last step, and \cref{lem:counting}, some step $t$ inside a
+closed set $W$ has
 \[
-  \card S \le K^2\,\card V\,\card M^3\, q^{\min(w + r + 2,\ \card{\rd(W)})},
+  \card S \le K^2\,(\card V + 1)\,\card M^3\, q^{\min(a,\ \card{\rd(W)})},
 \]
-where $w$ is the larger frontier of the step (\lean{Frontier.Ledger.exists_ncard_le}). As
-$\log_q\card S \ge n - o(n)$, both terms of the minimum are at least $n - o(n)$: the component
-$W$ reads almost all inputs, and its layout is wide. By \cref{lem:count-closed},
-$\beta_1(W) \le (r-1)s + 1 - \card{\rd(W)} \le (r-1)s - n + o(n)$, so $W$ alone has the demand
-and the supply of a connected graph, with $\kappa = 7 + 1/\log 2$. Apply \cref{lem:demand}.
+where $a \le w + r + 2$ for the frontier $w$ of the step (\lean{Frontier.Ledger.exists_ncard_le}).
+Write $D = n - \log_q\card S$ and $\Lambda = 2\log_q K + 3\log_q\card M + \log_q(\card V + 1)$,
+so that $n \le D + \Lambda + \min(a, \card{\rd(W)})$. Then the component $W$ reads almost all
+inputs, $n - \card{\rd(W)} \le D + \Lambda$, and its layout is wide,
+$n \le D + \Lambda + w + r + 2$. By \cref{lem:count-closed} with $s$ now $(r - 1)$ times the
+number of inner gates, $\beta_1(W) \le s + 1 - \card{\rd(W)} \le s - n + 1 + D + \Lambda$. Let
+$B = (A + \eta)\beta_1(W) + \eta\card V + C \ge w$ be the bound of \cref{lem:componentwise}, and
+apply \cref{lem:demand} to $w' = B - (A + \eta)\log_q(\card V + 1)$, with
+\[
+  e(n) = D + 2\log_q K_n + 3\beta(n)/\log 2 + r + 3, \qquad \kappa = 7 + (A + 2)/\log 2,
+\]
+and $\eta \le 1$: the supply holds for $w'$ by the bound on $\beta_1(W)$, the demand since
+$n \le D + \Lambda + B + r + 2$ and
+$(A + \eta + 1)\log_q(\card V + 1) \le \kappa\log(\card V + 1)$, and $\card V \le \kappa(n + s + 1)$.
 \end{proof}
 
 \Cref{thm:ledger-intro} is the special case of aggregate gates (\cref{prop:aggregate}), and with
@@ -1530,110 +1695,143 @@ and the supply of a connected graph, with $\kappa = 7 + 1/\log 2$. Apply \cref{l
 \section{Counting satisfying assignments}
 \label{sec:counting}
 
-The results of this section concern running times and are not formalized; their correctness
-rests on the exactness of the compiler (\cref{thm:exact}), which is.
+This section concerns running times, which are not formalized. Its correctness rests on the
+exactness of the compiler (\cref{thm:exact}) and on the layout theorems of \cref{sec:layouts},
+which are.
+
+\subsection{Counting along a layout}
 
 \begin{proposition}[Counting along a layout]
 \label{prop:dp}
-Given a constraint network with a layout of width $w$, maximum degree $d$, and at most $m$
-inputs read per vertex, the number of pairs $(x, \alpha)$ of an input and an assignment
-satisfying the network can be computed with $O(\card V\, q^{w + d + m})$ additions.
+Given a constraint network over $U$ with a layout of width $w$, in which every vertex has degree
+at most $d$ and reads at most $m$ inputs, and the constraints can be tested in polynomial time,
+the number of pairs $(x, \alpha)$ of an input and an assignment satisfying the network can be
+computed in time $\card V\, q^{w + d + m}\,\mathrm{poly}(\card V + \card\iota)$.
 \end{proposition}
 
 \begin{proof}
 For $t \le \card V$ and an assignment $\sigma$ to the frontier $C_t$, let $c_t(\sigma)$ count the
 pairs of an assignment to the inputs read by the first $t$ vertices and an assignment to the
 edges touching them that satisfy the constraints of the first $t$ vertices and agree with
-$\sigma$ on $C_t$. Then $c_0(\emptyset) = 1$, and $c_{t+1}$ is obtained from $c_t$ by extending
-each $\sigma$ with values on the new edges and the new inputs that satisfy the constraint of
-the vertex processed, which sees only these and $\sigma$. The answer, multiplied by the number
-of assignments to the unread inputs, is $c_{\card V}(\emptyset)$.
+$\sigma$ on $C_t$. Then $c_0(\emptyset) = 1$. The vertex $v$ processed at step $t$ sees only its
+own edges and inputs, and its edges lie in $C_t \cup C_{t+1}$; so $c_{t+1}$ is obtained from
+$c_t$ by extending each $\sigma$ with the at most $q^{d + m}$ values on the edges of $v$ and the
+inputs read at $v$ that are consistent with $\sigma$ and satisfy the constraint of $v$, and
+restricting to $C_{t+1}$. The answer is $c_{\card V}(\emptyset)$ times $q$ to the number of
+unread inputs. All counts are at most $q^{\card\iota + \card E}$, so the arithmetic is on
+integers of polynomially many bits.
 \end{proof}
 
-For the network of a circuit with one output, satisfying assignments correspond one to one to
-accepted inputs (\cref{thm:exact}), so \cref{prop:dp} counts them.
+For the network of a circuit with one output, the satisfying assignments on an accepted input
+form a single run (\cref{thm:exact}), so \cref{prop:dp} counts the accepted inputs.
+
+\subsection{Computing layouts}
+
+Say that $\LB_3(A)$ is \emph{constructive} if for every $\eta > 0$ there are a constant $C$ and
+a polynomial-time algorithm that, given a connected, loopless, subcubic multigraph $G$, outputs a
+layout whose frontiers have at most $(A + \eta)\beta_1(G) + \eta\card{V(G)} + C$ edges; and
+\emph{randomized constructive} if the algorithm is randomized and runs in expected polynomial
+time.
+
+\begin{lemma}[Constructive compression]
+\label{lem:constructive-compression}
+If for every $\xi > 0$ there is a (randomized) polynomial-time algorithm that lays out every
+simple cubic graph on $h \ge h_0(\xi)$ vertices with frontiers of at most $(c + \xi)h + O(1)$
+edges, then $\LB_3(2c)$ is (randomized) constructive.
+\end{lemma}
+
+\begin{proof}
+The compression of \cref{prop:compression} performs fewer than $\card V$ merges, each found by
+testing pairs of adjacent blocks, so the final compression and its quotient $H$ are computed in
+polynomial time. If $H$ has fewer than $h_0(\xi)$ vertices, an optimal layout of $H$ is found by
+exhaustive search in time depending only on $\xi$; otherwise the given algorithm lays out $H$.
+The expansion is computed in linear time, and the bound of \cref{prop:compression} applies.
+\end{proof}
+
+\begin{lemma}[Layouts from path decompositions]
+\label{lem:pathwidth}
+A cubic graph with a path decomposition of width $p$ has a layout, computable in polynomial time
+from the decomposition, whose frontiers have at most $p + 4$ edges.
+\end{lemma}
+
+\begin{proof}
+Let $X_1, \dots, X_\ell$ be the bags. Choose for every edge $e$ an index $j(e)$ with both
+endpoints in $X_{j(e)}$, number the edges $e_1, \dots, e_m$ so that $j(e_k)$ is nondecreasing, and
+give $e_k$ the score $k$. Apply \cref{lem:median} with $a = 1/2$, $\delta = 1$, and $M = m$: no
+edge scores below $a$ or at least $a + M\delta$, and every window contains a single edge. A vertex
+$v$ straddling the threshold $k + 1/2$ has edges $e_i$ and $e_{i'}$ with $i \le k < i'$; it lies in
+$X_{j(e_i)}$ and $X_{j(e_{i'})}$, hence in $X_{j(e_k)}$, since the bags containing $v$ are
+consecutive and $j(e_i) \le j(e_k) \le j(e_{i'})$. So at most $p + 1$ vertices straddle each
+threshold, and every frontier of the median layout has at most $p + 1 + 3$ edges.
+\end{proof}
+
+Fomin and H{\o}ie~\cite{FominHoie2006} show that for every $\xi > 0$ every cubic graph on
+$h \ge h_0(\xi)$ vertices has a path decomposition of width at most $(1/6 + \xi)h$, constructed
+in polynomial time. With \cref{lem:pathwidth,lem:constructive-compression}, $\LB_3(1/3)$ is
+constructive.
+
+\begin{lemma}[Sampling Gaussian layouts]
+\label{lem:sampling}
+For every $\xi > 0$ there is a randomized algorithm that lays out every simple cubic graph on
+$h \ge h_0(\xi)$ vertices with frontiers of at most $(p + \xi)h$ edges, in expected polynomial
+time, where $p = \frac{3}{2\pi}\arccos\frac{1+2\sqrt2}{4}$. Hence $\LB_3(2p)$ is randomized
+constructive.
+\end{lemma}
+
+\begin{proof}
+Fix the parameters $\lambda, R, T, M, \varepsilon$ of the proof of \cref{thm:layout} for
+$\xi/2$, so that a Gaussian sample $\omega$ satisfies the bound $(p + \xi/2)h$, through
+\cref{lem:median}, with probability at least $1 - O(1/h)$. The algorithm computes the unit
+kernel rows and the edge vectors $y_e$, each supported on a ball of at most $D_0 = D_0(R)$
+vertices, samples an approximation $\omega'$ of $\omega$ (below), lists the vertices by the median
+of the scores $s'(e) = \langle y_e, \omega'\rangle$, computes the largest frontier of this layout,
+and starts again if it exceeds $(p + \xi)h$.
+
+\emph{Perturbation.} Suppose $\card{s'(e) - s(e)} \le \zeta$ for every edge, where
+$s(e) = \langle y_e, \omega\rangle$, and let $Z$ be the number of edges $e$ with
+$\card{s(e) - \theta} \le \zeta$ for some threshold $\theta$ of the grid. A vertex straddling a
+threshold under $s'$ but not under $s$, an edge in a window or a tail under $s'$ but not under
+$s$, both involve one of these $Z$ edges. So every quantity bounded in \cref{lem:median} grows by
+at most $5Z$ when $s$ is replaced by $s'$. Every $s(e)$ is a standard Gaussian, so
+$\mathbb E Z \le \frac{3h}{2}(M + 1)\frac{2\zeta}{\sqrt{2\pi}} \le 1$ for
+$\zeta = 1/(3h(M+1))$, and $5Z \le \xi h/2$ except with probability $O(1/h)$.
+
+\emph{Sampling.} Let $U_z$ be independent uniform variables on $[0,1]$ and
+$\omega_z = \Phi^{-1}(U_z)$, where $\Phi$ is the standard normal distribution function. The
+algorithm reads the first $b$ bits of each $U_z$ and computes $\omega'_z$, the value of $\Phi^{-1}$
+at the midpoint of the dyadic interval of length $2^{-b}$ containing $U_z$, to within $2^{-b}$.
+With $\tau = \sqrt{6\ln h}$, all $\card{\omega_z} \le \tau$ except with probability at most
+$h\cdot e^{-\tau^2/2} = h^{-2}$, and then, as the density of a standard Gaussian is at least
+$h^{-4}$ on $[-\tau - 1, \tau + 1]$ for large $h$, $\card{\omega'_z - \omega_z} \le 2^{-b}h^4 + 2^{-b}$.
+Computing the $y_e$ to within $2^{-b}$ as well, $\card{s'(e) - s(e)} \le 2D_0(\tau + 2)(h^4 + 2)2^{-b}$,
+which is at most $\zeta$ for $b = O(\log h)$. Each trial thus takes polynomial time and succeeds
+with probability $1 - O(1/h) \ge 1/2$ for large $h$. \Cref{lem:constructive-compression}
+concludes.
+\end{proof}
+
+\subsection{The algorithm}
 
 \begin{theorem}[Counting satisfying assignments]
 \label{thm:sat}
-Suppose layouts witnessing $\LB_3(A)$ can be computed in (randomized) polynomial time. Then for
-every $\eta > 0$ the number of satisfying assignments of a Boolean circuit of fan-in two with
-$s$ gates can be computed in (randomized) time $2^{(A/(1+A) + \eta)s}$.
+Let $\LB_3(A)$ be constructive, or randomized constructive. For every $\eta > 0$, the number of
+satisfying assignments of a Boolean circuit of fan-in two with $s$ gates can be computed in time
+$2^{(A/(1+A) + \eta)s}$, or in expected time $2^{(A/(1+A) + \eta)s}$, respectively.
 \end{theorem}
 
 \begin{proof}
 Let $R$ be the set of inputs with a path to the output; the count is $2^{n - \card R}$ times the
-count over $R$. Either enumerate the assignments to $R$, in time $2^{\card R}\mathrm{poly}(s)$,
-or compile the circuit, compute a layout of width $w \le (A + \eta)(s + 1 - \card R) + \eta\,O(s)
-+ C$ (\cref{prop:counting}), and apply \cref{prop:dp}, in time $2^{w}\mathrm{poly}(s)$. The
-faster of the two takes time $2^{\min(\card R,\ A(s - \card R)) + O(\eta)s}$, and
-$\min(\card R, A(s - \card R)) \le \frac{A}{1+A}s$.
+count over the inputs in $R$. One algorithm enumerates the assignments to $R$, in time
+$2^{\card R}\mathrm{poly}(s)$. The other compiles the circuit into its network, which has at most
+$4s + 3$ vertices and cycle rank at most $s + 1 - \card R$ (\cref{prop:counting}), computes a
+layout of width $w \le (A + \eta)(s + 1 - \card R) + \eta(4s + 3) + C$, and applies
+\cref{prop:dp}, in time $2^{w}\mathrm{poly}(s)$. Run the one with the smaller bound. Since
+$\min(\card R, A(s - \card R)) \le \frac{A}{1+A}\,s$ (if $\card R > \frac{A}{1+A}s$ then
+$A(s - \card R) < \frac{A}{1+A}s$), the time is
+$2^{\frac{A}{1+A}s + O(\eta)s}\mathrm{poly}(s)$; rescale $\eta$.
 \end{proof}
 
-Two layout algorithms are available. Deterministically, the path decompositions of cubic
-graphs of Fomin and H{\o}ie~\cite{FominHoie2006} are constructive, and median layouts of their
-bags give $A = 1/3$, hence time $2^{(1/4 + \eta)s}$. With randomness, sample the Gaussian edge
-scores of \cref{sec:gaussian} and take the median layout: with probability tending to one the
-sample is good, and the width of the layout can be checked before it is used, which gives
-$A = 2p \approx 0.2807$ and time $2^{(0.2192 + \eta)s}$. Sampling the scores to
-$O(\log h)$ bits of precision changes only the order of scores closer than $h^{-O(1)}$, which
-affects the counts of \cref{lem:median} by $o(h)$ in expectation. This proves
-\cref{thm:sat-intro}.
-
-% ===========================================================================
-\section{Related work}
-\label{sec:related}
-
-\paragraph{Circuit lower bounds for explicit functions.}
-Over the full binary basis, the known lower bounds for explicit functions have come from gate
-elimination: $2n$ by Schnorr~\cite{Schnorr1974}, $2.5n$ by Paul~\cite{Paul1977}, $3n - o(n)$ by
-Blum~\cite{Blum1984}, with a simpler proof for affine dispersers by Demenkov and
-Kulikov~\cite{DemenkovKulikov2011}, $(3 + 1/86)n - o(n)$ by Find, Golovnev, Hirsch, and
-Kulikov~\cite{FGHK2016}, and $3.1n - o(n)$ by Li and Yang~\cite{LiYang2022}. The frontier method
-is not a form of gate elimination: it never simplifies the circuit, and its only property of
-the hard function is rectangle-freeness.
-
-\paragraph{Branching programs and extractors.}
-\Cref{lem:counting} is a lower bound for read-once programs (\cref{rem:programs}). For
-deterministic read-once branching programs, Andreev, Baskakov, Clementi, and
-Rolim~\cite{ABCR1999} gave a function in $\mathsf P$ requiring size $2^{n - O(\log^2 n)}$; for
-nondeterministic read-$k$ programs, Borodin, Razborov, and Smolensky~\cite{BRS1993} proved
-exponential bounds. Sumset sources were introduced by Chattopadhyay and
-Li~\cite{ChattopadhyayLi2016}; extractors for the sum of two sources were constructed by
-Chattopadhyay and Liao~\cite{ChattopadhyayLiao2022}, building on the two-source extractors of
-Chattopadhyay and Zuckerman~\cite{ChattopadhyayZuckerman2019}, and brought to min-entropy
-$O(\log n)$ by Li~\cite{Li2023}. Chattopadhyay and Liao~\cite{ChattopadhyayLiao2023} showed that
-sumset extractors are hard for strongly read-once linear branching programs, a model of
-Gryaznov, Pudl{\'a}k, and Talebanfard~\cite{GPT2022}; see also Li and Zhong~\cite{LiZhong2024}.
-
-\paragraph{Cuts, width, and layouts.}
-Converting circuits into ordered decision diagrams through small cuts goes back at least to
-Berman~\cite{Berman1991}, who bounded the size of ordered binary decision diagrams by
-$2^{w(C)}$ for a circuit width $w(C)$; Morizumi~\cite{Morizumi2023} proposed converting circuits
-into nondeterministic bounded-width circuits and branching programs as an approach to circuit
-lower bounds. The cuts there follow the order of evaluation. Here they are cuts of the
-undirected constraint graph in an arbitrary order, so the relevant width is its cutwidth, and
-the relevant measure of a circuit is the cycle rank of that graph. Relations between treewidth,
-pathwidth, and cutwidth are due to Korach and Solel~\cite{KorachSolel1993}. The pathwidth of
-cubic graphs was bounded by Fomin and H{\o}ie~\cite{FominHoie2006}, through the bisection bound
-of Monien and Preis~\cite{MonienPreis2006}; the correlation $2\sqrt2/3$ behind our Gaussian
-scores is that of Gaussian waves on the $3$-regular tree~\cite{CGHV2015,Lyons2017}.
-
-\paragraph{Linear maps.}
-Valiant~\cite{Valiant1977} observed that the graph of a linear circuit computing a totally
-regular map is a superconcentrator, and size bounds for superconcentrators~\cite{LevValiant1983}
-give linear lower bounds for such circuits of bounded in-degree. Superlinear lower bounds for
-unrestricted linear circuits are known for matrices whose entries generate number fields of
-large degree; see Lokam's survey~\cite{Lokam2009}. \Cref{lem:injective-cut} plays the role of the superconcentrator
-property, but at a single frontier of a layout rather than for vertex-disjoint paths.
-
-\paragraph{Satisfiability algorithms.}
-Circuit SAT over the full binary basis with $s$ gates can be solved in time
-$2^{0.4058 s}$, by an algorithm of Nurk~\cite{Nurk2009}. Golovnev, Kulikov, Smal, and
-Tamaki~\cite{GKST2016} gave a framework in which gate elimination yields both lower bounds and
-algorithms counting satisfying assignments.
-Williams~\cite{Williams2013} showed that improving exhaustive search implies superpolynomial
-lower bounds for larger classes. \Cref{thm:sat} is the algorithmic counterpart of the frontier
-method: the same frontiers that are small for the lower bound are enumerated by the algorithm.
+With $A = 1/3$ (constructive) and $A = 2p \approx 0.2807$ (randomized constructive) this proves
+\cref{thm:sat-intro}: $\frac{1/3}{4/3} = \frac14$ and $\frac{2p}{1 + 2p} \le 0.2192$.
 
 % ===========================================================================
 \section{Design notes on the formalization}
@@ -1650,9 +1848,9 @@ Mathlib's little-$o$. The linear theorems quantify over every field inside the e
 the threshold for $N$ is uniform in the field.
 
 \paragraph{One comparison.}
-The asymptotic arithmetic of every lower bound is \cref{lem:demand}, proved once. Each
-application supplies a graph, a demand, and a bound on the cycle rank, at a fixed length, and
-the lemma does the rest. This is what keeps the three lower bounds short.
+The asymptotic arithmetic of every lower bound is \cref{lem:demand}, proved once, for every
+sufficiently small slack. Each application supplies a graph, a demand, and a bound on the cycle
+rank, at a fixed length, and the lemma does the rest.
 
 \paragraph{Sets and cardinalities.}
 Sets of inputs, rectangles, cuts, and edge neighbourhoods are \lean{Set}s, and sizes are
@@ -1662,10 +1860,16 @@ only as \lean{Finite} instances on coordinates, alphabet, vertices, and edges. P
 
 \paragraph{The sweep lemma is abstract.}
 \Cref{lem:counting} is stated for an abstract sweep (\lean{Frontier.Sweep}) and proved without
-reference to graphs. Messages are arbitrary functions into an arbitrary type; for networks they
-are frontier values, encoded as functions $E \to \mathrm{Option}\ U$ that are \texttt{none}
-off the frontier, and for the ledger sweep they also carry two elements of the monoid. The
-revealed sets need not be nested.
+reference to graphs. Messages are arbitrary functions into an arbitrary type, and the revealed
+sets need not be nested.
+
+\paragraph{One sweep along a layout.}
+Every sweep in the development is built by a single constructor
+(\lean{Frontier.Network.frontierSweep}), whose messages pair an extra message with the values on
+the frontier, encoded as functions $E \to \mathrm{Option}\ U$ that are \texttt{none} off the
+frontier. The sweep of a network has no extra message, and the ledger sweep carries the guess
+and the ledger so far. The transition bounds of \cref{prop:frontier-sweep} are proved once, for
+the constructor.
 
 \paragraph{Inputs and sites.}
 Each input is read by at most one vertex, so the site map is
@@ -1683,7 +1887,7 @@ definitional, but at the cost of transport along the incidence relation in every
 \paragraph{Outputs and junction chains.}
 The compiler takes a family of outputs indexed by any finite type, each with its own accepting
 set. Deciding a set is the case of one output; computing a function accepts every value; the
-ledger compiles the output of the circuit together with every wire. One junction per consumer,
+ledger compiles the output of the circuit together with every live wire. One junction per consumer,
 with the junctions of a signal numbered by an equivalence between consumers and pairs (signal,
 position), removes every special case at the cost of one extra vertex and one extra edge per
 signal, which changes neither the cycle rank nor the theorems.
@@ -1701,7 +1905,8 @@ ledgers do use uniqueness, in the form of \cref{lem:outputs-cut} and of the run 
 because there the spliced assignment must be recognized as the run of the spliced input.
 
 \paragraph{Linearization through dual numbers.}
-Mathlib has partial derivatives of polynomials but no chain rule for substitution. Evaluating
+Mathlib, at the pinned version, has partial derivatives of multivariate polynomials but no chain
+rule for substitution. Evaluating
 the circuit over the dual numbers makes the chain rule a consequence of the fact that
 evaluation commutes with algebra homomorphisms, and reduces the analytic content to one Taylor
 identity, proved by induction on the polynomial.
@@ -1737,34 +1942,49 @@ number of inner gates. The constraint network and the compiler would fit natural
 next to its circuit model.
 
 % ===========================================================================
-\section{Further directions}
-\label{sec:extensions}
+\section{Open problems}
+\label{sec:open}
 
 \paragraph{Better layouts.}
-Any improvement of $\LB_3(A)$ below $A = 0.2807$ improves every coefficient in this paper at
-once, and the running time of \cref{thm:sat}. Numerical experiments suggest that nonlinear
-smoothing of Gaussian edge scores helps, but no proof is known. Below $A = 0.2066$ the layout
-bound is false.
+Any improvement of $\LB_3(A)$ below $A \approx 0.2807$ improves every coefficient in this paper at
+once, and the running time of \cref{thm:sat}. Since random cubic graphs have bisection width at
+least $0.103295\,h$~\cite{LichevMitsche2020}, $\LB_3(A)$ fails for $A < 0.2066$, so with layouts
+measured by their number of edges the method cannot exceed the coefficient
+$1 + 1/0.2066 \approx 5.84$ for fan-in two. What is the least $A$ for which $\LB_3(A)$ holds?
 
-\paragraph{Nondeterministic circuits.}
+\paragraph{Beyond edge counts.}
+Going past $5.84\,n$ needs either a frontier measure finer than the number of edges, for
+instance one that charges junction edges less than gate edges, or a compiler producing sparser
+graphs.
+
+\paragraph{Larger fan-in.}
+For fan-in $r \ge 3$ the method gives $(r-1)s > (1 + 1/A_{r+1} - \varepsilon)n$ under
+$\LB_{r+1}(A_{r+1})$. We do not know good layout coefficients for maximum degree $d \ge 4$; a
+compression as in \cref{sec:cubic} should again reduce the question to graphs of minimum degree
+three.
+
+\paragraph{Nondeterministic circuits and other capacities.}
 Witness inputs can be read anywhere in the network and existentially quantified. Since the
 lower bound for decision problems never uses uniqueness, the same argument should give the same
-bound counting only the ordinary inputs.
+bound for nondeterministic circuits, counting only the ordinary inputs. More generally, the
+demand of a problem says what a frontier must carry and the capacity of a model what it can
+carry: counting and rank are two instances, and information for distributions over inputs, or
+dimension for continuous operations over the reals (\cref{rem:continuous}), are others.
 
-\paragraph{Other capacities.}
-The demand of a problem is a statement about what a frontier must carry; the capacity of a
-model, what a frontier can carry. Counting and rank are two instances. Others are information
-for distributions over inputs, as in average-case versions of the counting lemma, and
-dimension for continuous operations over the reals (\cref{rem:continuous}).
+\paragraph{Explicit hard sets in the formalization.}
+The formalization takes the hard sets as hypotheses. A formal construction of a sumset
+disperser, or of any dense rectangle-free family in $\mathsf P$ with $\log K_n = o(n)$, would
+make \cref{cor:explicit} unconditional in Lean.
 
+% ===========================================================================
 % ===========================================================================
 \appendix
 \section{Index of formal statements}
 \label{app:index}
 
-All declarations are in the namespace \lean{Frontier}, in the file of the same name under
-\lean{Frontier/}, except for the upstreaming candidates in \lean{Frontier/ForMathlib} and
-\lean{Frontier/ForCslib}.
+All declarations are in the namespace \lean{Frontier}, in the files under \lean{Frontier/}
+named in each group of the table, except for the upstreaming candidates in
+\lean{Frontier/ForMathlib} and \lean{Frontier/ForCslib}.
 
 {\small
 \begin{longtable}{ll}
@@ -1772,6 +1992,15 @@ All declarations are in the namespace \lean{Frontier}, in the file of the same n
 Paper & Lean declaration \\
 \midrule
 \endhead
+\multicolumn{2}{l}{\emph{Introduction}} \\
+Thm.~\ref{thm:main} & \lean{lowerBound} \\
+Thm.~\ref{thm:layout-intro} & \lean{layoutBound_gaussian}, \lean{layoutBound_one_third} \\
+Cor.~\ref{cor:fanin-two} & \lean{lowerBound_gaussian}, \lean{lowerBound_four} \\
+Cor.~\ref{cor:explicit} & \lean{lowerBound_sumsetDisperser} \\
+Thm.~\ref{thm:linear-intro} & \lean{lowerBound_linear_finite}, \lean{lowerBound_linear_polynomial} \\
+Cor.~\ref{cor:cauchy-intro} & \lean{arith_cauchy_gaussian}, \lean{cauchyZMod_gaussian} \\
+Thm.~\ref{thm:ledger-intro} & \lean{lowerBound_aggregate}, \lean{lowerBound_aggregate_gaussian} \\
+\midrule
 \multicolumn{2}{l}{\emph{Rectangles} (\lean{Rectangle.lean}, \lean{Extractor.lean})} \\
 Def.~\ref{def:rectangle} & \lean{rectangle} \\
 Def.~\ref{def:rectangle-free} & \lean{RectangleFree} \\
@@ -1779,7 +2008,7 @@ Lem.~\ref{lem:ignored} & \lean{RectangleFree.ncard_le_of_dependsOn} \\
 Lem.~\ref{lem:support} & \lean{RectangleFree.pow_ncard_compl_lt} \\
 Def.~\ref{def:disperser} & \lean{SumsetDisperser} \\
 Lem.~\ref{lem:disperser} & \lean{SumsetDisperser.rectangleFree} \\
-Thm.~\ref{thm:disperser}, Cor.~\ref{cor:explicit} & \lean{lowerBound_sumsetDisperser} \\
+Thm.~\ref{thm:disperser} & \lean{lowerBound_sumsetDisperser} \\
 \midrule
 \multicolumn{2}{l}{\emph{Sweeps} (\lean{Sweep.lean})} \\
 Def.~\ref{def:sweep} & \lean{Sweep}, \lean{Sweep.transition} \\
@@ -1789,7 +2018,8 @@ Lem.~\ref{lem:counting} & \lean{Sweep.ncard_le} \\
 Hyp.~\ref{hyp:layout} & \lean{LayoutBound} \\
 Def.~\ref{def:network} & \lean{Network}, \lean{Network.accepted} \\
 Lem.~\ref{lem:separator} & \lean{Network.Satisfies.splice} \\
-Prop.~\ref{prop:network-sweep} & \lean{Network.sweep} \\
+Prop.~\ref{prop:frontier-sweep} & \lean{Network.frontierSweep}, \lean{Network.ncard_transition_le} \\
+ & \lean{Network.ncard_transition_le_of_touching}, \lean{Network.sweep} \\
 Thm.~\ref{thm:network-counting} & \lean{Network.ncard_accepted_le} \\
 \midrule
 \multicolumn{2}{l}{\emph{Compiler} (\lean{Compiler.lean})} \\
@@ -1804,11 +2034,9 @@ Prop.~\ref{prop:counting} & \lean{Compiler.card_edge_add_ncard_read_le} \\
   \lean{LowerBound.lean})} \\
 Lem.~\ref{lem:demand} & \lean{eventually_lt_of_demand} \\
 Thm.~\ref{thm:reduction} & \lean{exists_graph_of_decides} \\
-Thm.~\ref{thm:main} & \lean{lowerBound} \\
-Cor.~\ref{cor:fanin-two} & \lean{lowerBound_fanInTwo}, \lean{lowerBound_gaussian} \\
 \midrule
 \multicolumn{2}{l}{\emph{Layouts} (\lean{Layouts/*.lean}, \lean{Layouts.lean}, \lean{Main.lean})} \\
-Thm.~\ref{thm:layout} & \lean{layoutBound_gaussian}, \lean{layoutBound_one_third} \\
+Thm.~\ref{thm:layout} & \lean{layoutBound_gaussian}, \lean{Gaussian.cubicLayoutBound_gaussian} \\
 Prop.~\ref{prop:compression} & \lean{LayoutBound.of_cubic} \\
 Lem.~\ref{lem:median} & \lean{exists_key_of_edgeScore} \\
 Lem.~\ref{lem:kernel} & \lean{Gaussian.sum_unitKernel_mul_ge} \\
@@ -1822,10 +2050,9 @@ Lem.~\ref{lem:cauchy} & \lean{totallyRegular_cauchy}, \lean{totallyRegular_cauch
 Lem.~\ref{lem:injective-cut} & \lean{exists_injective_cut} \\
 Def.~\ref{def:capacity}, Lem.~\ref{lem:capacity} & \lean{LinearCapacity},
   \lean{linearCapacity_of_finite}, \lean{linearCapacity_affine} \\
-Thm.~\ref{thm:linear} & \lean{lowerBound_linear}, \lean{lowerBound_linear_finite} \\
-Lem.~\ref{lem:linearize} & \lean{exists_affine_circuit}, \lean{lowerBound_linear_polynomial} \\
+Thm.~\ref{thm:linear} & \lean{lowerBound_linear} \\
+Lem.~\ref{lem:linearize} & \lean{exists_affine_circuit} \\
 Cor.~\ref{cor:cauchy} & \lean{linear_finite_gaussian}, \lean{linear_polynomial_gaussian} \\
- & \lean{arith_cauchy_gaussian}, \lean{cauchyZMod_gaussian} \\
 \midrule
 \multicolumn{2}{l}{\emph{Ledgers} (\lean{Ledger/*.lean}, \lean{Components.lean})} \\
 Def.~\ref{def:ledger} & \lean{Ledger} \\
@@ -1835,12 +2062,17 @@ Prop.~\ref{prop:ledger-sweep} & \lean{Ledger.sweep}, \lean{Ledger.mem_of_splice}
 Lem.~\ref{lem:componentwise} & \lean{LayoutBound.exists_layout_componentwise} \\
 Lem.~\ref{lem:count-closed} & \lean{Compiler.cycleRankOn_add_ncard_readIn_le} \\
 Thm.~\ref{thm:ledger} & \lean{lowerBound_ledger}, \lean{Ledger.exists_ncard_le} \\
-Thm.~\ref{thm:ledger-intro} & \lean{lowerBound_aggregate}, \lean{lowerBound_aggregate_gaussian} \\
 \bottomrule
 \end{longtable}
 }
 
 \bibliographystyle{alpha}
 \bibliography{references}
+
+% ===========================================================================
+\section*{AI methodology statement}
+\addcontentsline{toc}{section}{AI methodology statement}
+
+\textbf{TODO.}
 
 \end{document}

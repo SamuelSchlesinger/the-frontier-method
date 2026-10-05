@@ -342,6 +342,7 @@ theorem lowerBound_linear {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)
           (1 + 1 / A - ε) * N < (r - 1) * c.innerSize := by
   obtain ⟨η, hη, H⟩ := eventually_lt_of_demand hA (κ := 4) (by norm_num) hε
   obtain ⟨C, hC⟩ := hlayout η hη
+  replace H := H η hη le_rfl
   filter_upwards [H C (fun _ => 1) (isLittleO_const_left.mpr
       (Or.inr (tendsto_norm_atTop_atTop.comp tendsto_natCast_atTop_atTop))),
     eventually_ge_atTop 1] with N hN hN1
@@ -372,10 +373,7 @@ theorem lowerBound_linear {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)
       have : (G.cycleRank : ℝ) + N ≤ ((r - 1) * c.innerSize : ℕ) + 1 := by exact_mod_cast hrank
       simp only [s]; linarith
     have := mul_le_mul_of_nonneg_left hrank' (by linarith : 0 ≤ A + η)
-    have hV0 : (0 : ℝ) ≤ Nat.card V := Nat.cast_nonneg _
-    have hlog : 0 ≤ (A + η) * (4 * Real.log (Nat.card V + 1)) :=
-      mul_nonneg (by linarith) (mul_nonneg (by norm_num) (Real.log_nonneg (by linarith)))
-    nlinarith
+    linarith
 
 /-- **Linear maps over finite fields**, over any basis. -/
 theorem lowerBound_linear_finite {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)

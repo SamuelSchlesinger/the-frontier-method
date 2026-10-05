@@ -60,42 +60,43 @@ theorem isLittleO_log_affine {α β : ℝ} (hα : 0 ≤ α) (hβ : 1 ≤ β) :
     linarith
   linarith
 
-/-- **Demand and supply at the frontier.** Fix `A > 0`, `ε > 0`, and a constant `κ ≥ 0`. There is
-a slack `η > 0` such that, for every constant `C` and every error `e(n) = o(n)`, for all large
-`n` the following holds. If a graph with `v ≤ κ (n + s + 1)` vertices has a layout of width `w`
+/-- **Demand and supply at the frontier.** Fix `A > 0`, `ε > 0`, and a constant `κ ≥ 0`. For every
+small enough slack `η > 0`, every constant `C`, and every error `e(n) = o(n)`, for all large `n`
+the following holds. If a graph with `v ≤ κ (n + s + 1)` vertices has a layout of width `w`
 that is
 
 * at least the demand: `n ≤ w + e(n) + κ log (v + 1)`, and
-* at most the supply: `w ≤ (A + η) (s - n + e(n) + κ log (v + 1)) + η v + C`,
+* at most the supply: `w ≤ (A + η) (s - n + e(n)) + η v + C`,
 
 then `s > (1 + 1/A - ε) n`.
 
-In applications, `s` is `(r - 1)` times the size of a circuit of fan-in `r`, the supply is the
-layout hypothesis applied to a graph of cycle rank at most `s - n + e(n)`, and the demand is a
-counting argument for the problem. -/
+In applications, `s` is `(r - 1)` times the number of gates of a circuit of fan-in `r`, the
+supply is the layout hypothesis applied to a graph of cycle rank at most `s - n + e(n)`, and the
+demand is a counting argument for the problem. The slack is chosen before the layout hypothesis
+provides `C`. -/
 theorem eventually_lt_of_demand {A : ℝ} (hA : 0 < A) {κ : ℝ} (hκ : 0 ≤ κ) {ε : ℝ}
     (hε : 0 < ε) :
-    ∃ η > 0, ∀ (C : ℝ) (e : ℕ → ℝ), e =o[atTop] (fun n => (n : ℝ)) →
+    ∃ η₀ > 0, ∀ η, 0 < η → η ≤ η₀ → ∀ (C : ℝ) (e : ℕ → ℝ), e =o[atTop] (fun n => (n : ℝ)) →
       ∀ᶠ n : ℕ in atTop, ∀ s v w : ℝ, 0 ≤ s → 0 ≤ v → v ≤ κ * (n + s + 1) →
         (n : ℝ) ≤ w + e n + κ * Real.log (v + 1) →
-        w ≤ (A + η) * (s - n + e n + κ * Real.log (v + 1)) + η * v + C →
+        w ≤ (A + η) * (s - n + e n) + η * v + C →
         (1 + 1 / A - ε) * n < s := by
   -- Spend the slack so that `η B ≤ A ε / 2`, where `B` collects the coefficients of `η n`.
   set B := 1 / A + κ * (2 + 1 / A) with hB_def
   have hB : 0 ≤ B := by positivity
-  set η := A * ε / (2 * (B + 1)) with hη_def
-  have hη : 0 < η := by positivity
+  refine ⟨A * ε / (2 * (B + 1)), by positivity, fun η hη hηle C e he => ?_⟩
   have hηB : η * B ≤ A * ε / 2 := by
-    rw [hη_def, div_mul_eq_mul_div, div_le_div_iff₀ (by positivity) two_pos]
-    nlinarith [mul_pos hA hε]
-  refine ⟨η, hη, fun C e he => ?_⟩
+    have : A * ε / (2 * (B + 1)) * B ≤ A * ε / 2 := by
+      rw [div_mul_eq_mul_div, div_le_div_iff₀ (by positivity) two_pos]
+      nlinarith [mul_pos hA hε]
+    exact (mul_le_mul_of_nonneg_right hηle hB).trans this
   -- Each lower-order term is eventually at most `δ n`, with `δ = A ε / 10`.
   set δ := A * ε / 10 with hδ_def
   have hδ : 0 < δ := by positivity
   have hlog := isLittleO_log_affine (α := κ * (2 + 1 / A)) (β := κ + 1) (by positivity)
     (by linarith)
   filter_upwards [he.bound (show 0 < δ / (A + η + 1) by positivity),
-    hlog.bound (show 0 < δ / ((A + η + 1) * (κ + 1)) by positivity), eventually_ge_atTop 1,
+    hlog.bound (show 0 < δ / (κ + 1) by positivity), eventually_ge_atTop 1,
     eventually_ge_atTop ⌈(|C| + η * κ) / δ⌉₊] with n hen hlogn hn1 hnC
   intro s v w hs hv hvκ hdemand hsupply
   by_contra! hsn
@@ -108,18 +109,16 @@ theorem eventually_lt_of_demand {A : ℝ} (hA : 0 < A) {κ : ℝ} (hκ : 0 ≤ �
     have : κ * (n + s + 1) ≤ κ * ((2 + 1 / A) * n + 1) :=
       mul_le_mul_of_nonneg_left (by nlinarith) hκ
     linarith
-  -- The logarithmic terms of the demand and of the supply.
-  have hL : (A + η + 1) * (κ * Real.log (v + 1)) ≤ δ * n := by
+  -- The logarithmic term of the demand.
+  have hL : κ * Real.log (v + 1) ≤ δ * n := by
     have hlog1 : Real.log (v + 1) ≤ Real.log (κ * (2 + 1 / A) * n + (κ + 1)) :=
       Real.log_le_log (by linarith) (by linarith)
     have hlog0 : 0 ≤ Real.log (v + 1) := Real.log_nonneg (by linarith)
     have h1 := (hlog1.trans (le_abs_self _)).trans hlogn
-    have h2 := mul_le_mul_of_nonneg_left h1 (by positivity : 0 ≤ (A + η + 1) * (κ + 1))
-    rw [← mul_assoc, mul_div_cancel₀ _ (by positivity : (A + η + 1) * (κ + 1) ≠ 0)] at h2
-    have h3 : (A + η + 1) * (κ * Real.log (v + 1)) ≤ (A + η + 1) * (κ + 1) * Real.log (v + 1) := by
-      rw [← mul_assoc]
-      exact mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left (by linarith) (by positivity))
-        hlog0
+    have h2 := mul_le_mul_of_nonneg_left h1 (by linarith : 0 ≤ κ + 1)
+    rw [← mul_assoc, mul_div_cancel₀ _ (by linarith : κ + 1 ≠ 0)] at h2
+    have h3 : κ * Real.log (v + 1) ≤ (κ + 1) * Real.log (v + 1) :=
+      mul_le_mul_of_nonneg_right (by linarith) hlog0
     linarith
   -- The error term of the problem.
   have hE : (A + η + 1) * |e n| ≤ δ * n := by
@@ -145,10 +144,7 @@ theorem eventually_lt_of_demand {A : ℝ} (hA : 0 < A) {κ : ℝ} (hκ : 0 ≤ �
     have := mul_nonneg (by linarith : 0 ≤ A + η + 1) (sub_nonneg.mpr (le_abs_self (e n)))
     linarith [show (A + η + 1) * (|e n| - e n) = (A + η + 1) * |e n| - ((A + η) * e n + e n)
       by ring]
-  have hexpand : (A + η) * (s - n + e n + κ * Real.log (v + 1)) =
-      (A + η) * (s - n) + (A + η) * e n + (A + η) * (κ * Real.log (v + 1)) := by ring
-  have hL' : (A + η + 1) * (κ * Real.log (v + 1)) =
-      (A + η) * (κ * Real.log (v + 1)) + κ * Real.log (v + 1) := by ring
+  have hexpand : (A + η) * (s - n + e n) = (A + η) * (s - n) + (A + η) * e n := by ring
   have hBn : η * B * n = η / A * n + η * κ * (2 + 1 / A) * n := by rw [hB_def]; ring
   have hηBn : η * B * n ≤ A * ε / 2 * n := mul_le_mul_of_nonneg_right hηB (by linarith)
   have hδn : δ * n = A * ε * n / 10 := by rw [hδ_def]; ring

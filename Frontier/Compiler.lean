@@ -86,6 +86,9 @@ open Cslib.Circuits Set
 
 variable {σ : Signature} {n s : ℕ} {O : Type*} [Finite O] (p : Program σ n s) (out : O → Wire n s)
 
+-- Every network in this file has finitely many outputs, though a few lemmas do not need it.
+set_option linter.unusedSectionVars false
+
 /-! ### Signals, consumers, and junctions -/
 
 /-- A wire is *reachable* when it is an output or an argument of a reachable gate. -/
@@ -213,7 +216,6 @@ def feeder (j : Junction p out) : Vertex p out :=
   if j.2.val = 0 then .signal j.1
   else .junction ⟨j.1, ⟨j.2.val - 1, lt_of_le_of_lt (Nat.sub_le _ _) j.2.isLt⟩⟩
 
-omit [Finite O] in
 /-- No junction feeds itself. -/
 theorem feeder_ne_junction_self (j : Junction p out) : feeder j ≠ .junction j := by
   obtain ⟨w, k⟩ := j
@@ -281,7 +283,6 @@ theorem eq_head_of_src_eq_signal {e : Edge p out} {w : Signal p out}
     exact Fin.ext hk
   · cases h
 
-omit [Finite O] in
 /-- An edge leaving a junction carries the junction's signal. -/
 theorem signal_of_src_eq_junction {e : Edge p out} {j : Junction p out}
     (h : src e = .junction j) : e.signal = j.1 := by
@@ -314,14 +315,12 @@ open Classical in
 noncomputable def site (i : Fin n) : Option (Vertex p out) :=
   if h : Reach p out (.input i) then some (.signal ⟨.input i, h⟩) else none
 
-omit [Finite O] in
 theorem site_eq_some {i : Fin n} {v : Vertex p out} (h : site i = some v) :
     ∃ hi : Reach p out (.input i), v = .signal ⟨.input i, hi⟩ := by
   unfold site at h
   split_ifs at h with hi
   exact ⟨hi, (Option.some_injective _ h).symm⟩
 
-omit [Finite O] in
 theorem site_of_reach {i : Fin n} (hi : Reach p out (.input i)) :
     site i = some (.signal ⟨.input i, hi⟩ : Vertex p out) := by
   simp [site, hi]
@@ -492,7 +491,6 @@ theorem loopless : (network p out I Acc).Loopless := by
 noncomputable def slotEdge (t : Slot p out) : Edge p out :=
   .deliver ((junctionEquiv p out).symm (.inl t))
 
-omit [Finite O] in
 /-- A gate has at most `r` slots when the fan-in is at most `r`. -/
 theorem ncard_slots_le {r : ℕ} (hfan : p.FanInAtMost r) (w : Wire n s) :
     {t : Slot p out | Wire.gate t.1.1 = w}.ncard ≤ r := by
@@ -519,7 +517,6 @@ theorem exists_slot_of_tgt_eq_signal {e : Edge p out} {w : Signal p out}
       exact ⟨t, congrArg Subtype.val h, by simp [slotEdge, ← hj]⟩
     · cases h
 
-omit [Finite O] in
 /-- Two junctions fed by the same junction are equal. -/
 theorem eq_of_feeder_eq_junction {j₁ j₂ j : Junction p out} (h₁ : feeder j₁ = .junction j)
     (h₂ : feeder j₂ = .junction j) : j₁ = j₂ := by
@@ -629,7 +626,6 @@ theorem reflTransGen_arg {g : Fin s} (hg : Reach p out (.gate g))
   rw [fst_junctionEquiv_symm] at hj
   exact (Multigraph.reflTransGen_adj_symm hj).tail ⟨argEdge hg a, Or.inl ⟨rfl, tgt_argEdge hg a⟩⟩
 
-omit [Finite O] in
 /-- A wire upstream of an output is reachable. -/
 theorem reach_of_upstream {o : O} {w : Wire n s} (h : p.Upstream (out o) w) : Reach p out w := by
   induction h with
@@ -646,7 +642,6 @@ theorem reflTransGen_of_upstream {o : O} {w : Wire n s} (h : p.Upstream (out o) 
     have hg' := reach_of_upstream hg
     exact (reflTransGen_arg I Acc hg' a).trans (ih hg')
 
-omit [Finite O] in
 /-- Every reachable wire is upstream of some output. -/
 theorem exists_upstream {w : Wire n s} (hw : Reach p out w) : ∃ o, p.Upstream (out o) w := by
   induction hw with
@@ -726,7 +721,6 @@ variable (p out) in
 abbrev InnerGate : Type :=
   {g : Fin s // Reach p out (.gate g) ∧ σ.Arity (p.lines g).op ≠ 0}
 
-omit [Finite O] in
 theorem card_innerGate_le : Nat.card (InnerGate p out) ≤ p.innerGates.card := by
   calc Nat.card (InnerGate p out)
       ≤ Nat.card p.innerGates :=
@@ -734,7 +728,6 @@ theorem card_innerGate_le : Nat.card (InnerGate p out) ≤ p.innerGates.card := 
           fun _ _ h => Subtype.ext (by simpa using h)
     _ = p.innerGates.card := Nat.card_eq_finsetCard _
 
-omit [Finite O] in
 /-- There are at most `r` slots per reachable inner gate; constant gates have none. -/
 theorem card_slot_le {r : ℕ} (hfan : p.FanInAtMost r) :
     Nat.card (Slot p out) ≤ r * Nat.card (InnerGate p out) := by
@@ -751,7 +744,6 @@ theorem card_slot_le {r : ℕ} (hfan : p.FanInAtMost r) :
     _ = r * Nat.card (InnerGate p out) := by
         rw [Nat.card_prod, Nat.card_eq_fintype_card (α := Fin r), Fintype.card_fin, mul_comm]
 
-omit [Finite O] in
 /-- There are at least as many reachable gates as reachable inner gates. -/
 theorem card_innerGate_le_card_gate :
     Nat.card (InnerGate p out) ≤ Nat.card {g : Fin s // Reach p out (.gate g)} :=
