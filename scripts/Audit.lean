@@ -18,6 +18,18 @@ Run after `lake build --wfail` with `lake env lean scripts/Audit.lean`.
 #guard_msgs in
 #print axioms Frontier.lowerBound_sumsetDisperser
 
+/-- info: 'Frontier.SumsetDisperser.sumsetFree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.SumsetDisperser.sumsetFree
+
+/-- info: 'Frontier.AdditiveSweep.ncard_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.AdditiveSweep.ncard_le
+
+/-- info: 'Frontier.AdditiveSweep.transitionCount_le_codes' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.AdditiveSweep.transitionCount_le_codes
+
 /-- info: 'Frontier.lowerBound_linear' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Frontier.lowerBound_linear

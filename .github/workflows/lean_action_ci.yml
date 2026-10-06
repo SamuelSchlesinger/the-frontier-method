@@ -23,3 +23,5 @@ jobs:
         run: python scripts/check_communication.py
       - name: Check restriction and affine preparation experiments
         run: python research/communication/restrictions.py
+      - name: Check additive syndrome generators
+        run: python research/communication/syndrome_generator.py

@@ -39,6 +39,32 @@ representation, does not establish that theorem.
 
 Source: Navin Kashyap, [Matroid Pathwidth and Code Trellis Complexity](https://arxiv.org/abs/0705.1384).
 
+## Additive generators and the target of five
+
+`AdditiveSweep.ncard_le` proves `|S| <= (K-1)^2 D` for additive splicing data
+over a finite monoid when `S` is `K`-sumset-free, `K>=2`, and `|S|>=K`.
+`SumsetDisperser.sumsetFree` supplies the hard fibers. Labels can have overlapping
+supports, and no uniqueness of accepting paths is required.
+`AdditiveSweep.transitionCount_le_codes` allows any finite encoding determining
+the complete transition.
+
+The [affine-interface compiler](research/communication/additive.md) emits vectors
+in the original input space while enforcing all affine constraints in one
+syndrome register. It charges the exact feasible-syndrome dimension at each cut,
+together with the suffix boundary in the same layout. This compiler is a paper
+proof with finite executable checks; it is not an end-to-end Lean circuit theorem.
+The global-syndrome version gives `4.781248...n-o(n)` for circuits with a cubic
+edge-parity prefix and arbitrary nonlinear continuation, conditional on computing
+the hard family. This architecture bound leaves the unrestricted coefficient unchanged.
+
+For the exact five target, [paid restrictions](research/communication/restrictions.md)
+can preserve the potential `5d-s` using just one branch. What remains is a
+restriction-or-terminal theorem covering every residual circuit, with terminal
+additive transition exponent at most `(s-d)/4+o(d)`. Separately small graph and
+code widths do not suffice: their common ordering must meet the budget.
+The note credits the Minkowski-circuit and code-trellis antecedents and does not
+claim a weighted additive-peeling theorem or historical priority.
+
 ## Pruning
 
 `Sweep.abs_sumOn_le_pruned` and `agreement_le_pruned_sweeps` keep inputs whose complete
@@ -165,6 +191,6 @@ but their universal congestion bounds remain to be proved.
 ## Verification
 
 Run `lake build --wfail` and `lake env lean scripts/Audit.lean`. The audit contains exact
-standard-axiom guards for forty-four principal endpoints. The paper includes proofs and
+standard-axiom guards for the principal endpoints. The paper includes proofs and
 a declaration index for the added results, with external constructions and unformalized
 algorithmic consequences identified separately.

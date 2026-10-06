@@ -16,6 +16,7 @@ public import Frontier.LowerBound
 public import Frontier.Layouts
 public import Frontier.Main
 public import Frontier.Extractor
+public import Frontier.AdditiveSweep
 public import Frontier.Linear.Main
 public import Frontier.Components
 public import Frontier.Ledger.Main
@@ -40,6 +41,9 @@ A circuit lower bound from graph layouts, in independent pieces:
   lemma. `Frontier.Extractor`: sumset dispersers have rectangle-free fibers.
 * `Frontier.Sweep`: abstract splicing messages and the frontier counting lemma
   `Frontier.Sweep.ncard_le`. No graphs or circuits appear.
+* `Frontier.AdditiveSweep`: sumset-free sets require large additive generators;
+  emitted vectors can overlap in their coordinate supports. Finite transition codes
+  can charge one determined syndrome update rather than two independent states.
 * `Frontier.Multigraph` and `Frontier.Network`: layouts, the layout hypothesis
   `Frontier.LayoutBound`, constraint networks, the separator lemma, and the sweep of a network
   along a layout.

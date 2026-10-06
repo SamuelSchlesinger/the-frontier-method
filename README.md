@@ -130,6 +130,12 @@ missing supply bound and a shared-selector circuit that defeats a marginal-entro
 The [restriction investigation](research/communication/restrictions.md) derives adaptive
 branch accounting, gives two paid local reductions, and checks an affine compression of a
 low-fanout obstruction. It leaves the universal structural coverage theorem open.
+The [additive continuation](research/communication/additive.md) proves threshold demand
+for generators that emit overlapping vectors. Its affine-interface compiler retains every
+code constraint in one syndrome state and can charge the exact trellis rank at each cut.
+The abstract demand and transition-code interface are checked in Lean; the compiler is a
+paper proof with finite checks. Its `4.7812…` bound for cubic parity prefixes with arbitrary
+nonlinear continuations is restricted to that architecture, not a universal improvement.
 That still requires a capacity supply theorem or a uniform quantitative Gaussian gain bound.
 The paper gives complete proofs and credits the coding, communication-complexity, and
 tensor-network precedents; [RESEARCH.md](RESEARCH.md) records the remaining proof obligations.
@@ -141,6 +147,7 @@ tensor-network precedents; [RESEARCH.md](RESEARCH.md) records the remaining proo
 | `Frontier/Rectangle.lean` | Rectangle-free sets and the support lemma |
 | `Frontier/Extractor.lean` | Sumset dispersers have rectangle-free fibers |
 | `Frontier/Sweep.lean` | Abstract splicing messages and the frontier counting lemma |
+| `Frontier/AdditiveSweep.lean` | Sumset-free demand for additive generators and finite transition codes |
 | `Frontier/Decomposable.lean` | Smooth decomposable DAGs, certificate substitution, and threshold counting |
 | `Frontier/Multigraph.lean` | Multigraphs, layouts, cycle rank, and the layout hypothesis |
 | `Frontier/Network.lean` | Constraint networks, the separator lemma, and the frontier sweep along a layout, from which every sweep in the development is built |
@@ -192,9 +199,10 @@ lake env lean scripts/Audit.lean
 python3 scripts/check_algorithms.py
 python3 scripts/check_communication.py
 python3 research/communication/restrictions.py
+python3 research/communication/syndrome_generator.py
 ```
 
-The audit checks the exact axiom lists of fifty-two principal results and fails if any list changes.
+The audit checks the exact axiom lists of fifty-five principal results and fails if any list changes.
 It also runs in CI. The paper's theorem-to-declaration index identifies the checked statements;
 the audit does not verify the external extractor construction or the algorithmic claims.
 The Python script independently compares raw-edge, signal-state, and ledger counting with
@@ -210,6 +218,9 @@ savings do not establish a universal improvement.
 The restriction script checks local normalization against exhaustive truth tables,
 fractional branch factors, and affine changes of basis. Its finite obstruction concerns
 the implemented local rules, not minimum circuit size.
+The syndrome-generator script compares generated supports with direct evaluation in both
+the global and pruned syndrome models, checks graphic rank profiles, and detects the false
+acceptances created by dropping the affine constraints.
 
 ## License
 

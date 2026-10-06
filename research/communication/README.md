@@ -75,6 +75,10 @@ better coefficients for biased independent sources and for restriction-tree
 accounting, at the expense of the exponential remainder's rate. The
 [restriction continuation](restrictions.md) derives that accounting and tests
 concrete structural reductions, without claiming a universal improvement.
+The [additive continuation](additive.md) supplies a different exact-demand interface:
+sumset hardness permits overlapping vector labels. A coded affine prefix can then be
+checked by one syndrome, with a layout-dependent rank cost. Its remaining target is a
+common ordering that makes the suffix boundary and syndrome cheap simultaneously.
 
 ## Where amortization enters
 

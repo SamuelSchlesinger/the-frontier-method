@@ -236,6 +236,14 @@ purely affine immediate successors, so neither the local restriction rules nor
 the small-ledger corollary alone resolves them. This is the next structural case
 to test, keeping the arbitrary nonlinear continuation in the model.
 
+The [additive continuation](additive.md) now treats this case without deleting
+its linear constraints: one syndrome register gives
+`s >= L_constant*n+ell-(n-r)-(L_constant-2)c-o(n)`.
+For a cubic prefix this yields `4.781248...n-o(n)`; for a quartic prefix it does
+not improve the old universal bound. A sharper compiler charges the exact
+syndrome rank at each cut. The missing step is a simultaneous suffix/code layout
+bound, followed by a coverage theorem for general residual circuits.
+
 Run `python3 research/communication/restrictions.py` for full truth-table checks
 of normalization and restrictions, the safe local patterns, the fractional branch
 factors, and the reproducible low-fanout example. These finite checks are separate
