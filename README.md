@@ -113,6 +113,9 @@ The new boundary results are checked in Lean as well:
   form `im L ∩ im R`, with the exact matroid-connectivity dimension.
 * Pruning a coherent sweep to selected transitions preserves splicing. Discarded uniform
   probability mass `δ` contributes at most `δ/2` to the agreement bound.
+* Optimizing the pruning cost caps each transition's charge by the mass of its inputs.
+  Square-root moments give a Renyi-entropy criterion for average-case hardness; conditional
+  prefix potentials bound those moments without assuming independent signals.
 * A binary tree of regions has a weighted frontier bound with residual factor `(K - 1)^3`.
   Its network realization charges the **union** of the parent and two child boundaries,
   together with locally read inputs. It assumes all inputs are read and unique satisfying traces.
@@ -120,6 +123,8 @@ The new boundary results are checked in Lean as well:
   increase any threshold cut. Local gains add exactly.
 
 These refine the method without establishing a better universal `4.5625…` coefficient.
+The [communication investigation](research/communication/README.md) records the exact
+missing supply bound and a shared-selector circuit that defeats a marginal-entropy shortcut.
 That still requires a capacity supply theorem or a uniform quantitative Gaussian gain bound.
 The paper gives complete proofs and credits the coding, communication-complexity, and
 tensor-network precedents; [RESEARCH.md](RESEARCH.md) records the remaining proof obligations.
@@ -144,6 +149,7 @@ tensor-network precedents; [RESEARCH.md](RESEARCH.md) records the remaining proo
 | `Frontier/Boundary/Fiber.lean`, `Frontier/Boundary/MDS.lean` | Mixed-observation fiber demand and nonlinear MDS lower bounds |
 | `Frontier/AverageCase/*.lean` | Coherent weighted peeling, circuit agreement bounds, and sumset bias |
 | `Frontier/AverageCase/Pruning.lean` | Transition deletion with a weighted tail budget |
+| `Frontier/AverageCase/Capacity.lean`, `Frontier/Boundary/Communication.lean` | Capped transition masses, square-root agreement bounds, and conditional prefix potentials |
 | `Frontier/Tree.lean`, `Frontier/Tree/Network.lean` | Weighted tree frontiers and joint merge capacity |
 | `Frontier/Layouts/General.lean`, `Frontier/Layouts/Local.lean` | Every fixed degree; independent local cut improvements |
 | `Frontier/Layouts/Vertex*.lean`, `Frontier/Layouts/Quartic*.lean` | General-degree Gaussian vertex ordering; degree-four compression and coefficient `2/5` |
@@ -179,9 +185,10 @@ lake exe cache get
 lake build --wfail
 lake env lean scripts/Audit.lean
 python3 scripts/check_algorithms.py
+python3 scripts/check_communication.py
 ```
 
-The audit checks the exact axiom lists of forty-four principal results and fails if any list changes.
+The audit checks the exact axiom lists of forty-nine principal results and fails if any list changes.
 It also runs in CI. The paper's theorem-to-declaration index identifies the checked statements;
 the audit does not verify the external extractor construction or the algorithmic claims.
 The Python script independently compares raw-edge, signal-state, and ledger counting with
@@ -191,6 +198,9 @@ layers, including asymmetric thresholds, nonuniform weights, and shared error bu
 It includes repeated arguments, constants, unused inputs, noncancellative monoids, and arbitrary
 vertex orders. These finite checks exercise correctness; they do not prove the asymptotic
 bounds or implement the full Gaussian layout construction.
+The communication script checks capped costs on actual compiled traces, exhaustive codebook
+choices, conditional moment identities, and the shared-selector counterexample. Its local
+savings do not establish a universal improvement.
 
 ## License
 

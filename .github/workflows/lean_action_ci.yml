@@ -19,3 +19,5 @@ jobs:
           python-version: '3.12'
       - name: Check reference counting procedures
         run: python scripts/check_algorithms.py
+      - name: Check communication capacity experiments
+        run: python scripts/check_communication.py

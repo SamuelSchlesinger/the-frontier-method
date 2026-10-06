@@ -24,6 +24,7 @@ public import Frontier.Signals
 public import Frontier.AverageCase.Extractor
 public import Frontier.Boundary.Code
 public import Frontier.AverageCase.Pruning
+public import Frontier.Boundary.Communication
 public import Frontier.Tree.Network
 public import Frontier.Layouts.Local
 public import Frontier.Decomposable
@@ -67,6 +68,8 @@ A circuit lower bound from graph layouts, in independent pieces:
   overlapping certificates. `Frontier.AverageCase.Pruning`: transition deletion with an
   explicit tail budget. `Frontier.Tree`: weighted peeling on trees of regions, with joint
   merge capacity.
+  `Frontier.AverageCase.Capacity`: capped transition masses and square-root moments.
+  `Frontier.Boundary.Communication`: conditional prefix potentials for dependent encodings.
 
 The main theorem is `Frontier.lowerBound`: under `LayoutBound (r + 1) A`, circuits of fan-in at
 most `r` deciding dense rectangle-free sets satisfy `(r - 1) s > (1 + 1/A - ε) n`. For fan-in

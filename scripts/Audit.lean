@@ -98,6 +98,26 @@ Run after `lake build --wfail` with `lake env lean scripts/Audit.lean`.
 #guard_msgs in
 #print axioms Frontier.agreement_le_pruned_sweeps
 
+/-- info: 'Frontier.Sweep.abs_sumOn_le_capped' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Sweep.abs_sumOn_le_capped
+
+/-- info: 'Frontier.Sweep.cappedCapacity_le_root' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Sweep.cappedCapacity_le_root
+
+/-- info: 'Frontier.agreement_le_capped_sweeps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.agreement_le_capped_sweeps
+
+/-- info: 'Frontier.agreement_le_root_sweeps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.agreement_le_root_sweeps
+
+/-- info: 'Frontier.Communication.rootPotential_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Communication.rootPotential_le
+
 /-- info: 'Frontier.Network.abs_sumOn_accepted_le_tree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Frontier.Network.abs_sumOn_accepted_le_tree

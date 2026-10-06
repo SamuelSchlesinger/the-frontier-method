@@ -497,9 +497,10 @@ lake exe cache get
 lake build --wfail
 lake env lean scripts/Audit.lean
 python3 scripts/check_algorithms.py
+python3 scripts/check_communication.py
 ./scripts/build-paper.sh
 \end{verbatim}
-The audit checks the exact axiom lists of forty-four principal results, including weighted
+The audit checks the exact axiom lists of forty-nine principal results, including weighted
 peeling, the average-case endpoints, and the new capacity and layout results; a changed
 list fails the check.
 The Python script checks the reference edge, signal, and ledger counting
@@ -507,7 +508,10 @@ procedures against exhaustive evaluation on small circuits, checks local conditi
 against full enumeration, and checks rectangle peeling and threshold charges in an unambiguous
 program with guess layers, asymmetric thresholds, and nonuniform weights. These are finite
 correctness checks, not proofs of the asymptotic
-running times. \Cref{sec:design} records the design decisions behind the formal statements,
+running times. The communication script additionally checks capped pruning on compiled
+traces, exhaustive codebook optimization, dependent conditional moments, and the
+shared-selector obstruction of \cref{sec:communication-capacity}.
+\Cref{sec:design} records the design decisions behind the formal statements,
 and \cref{app:index} is an index from the paper to the code.
 
 \subsection{Organization}
@@ -3018,8 +3022,8 @@ Finally, fixed-monoid aggregate gates have $\log\card M=O(k)$ by \cref{prop:aggr
 \section{Refining boundary capacity}
 \label{sec:boundary}
 
-The preceding bounds count boundary values. This section gives four checked ways to refine
-that count or the geometry of the decomposition, followed by a checked local change to
+The preceding bounds count boundary values. This section refines
+that count using codes, distributions, and the geometry of the decomposition, followed by a checked local change to
 Gaussian vertex keys. These statements do not improve the universal coefficient $L$ on
 their own: a numerical improvement also requires a bound on the resulting capacities or
 on the gain of the new keys.
@@ -3167,6 +3171,136 @@ errors before converting correlation to agreement
 including their final unused-input step (\lean{Frontier.Network.sweep_revealed_mono}).
 A universal gain would require small retained codebooks for every small circuit, together
 with a suitably small discarded mass; the bound does not presume such a concentration theorem.
+
+\subsection{Distribution-sensitive transition capacity}
+\label{sec:communication-capacity}
+
+Pruning can be optimized separately for each transition. This gives a direct connection
+to one-shot source coding: the relevant distribution is that of a complete transition,
+including both adjacent messages and newly read inputs. Smooth source-coding quantities,
+rather than average description length alone, control the size of a codebook with small
+error; see Renner and Wolf~\cite{RennerWolf2004}. The statements below require no
+independence between signals or between successive transitions.
+
+\begin{proposition}[Capped transition masses]
+\label{prop:capped-capacity}
+Let $P_0,P_1$ be coherent sweeps with nested revealed sets and positive lengths for the
+two output classes of a Boolean predictor $g$ on $\{0,1\}^n$. Suppose the target $f$ has
+rectangle bias at most $2b$ at threshold $K\ge2$. Put $N=2^n$ and
+$\lambda=(K-1)^2/N$. For each output $a$, step $t$, and used transition $e$, put
+\[
+ p_{a,t}(e)=\Pr_{X\sim U_n}[g(X)=a,\ \tau^{a}_t(X)=e].
+\]
+These are unconditional masses, not probabilities conditioned on $g(X)=a$. Then
+\begin{equation}
+\label{eq:capped-agreement}
+ \Pr[g(X)=f(X)]\le\frac12+b+
+   \frac12\sum_{a,t,e}\min\{\lambda,p_{a,t}(e)\}.
+\end{equation}
+More generally, under the hypotheses of \cref{prop:weighted-sweep}, with coherence and
+nested revealed sets, put $c_*=a(K_L-1)(K_R-1)$ and
+$m_t(e)=\sum_{x\in S:\tau_t(x)=e}|w(x)|$. The residual in that proposition may be
+replaced by $\sum_{t,e}\min\{c_*,m_t(e)\}$.
+\leanref{Frontier.Sweep.abs_sumOn_le_capped, Frontier.agreement_le_capped_sweeps}
+\end{proposition}
+
+\begin{proof}
+Keep precisely those transitions with $p_{a,t}(e)\ge\lambda$. In
+\cref{eq:pruned-agreement}, each retained transition costs $\lambda/2$. The discarded
+fraction is at most the sum of the masses of deleted transitions, by the union bound.
+Thus every transition contributes half the smaller of its description allowance and its
+mass. The same argument with the absolute weights proves the general statement. This
+choice minimizes the sum of retained-transition cost and the individual deletion tails;
+it need not minimize the actual discarded union, whose events may overlap.
+\end{proof}
+
+Suppose the two sweeps have the same length $T$, as in the circuit construction. The joint
+label $Z_t=(g(X),\tau_t^{g(X)}(X))$ has probability mass function $p_{a,t}(e)$. Write
+\[
+ H_{1/2}(Z_t)=2\log_2\sum_{a,e}\sqrt{p_{a,t}(e)}
+\]
+for its R\'enyi entropy of order $1/2$. Since
+$\min\{\lambda,p\}\le\sqrt{\lambda p}$, \cref{eq:capped-agreement} gives
+\begin{equation}
+\label{eq:renyi-agreement}
+ \Pr[g(X)=f(X)]\le\frac12+b+
+   \frac{K-1}{2}\sum_{t=0}^{T-1}2^{-(n-H_{1/2}(Z_t))/2}.
+\end{equation}
+The square-root moment inequality and the unnormalized prediction bound are checked as
+\lean{Frontier.Sweep.cappedCapacity_le_root} and
+\lean{Frontier.agreement_le_root_sweeps}. Consequently, when $T=n^{O(1)}$ and
+$\log K=o(n)$, a bound $H_{1/2}(Z_t)\le(1-\gamma)n$ at every step suffices for
+agreement at most $1/2+b+2^{-\Omega_\gamma(n)}$.
+
+One may upper-bound this moment using any code that determines the complete joint label
+$Z_t$: merging fibers cannot increase their square-root sum, since
+$\sqrt{u+v}\le\sqrt u+\sqrt v$. If an encoding omits the output bit, appending it
+increases $H_{1/2}$ by at most one, by
+$\sqrt{p_0}+\sqrt{p_1}\le\sqrt{2(p_0+p_1)}$. This permits the underlying signal distribution
+to be analyzed before conditioning on the output class.
+
+\begin{samepage}
+\begin{proposition}[Conditional prefix potentials]
+\label{prop:prefix-potential}
+Expose the coordinates of a transition encoding in order. Let $p(v)$ be the probability
+of an encoding prefix $v$, with one root of mass one and leaves the complete codewords.
+Assign a nonnegative potential $V(v)$, at least one at every leaf, such that
+\[
+ \sum_{u\text{ child of }v}\sqrt{p(u)}V(u)\le\sqrt{p(v)}V(v).
+\]
+Then $\sum_z\sqrt{\Pr[Z=z]}\le V(\mathrm{root})$, so
+$H_{1/2}(Z)\le2\log_2 V(\mathrm{root})$.
+\leanref{Frontier.Communication.rootPotential_le}
+\end{proposition}
+\end{samepage}
+
+\begin{proof}
+Sum the local inequalities over each depth. Every child has one parent, so the weighted
+square-root sum does not increase with depth. At the leaves it bounds the square-root
+moment, while at the root it is $V(\mathrm{root})$. Lean checks the finite telescoping
+inequality; the entropy formulation is its logarithmic restatement.
+\end{proof}
+
+For example, at a positive-mass binary prefix put
+$c(v)=\sqrt{q_v}+\sqrt{1-q_v}$, where $q_v$ is the actual conditional probability of the
+next bit. Set $V(v)=c(v)\max_u V(u)$, maximizing over positive-mass children, with leaf
+potential one. This satisfies the local
+inequality, and $V(\mathrm{root})$ is the maximum product of the $c(v)$ along a supported
+path. Thus credits may be amortized along encoding paths, including dependent signals.
+A fair bit contributes one to twice the logarithm, a deterministic bit contributes zero,
+and a bit of conditional probability $1/4$ or $3/4$ contributes
+\[
+ 2\log_2\frac{1+\sqrt3}{2}=0.8999686\ldots.
+\]
+These are conditional probabilities after the previously encoded values have been fixed;
+marginal bias does not provide the same certificate.
+
+Indeed, take independent uniform bits $z,x_1,\ldots,x_k$ and the $k$ gates
+$y_i=z\wedge x_i$. Every $y_i$ has marginal probability $1/4$ of being one, but
+\[
+ \Pr[Y=0^k]=\frac12+2^{-k-1},\qquad
+ \Pr[Y=y]=2^{-k-1}\quad(y\ne0^k).
+\]
+The Shannon entropy is $k/2+1-o(1)$, whereas any set of output patterns carrying mass
+at least $1-\delta$, for $\delta<1/2$, has at least $(1-2\delta)2^k$ elements. In particular,
+inverse-polynomial error permits only an $o(1)$-bit reduction from $k$ in the logarithm of
+the support size. Also $H_{1/2}(Y)=k-1+o(1)$, so adding the marginal R\'enyi entropies
+would be unsound. This example obstructs that local shortcut; it does not obstruct choosing
+a different layout or simplifying the circuit.
+
+\paragraph{What would improve the circuit constant.}
+A universal construction of polynomial-length coherent sweeps giving, for circuits
+with $m=n-o(n)$ reachable inputs,
+\[
+ \max_t H_{1/2}(Z_t)\le B(s-m)+o(n),\qquad B<A,
+\]
+would extend the average-case threshold to $(1+1/B-\varepsilon)n$, with the same
+extractor error and an exponentially small remainder. The many-unread-input case is
+already covered in \cref{thm:average-case}. For example, $B=1/4$ would give threshold
+$(5-\varepsilon)n$. No such universal moment bound is proved here. The prefix potentials
+concern the encoding of one transition, not successive graph cuts, and do not by
+themselves bound their cost in terms of circuit size. Efficient exact counting would also
+require an efficiently constructible representation preserving exact counts.
 
 \subsection{A tree of regions}
 
@@ -3613,6 +3747,9 @@ Prop.~\ref{prop:syndrome} & \lean{LinearBoundary.completions_eq_iff}, \lean{Line
 \multicolumn{2}{l}{\emph{Pruning} (\lean{AverageCase/Pruning.lean})} \\*
 Prop.~\ref{prop:pruning} & \lean{Sweep.abs_sumOn_le_pruned}, \lean{Sweep.sumOn_discarded_le} \\
 Eq.~\eqref{eq:pruned-agreement} & \lean{agreement_le_pruned_sweeps} \\
+Prop.~\ref{prop:capped-capacity} & \lean{Sweep.abs_sumOn_le_capped}, \lean{agreement_le_capped_sweeps} \\
+Eq.~\eqref{eq:renyi-agreement}, moment form & \lean{Sweep.cappedCapacity_le_root}, \lean{agreement_le_root_sweeps} \\
+Prop.~\ref{prop:prefix-potential} & \lean{Communication.rootPotential_le} \\
 \multicolumn{2}{l}{\emph{Tree frontiers} (\lean{Tree.lean}, \lean{Tree/Network.lean})} \\*
 Thm.~\ref{thm:tree-frontier} & \lean{TreeFrontier.abs_sumOn_le_of_budget} \\
 Eq.~\eqref{eq:tree-network} & \lean{Network.abs_sumOn_accepted_le_tree} \\
