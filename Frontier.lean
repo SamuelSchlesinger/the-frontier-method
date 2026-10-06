@@ -24,6 +24,7 @@ public import Frontier.Nondeterministic
 public import Frontier.Signals
 public import Frontier.AverageCase.Extractor
 public import Frontier.Boundary.Code
+public import Frontier.Boundary.Joint
 public import Frontier.AverageCase.Pruning
 public import Frontier.Boundary.Communication
 public import Frontier.Tree.Network
@@ -68,6 +69,8 @@ A circuit lower bound from graph layouts, in independent pieces:
   Polynomially small sumset bias gives polynomially small agreement advantage.
 * `Frontier.Boundary`: hypergraph signal boundaries, exact linear syndrome states, and
   transition codes; mixed input-output fiber demand and nonlinear MDS lower bounds.
+  `Frontier.Boundary.Joint`: joint ranks of shared linear information and visible
+  observations, avoiding independent charges for overlapping information.
   `Frontier.Decomposable`: threshold counting for smooth union/product DAGs with
   overlapping certificates. `Frontier.AverageCase.Pruning`: transition deletion with an
   explicit tail budget. `Frontier.Tree`: weighted peeling on trees of regions, with joint

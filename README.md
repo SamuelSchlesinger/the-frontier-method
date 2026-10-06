@@ -136,6 +136,10 @@ code constraint in one syndrome state and can charge the exact trellis rank at e
 The abstract demand and transition-code interface are checked in Lean; the compiler is a
 paper proof with finite checks. Its `4.7812…` bound for cubic parity prefixes with arbitrary
 nonlinear continuations is restricted to that architecture, not a universal improvement.
+Joint encoding further avoids charging visible interface values separately from syndrome
+information they already determine. The underlying subspace/rank identity is checked in
+`Frontier.LinearBoundary.finrank_joint`; the compiler instantiation remains a paper proof
+with finite checks, described in the [joint-code note](research/communication/joint.md).
 That still requires a capacity supply theorem or a uniform quantitative Gaussian gain bound.
 The paper gives complete proofs and credits the coding, communication-complexity, and
 tensor-network precedents; [RESEARCH.md](RESEARCH.md) records the remaining proof obligations.
@@ -158,6 +162,7 @@ tensor-network precedents; [RESEARCH.md](RESEARCH.md) records the remaining proo
 | `Frontier/Projection.lean`, `Frontier/Nondeterministic.lean` | Existential projection and the same lower bounds for verifiers |
 | `Frontier/Signals.lean` | Frontier capacity measured by distinct signals |
 | `Frontier/Boundary/*.lean` | Hypergraph cuts, exact linear syndrome states, transition codes |
+| `Frontier/Boundary/Joint.lean` | Joint rank of visible observations and shared linear information |
 | `Frontier/Boundary/Fiber.lean`, `Frontier/Boundary/MDS.lean` | Mixed-observation fiber demand and nonlinear MDS lower bounds |
 | `Frontier/AverageCase/*.lean` | Coherent weighted peeling, circuit agreement bounds, and sumset bias |
 | `Frontier/AverageCase/Pruning.lean` | Transition deletion with a weighted tail budget |
@@ -202,7 +207,7 @@ python3 research/communication/restrictions.py
 python3 research/communication/syndrome_generator.py
 ```
 
-The audit checks the exact axiom lists of fifty-five principal results and fails if any list changes.
+The audit checks the exact axiom lists of fifty-six principal results and fails if any list changes.
 It also runs in CI. The paper's theorem-to-declaration index identifies the checked statements;
 the audit does not verify the external extractor construction or the algorithmic claims.
 The Python script independently compares raw-edge, signal-state, and ledger counting with
@@ -218,9 +223,10 @@ savings do not establish a universal improvement.
 The restriction script checks local normalization against exhaustive truth tables,
 fractional branch factors, and affine changes of basis. Its finite obstruction concerns
 the implemented local rules, not minimum circuit size.
-The syndrome-generator script compares generated supports with direct evaluation in both
-the global and pruned syndrome models, checks graphic rank profiles, and detects the false
-acceptances created by dropping the affine constraints.
+The syndrome-generator script compares generated supports with direct evaluation in the
+global, pruned, and joint-code models, checks affine and graphic rank profiles, and detects
+the false acceptances created by dropping the affine constraints. Joint-rank savings are
+measured against an independent signal/syndrome bound, after removing repeated wire copies.
 
 ## License
 

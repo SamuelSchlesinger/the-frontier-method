@@ -79,6 +79,8 @@ The [additive continuation](additive.md) supplies a different exact-demand inter
 sumset hardness permits overlapping vector labels. A coded affine prefix can then be
 checked by one syndrome, with a layout-dependent rank cost. Its remaining target is a
 common ordering that makes the suffix boundary and syndrome cheap simultaneously.
+The [joint-code refinement](joint.md) also removes overlap between visible interface
+signals and the syndrome itself; it gives a smaller target for that common ordering.
 
 ## Where amortization enters
 

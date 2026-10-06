@@ -57,6 +57,15 @@ The global-syndrome version gives `4.781248...n-o(n)` for circuits with a cubic
 edge-parity prefix and arbitrary nonlinear continuation, conditional on computing
 the hard family. This architecture bound leaves the unrestricted coefficient unchanged.
 
+`LinearBoundary.joint_eq` and `finrank_joint` check the subspace identity for
+encoding visible linear observations together with shared information. The
+[joint-code refinement](research/communication/joint.md) applies it to interface
+values and a syndrome, avoiding a second charge for their overlap. Its code and
+graphic-cycle formulas are paper proofs with direct finite checks; the compiler
+instantiation is not claimed as formally verified. The hard graphic-prefix test
+can include one bypassed original input, making it full rank without changing
+the leading constants.
+
 For the exact five target, [paid restrictions](research/communication/restrictions.md)
 can preserve the potential `5d-s` using just one branch. What remains is a
 restriction-or-terminal theorem covering every residual circuit, with terminal

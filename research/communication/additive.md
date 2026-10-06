@@ -139,6 +139,10 @@ compression, which is not assumed in (5).
 Crucially, **the same order determines both terms**. A small suffix cutwidth
 and a small code trellis width obtained in different orders cannot be added.
 
+The [joint-code refinement](joint.md) improves (5) further: visible interface
+values and the syndrome can contain the same information. Their combined rank
+replaces their separate charges, with the code constraints still enforced.
+
 ## A quantitative architecture bound
 
 Assume `s,m=O(n)` and the accepted set is dense and `K`-sumset-free with
@@ -176,6 +180,13 @@ These are conditional bounds on circuit architectures computing an eligible
 target. They neither improve the unrestricted coefficient nor assert that the
 particular explicit extractor factors through these prefixes.
 
+For a test that can represent an arbitrary target, include one original input
+alongside the graph parities. This makes the interface full rank: edge parities
+and the anchor determine every original input. It adds one interface signal,
+no prefix gate, and leaves the leading constants in (7) unchanged. The joint-code
+note uses this anchored version, avoiding dependence on a target's global-flip
+symmetry.
+
 For graphic prefixes, (4) has a useful combinatorial form. If `H_P,H_F` are the
 two spanning subgraphs (including all isolated vertices), then
 
@@ -212,7 +223,8 @@ below `(5-epsilon)d`. Setting the interface to the identity always recovers
 the old method, but only with coefficient `A`, not `1/4`.
 
 The first controlled test should be the cubic parity prefix with arbitrary
-nonlinear continuation. At `s=5n`, its suffix has `t-m=2n`. Using the old
+nonlinear continuation, including the anchor just described. At `s=5n`, its
+suffix has `t-m=2n-O(1)`. Using the old
 suffix bound, it is enough to arrange
 
 ```
@@ -236,8 +248,8 @@ an average-case extension would require its own compatible mass argument.
 Run `python3 research/communication/syndrome_generator.py`. It independently
 compares generated original-input sets with exhaustive truth-table evaluation
 for affine offsets, rank-deficient interfaces, arbitrary binary suffix gates,
-sharing, and arbitrary non-topological layouts. Both the global syndrome and
-the pruned trellis version are checked. Exhaustive edge bipartitions of two
+sharing, and arbitrary non-topological layouts. The global syndrome, pruned
+trellis, and joint-code versions are checked. Exhaustive edge bipartitions of two
 small graphs check (8), including disconnected sides. A negative control with
 `y=(x,x)` and suffix XOR produces false accepted inputs if the syndrome
 constraint is dropped. These tests verify finite implementations, not (9).

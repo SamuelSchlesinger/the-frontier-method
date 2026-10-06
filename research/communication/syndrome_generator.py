@@ -74,13 +74,54 @@ def feasible_syndromes(checks, read, target):
     return feasible, dimension
 
 
+def joint_states(checks, target, read, visible):
+    """All feasible (visible interface values, old syndrome) pairs, without h."""
+    visible_mask = sum(1 << j for j in visible)
+    states = set()
+    for word in range(1 << len(checks)):
+        total = partial = 0
+        for j, column in enumerate(checks):
+            if word & (1 << j):
+                total ^= column
+                if j in read:
+                    partial ^= column
+        if total == target:
+            states.add((word & visible_mask, partial))
+    return states
+
+
+def joint_rank(rows, checks, read, visible):
+    """Rank of the actual joint observation map, independently of enumeration."""
+    partial_rows = []
+    for k in range(max(checks, default=0).bit_length()):
+        row = 0
+        for j in read:
+            if checks[j] & (1 << k):
+                row ^= rows[j]
+        partial_rows.append(row)
+    return len(affine_basis([rows[j] for j in visible] + partial_rows)[0])
+
+
+def signal_pattern(net, edges, assignment):
+    """Interface mask, or None if copies of any frontier signal disagree."""
+    observed = {}
+    for e in edges:
+        j = net.edges[e][2]
+        value = assignment[e]
+        if j in observed and observed[j] != value:
+            return None
+        observed[j] = value
+    return sum(value << j for j, value in observed.items() if j < net.n)
+
+
 def generated_support(net, order, checks, syndrome, labels, translation, kernel,
-                      prune_syndrome=True, omit_code_check=False):
+                      prune_syndrome=True, joint=False, omit_code_check=False):
     """Union/translation DP over boundary assignments and one syndrome register."""
     assert net.unread == 0
     assert len(order) == len(net.vertices) and set(order) == set(net.vertices)
     if omit_code_check:
         prune_syndrome = False
+        joint = False
     past, previous_cut = set(), []
     read = set()
     table = {((), 0): {0}}
@@ -89,6 +130,7 @@ def generated_support(net, order, checks, syndrome, labels, translation, kernel,
     c = max(checks, default=0).bit_length()
     for vertex in order:
         feasible, dimension = feasible_syndromes(checks, read, syndrome)
+        old_read = set(read)
         if prune_syndrome:
             assert all(state[1] in feasible for state in table)
         past.add(vertex)
@@ -98,6 +140,13 @@ def generated_support(net, order, checks, syndrome, labels, translation, kernel,
         incident = net.incident[vertex]
         fresh = sorted(set(incident) - old_edges)
         is_input = vertex[0] == "wire" and vertex[1] < net.n
+        union = old_edges | set(next_cut)
+        signals = {net.edges[e][2] for e in union}
+        interface_edges = [e for e in union if net.edges[e][2] < net.n]
+        visible = {net.edges[e][2] for e in interface_edges}
+        if is_input:
+            assert vertex[1] in visible
+        pairs = joint_states(checks, syndrome, old_read, visible) if joint else None
         if is_input:
             read.add(vertex[1])
         next_feasible, _ = feasible_syndromes(checks, read, syndrome)
@@ -107,6 +156,10 @@ def generated_support(net, order, checks, syndrome, labels, translation, kernel,
             old_values = dict(zip(previous_cut, before[0]))
             for bits in product((0, 1), repeat=len(fresh)):
                 assignment = old_values | dict(zip(fresh, bits))
+                if joint:
+                    pattern = signal_pattern(net, union, assignment)
+                    if pattern is None or (pattern, before[1]) not in pairs:
+                        continue
                 for bit in (0, 1) if is_input else (0,):
                     if not net.check(vertex, assignment.__getitem__, bit):
                         continue
@@ -121,8 +174,16 @@ def generated_support(net, order, checks, syndrome, labels, translation, kernel,
         # is no second independent syndrome assignment in this count.
         budget = 1 << ((dimension if prune_syndrome else c)
                        + len(old_edges | set(next_cut)) + int(is_input))
+        independent_budget = budget
+        if joint:
+            # All copies of an interface signal agree. Its visible value also
+            # determines the read bit, so no additional read charge is needed.
+            joint_budget = len(pairs) << (len(signals) - len(visible))
+            independent_budget = 1 << (len(signals) + dimension)
+            assert joint_budget <= independent_budget <= budget
+            budget = joint_budget
         assert len(transitions) <= budget
-        layers.append((len(transitions), budget))
+        layers.append((len(transitions), budget, independent_budget))
         edge_count += len(transitions)
         table, previous_cut = updated, next_cut
     if omit_code_check:
@@ -148,7 +209,7 @@ def direct_support(n, rows, offsets, gates, out):
 
 def check_compiler():
     rng = Random(510)
-    cases = checked = 0
+    cases = checked = peak_savings = 0
     for _ in range(24):
         n, m = rng.randrange(1, 6), rng.randrange(2, 7)
         rows = [rng.randrange(1 << n) for _ in range(m)]
@@ -171,15 +232,43 @@ def check_compiler():
                 order.reverse()
             else:
                 rng.shuffle(order)
-            for pruning in (False, True):
+            budgets = []
+            for pruning, joint in ((False, False), (True, False), (True, True)):
                 actual, edges, layers = generated_support(net, order, *code,
-                                                          prune_syndrome=pruning)
+                                                          prune_syndrome=pruning, joint=joint)
                 assert actual == expected, (n, rows, offsets, gates, expected, actual)
-                assert edges <= sum(budget for _, budget in layers) + 1 + 2 * len(code[-1])
+                assert edges <= sum(budget for _, budget, _ in layers) + 1 + 2 * len(code[-1])
+                budgets.append(max(budget for _, budget, _ in layers))
+            peak_savings += budgets[2] < max(independent for _, _, independent in layers)
             checked += 1
         cases += 1
     print(f"Syndrome generator: {cases} coded circuits, {checked} arbitrary layouts "
-          "matched truth-table supports and budgets with global and trellis states.")
+          "matched truth-table supports and budgets in three state models; "
+          f"joint rank improved on separated signal/syndrome peaks in {peak_savings} layouts.")
+
+
+def check_joint_profiles():
+    rng = Random(511)
+    checked = 0
+    for _ in range(32):
+        n, m = rng.randrange(1, 6), rng.randrange(1, 7)
+        rows = [rng.randrange(1 << n) for _ in range(m)]
+        offsets = [rng.randrange(2) for _ in rows]
+        checks, target, *_ = affine_code(n, rows, offsets)
+        total_rank = len(affine_basis(rows)[0])
+        for _ in range(32):
+            read = {j for j in range(m) if rng.randrange(2)}
+            future = set(range(m)) - read
+            visible = {j for j in range(m) if rng.randrange(2)}
+            rho = joint_rank(rows, checks, read, visible)
+            rank_formula = (len(affine_basis([rows[j] for j in read | visible])[0])
+                            + len(affine_basis([rows[j] for j in future | visible])[0])
+                            - total_rank)
+            assert rho == rank_formula
+            assert len(joint_states(checks, target, read, visible)) == 1 << rho
+            checked += 1
+    print(f"Joint profiles: {checked} affine splits matched direct state counts, "
+          "observation-map rank, and the two enlarged row-space ranks.")
 
 
 def components(n, edges):
@@ -200,7 +289,8 @@ def check_graphic_profiles():
     # disconnected spanning sides, so cycle rank must include all components.
     graphs = [(4, [(u, v) for u in range(4) for v in range(u + 1, 4)]),
               (5, [(u, 4) for u in range(4)] + [(u, (u + 1) % 4) for u in range(4)])]
-    checked = 0
+    checked = joint_checked = 0
+    rng = Random(512)
     for n, edges in graphs:
         rows = [(1 << u) | (1 << v) for u, v in edges]
         checks, target, *_ = affine_code(n, rows, [j % 2 for j in range(len(rows))])
@@ -214,8 +304,43 @@ def check_graphic_profiles():
             right_cycles = len(right) - n + components(n, right)
             assert dimension == c - left_cycles - right_cycles
             checked += 1
+            for _ in range(8):
+                visible = {j for j in range(len(edges)) if rng.randrange(2)}
+                expanded_left = [e for j, e in enumerate(edges) if j in read | visible]
+                expanded_right = [e for j, e in enumerate(edges) if j not in read or j in visible]
+                lp = len(expanded_left) - n + components(n, expanded_left)
+                lf = len(expanded_right) - n + components(n, expanded_right)
+                rho = joint_rank(rows, checks, read, visible)
+                assert rho == c + len(visible) - lp - lf
+                assert len(joint_states(checks, target, read, visible)) == 1 << rho
+                joint_checked += 1
     print(f"Graphic profiles: {checked} edge bipartitions matched exact syndrome "
-          "cardinalities and the componentwise cycle formula.")
+          f"cardinalities; {joint_checked} exposed-boundary profiles matched the joint cycle formula.")
+
+
+def check_overlap_and_anchor():
+    # z=y0 and the visible y0 are the same bit. Separately charging them doubles
+    # the exponent even though there are only two possible joint states.
+    rows = [1, 1]
+    checks, target, *_ = affine_code(1, rows, [0, 0])
+    _, dimension = feasible_syndromes(checks, {0}, target)
+    assert dimension == 1
+    assert len(joint_states(checks, target, {0}, {0})) == 2 < 1 << (1 + dimension)
+
+    # A graphical parity map alone loses the global flip. Including x0 gives a
+    # full-rank interface and makes the hard test meaningful for nonperiodic f.
+    rows = [0b011, 0b110, 0b101, 0b001]
+    assert len(affine_basis(rows)[0]) == 3
+    offsets = [0, 1, 0, 1]
+    gates = [Gate(8, (0, 1)), Gate(14, (2, 3)), Gate(6, (4, 5))]
+    code = affine_code(3, rows, offsets)
+    net = Network(4, gates, [(6, True)])
+    expected = direct_support(3, rows, offsets, gates, 6)
+    for order in (list(net.vertices), list(reversed(net.vertices))):
+        actual, _, _ = generated_support(net, order, *code, joint=True)
+        assert actual == expected
+    print("Overlap guard: two correlated bits cost one; anchored graphic interface "
+          "has full rank and its nonlinear suffix matches direct evaluation.")
 
 
 def check_missing_constraint():
@@ -233,5 +358,7 @@ def check_missing_constraint():
 
 if __name__ == "__main__":
     check_compiler()
+    check_joint_profiles()
     check_graphic_profiles()
+    check_overlap_and_anchor()
     check_missing_constraint()

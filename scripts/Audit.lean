@@ -102,6 +102,10 @@ Run after `lake build --wfail` with `lake env lean scripts/Audit.lean`.
 #guard_msgs in
 #print axioms Frontier.LinearBoundary.ncard_syndromes_le_states
 
+/-- info: 'Frontier.LinearBoundary.finrank_joint' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.LinearBoundary.finrank_joint
+
 /-- info: 'Frontier.Sweep.abs_sumOn_le_codes' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Frontier.Sweep.abs_sumOn_le_codes
