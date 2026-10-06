@@ -41,8 +41,24 @@ The layout bound is proved for subcubic graphs with `A = (3/π) arccos((1 + 2√
 * **Every fixed fan-in**: a spanning tree gives
   `cutwidth(G) ≤ β₁(G) + d floor(log₂ |V|)` in maximum degree `d`, hence `LayoutBound d 1`.
   Thus `(r - 1)s > (2 - ε)n` for every fixed fan-in `r ≥ 2`
-  (`Frontier.layoutBound_one`, `Frontier.lowerBound_all_fanIn`). This is a general baseline;
-  the Gaussian coefficient is stronger at fan-in two.
+  (`Frontier.layoutBound_one`, `Frontier.lowerBound_all_fanIn`). A Gaussian vertex ordering
+  and degree-four compression improve this to `LayoutBound 4 (2/5)` and
+  `s > (7/4 - ε)n` for fan-in three (`Frontier.layoutBound_two_fifths`,
+  `Frontier.lowerBound_fanInThree`). For every fixed degree `d ≥ 2`, the checked simple-graph
+  estimate is `cutwidth ≤ arccos(2√(d-1)/d)/π · |E| + o(|V|)`
+  (`Frontier.Gaussian.vertexLayout_bound`). Converting this into sharper cycle-rank
+  coefficients in degrees five and above remains open here.
+* **Decomposable representations**: a smooth DNNF with `e` union edges and `v` binary product
+  nodes representing a `K`-rectangle-free set `S`, with `K ≥ 2` and `|S| ≥ K`, satisfies
+  `|S| ≤ (K-1)^2 e + (K-1)^3 v` (`Frontier.Decomposable.ncard_le`). Union branches may overlap.
+  The paper deduces DNNF size `2^(n-o(n))` for dense families with `log K = o(n)`, and
+  `2^(n-O(log n))` for the cited extractor family.
+* **Mixed input-output recovery**: the product of two complementary mixed-observation fiber
+  sizes bounds the inputs sharing a frontier message
+  (`Frontier.Compiler.pow_le_cutSignals_mul_fibers`). Any finite-alphabet map whose graph
+  code is MDS inherits the binary coefficient `L` and ternary coefficient `7/4`
+  (`Frontier.lowerBound_mds`, `Frontier.mds_gaussian`). This includes totally regular maps
+  and their nonlinear variants under coordinatewise alphabet permutations.
 * **Linear maps and arithmetic circuits**: circuits computing a totally regular map `x ↦ M x`,
   over finite fields with any basis and over infinite fields with polynomial operations, need
   `(L - ε) N` gates; over every field of characteristic zero, arithmetic circuits computing the
@@ -57,7 +73,7 @@ The layout bound is proved for subcubic graphs with `A = (3/π) arccos((1 + 2√
 The exact and uniform average-case lower bounds, arithmetic instantiations, and layout theorem
 are proved
 with no `sorry`, using only the standard axioms (`propext`, `Classical.choice`, `Quot.sound`),
-in about 12,000 lines of Lean. The accompanying paper also gives a deterministic #SAT algorithm
+in about 13,000 lines of Lean. The accompanying paper also gives a deterministic #SAT algorithm
 for circuits of fan-in two with `s` positive-arity gates, running for every fixed `η > 0` in
 time and space `O*(2^((1/L + η) s))`, where `1/L = 0.2191781936...`. Here `O*` suppresses
 polynomial factors in the full circuit encoding and the number of inputs. With `m` inputs
@@ -65,6 +81,9 @@ reachable from the output, the sharper time bound is
 `O*(2^(min(m, A(s-m)) + ηs))`. With a finite, efficiently evaluable ledger, the algorithm takes
 `|M|^O(1) O*(2^((1/L + η) s_ord))`; this allows `k` unbounded AND/OR/parity/fixed-modulus gates
 at an additional `O(k)` cost in the exponent.
+For fan-in three, the degree-four layout gives time and space
+`O*(2^((4/7 + η)s))`, with the sharper bound
+`O*(2^(min(m, (2/5)(2s-m)) + ηs))`.
 
 The deterministic cubic-layout construction uses fixed-accuracy discretization and conditional
 expectations, taking `f(ξ) h^3 polylog(h)` time on an `h`-vertex cubic graph; the polynomial degree
@@ -72,7 +91,8 @@ is independent of accuracy. The paper also proves exact counting with signal sta
 a tree-limit calculation showing that the current local Gaussian straddling estimate is sharp.
 The algorithms and their complexity bounds, this limiting calculation, the random-set existence
 argument, the explicit program partition and general distributional packing bounds, and the
-branching-program discussion are not formalized.
+branching-program discussion are not formalized. The DNNF smoothing conversion is also a
+paper proof; the finite threshold theorem is checked for the actual smooth union/product DAG.
 
 The new boundary results are checked in Lean as well:
 
@@ -99,6 +119,7 @@ tensor-network precedents; [RESEARCH.md](RESEARCH.md) records the remaining proo
 | `Frontier/Rectangle.lean` | Rectangle-free sets and the support lemma |
 | `Frontier/Extractor.lean` | Sumset dispersers have rectangle-free fibers |
 | `Frontier/Sweep.lean` | Abstract splicing messages and the frontier counting lemma |
+| `Frontier/Decomposable.lean` | Smooth decomposable DAGs, certificate substitution, and threshold counting |
 | `Frontier/Multigraph.lean` | Multigraphs, layouts, cycle rank, and the layout hypothesis |
 | `Frontier/Network.lean` | Constraint networks, the separator lemma, and the frontier sweep along a layout, from which every sweep in the development is built |
 | `Frontier/Compiler.lean` | Circuits of fan-in `r` with any outputs as exact networks of degree `r + 1` |
@@ -108,11 +129,13 @@ tensor-network precedents; [RESEARCH.md](RESEARCH.md) records the remaining proo
 | `Frontier/Projection.lean`, `Frontier/Nondeterministic.lean` | Existential projection and the same lower bounds for verifiers |
 | `Frontier/Signals.lean` | Frontier capacity measured by distinct signals |
 | `Frontier/Boundary/*.lean` | Hypergraph cuts, exact linear syndrome states, transition codes |
+| `Frontier/Boundary/Fiber.lean`, `Frontier/Boundary/MDS.lean` | Mixed-observation fiber demand and nonlinear MDS lower bounds |
 | `Frontier/AverageCase/*.lean` | Coherent weighted peeling, circuit agreement bounds, and sumset bias |
 | `Frontier/AverageCase/Pruning.lean` | Transition deletion with a weighted tail budget |
 | `Frontier/Tree.lean`, `Frontier/Tree/Network.lean` | Weighted tree frontiers and joint merge capacity |
 | `Frontier/Layouts/General.lean`, `Frontier/Layouts/Local.lean` | Every fixed degree; independent local cut improvements |
-| `Frontier/Main.lean` | The `(L - ε) n` and `(4 - ε) n` bounds for dense rectangle-free families |
+| `Frontier/Layouts/Vertex*.lean`, `Frontier/Layouts/Quartic*.lean` | General-degree Gaussian vertex ordering; degree-four compression and coefficient `2/5` |
+| `Frontier/Main.lean` | Binary, ternary, and every fixed fan-in bounds for dense rectangle-free families |
 | `Frontier/Linear/*.lean` | Totally regular maps, Cauchy matrices, linear capacity, linearization, arithmetic circuits |
 | `Frontier/Components.lean`, `Frontier/Ledger/*.lean` | Layouts of disconnected graphs; ledgers for gates of unbounded fan-in |
 | `Frontier/ForMathlib`, `Frontier/ForCslib` | Upstreaming candidates |
@@ -145,7 +168,7 @@ lake env lean scripts/Audit.lean
 python3 scripts/check_algorithms.py
 ```
 
-The audit checks the exact axiom lists of twenty-five principal results and fails if any list changes.
+The audit checks the exact axiom lists of thirty-six principal results and fails if any list changes.
 It also runs in CI. The paper's theorem-to-declaration index identifies the checked statements;
 the audit does not verify the external extractor construction or the algorithmic claims.
 The Python script independently compares raw-edge, signal-state, and ledger counting with

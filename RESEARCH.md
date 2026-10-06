@@ -61,6 +61,37 @@ on knowledge compilation and communication, and
 These connections motivate the formulation; no external width equivalence is assumed
 by the checked theorem.
 
+## Decomposable representations
+
+`Decomposable.ncard_le` proves the finite threshold bound directly for smooth union/product
+DAGs: `|S| ≤ (K-1)^2 e_union + (K-1)^3 v_product` for a `K`-rectangle-free accepted set,
+`K ≥ 2`, and `|S| ≥ K`. The checked `Occurs.substitute` theorem derives the context
+rectangle from the DAG semantics. No determinism of union gates or uniqueness of accepting
+certificates is assumed.
+
+The paper deduces almost-full-exponential DNNF lower bounds, with an `O(n)` smoothing
+conversion for nonsmooth Boolean DNNFs. That conversion is not formalized. The finite
+theorem does not extend the weighted coherent-peeling result to arbitrary overlapping
+certificates. Improving the circuit coefficient still requires a universal supply bound
+for joint merge capacity.
+
+## Mixed input-output fibers
+
+`OutputSplicing.card_le` bounds the domain size by the number of used boundary messages
+times the largest fibers of two complementary mixed observations. The compiler instance,
+`Compiler.pow_le_cutSignals_mul_fibers`, charges distinct signals. This is a pointwise
+demand theorem for arbitrary maps over finite alphabets.
+
+`lowerBound_mds` transfers any positive layout coefficient to maps whose graph codes have
+the MDS property. `mds_gaussian` gives the binary coefficient `L`; the same transfer with
+`layoutBound_two_fifths` gives the ternary coefficient `7/4`. `TotallyRegular.isMDS` and
+`IsMDS.permute` check the linear specialization and preservation under coordinatewise
+alphabet permutations. The alphabet may grow with the dimension.
+
+The next demand extension is the graded rank profile for ordinary matrices, with a
+precise terminal-ordering parameter and componentwise accounting. Neither that matroid
+pathwidth transfer nor the Jacobian extension is claimed by the present formalization.
+
 ## Nonlinear local updates
 
 `LocalLayout.cutSize_improve_cubic_le` updates an independent set of vertices to the
@@ -91,14 +122,29 @@ fixed degree. `lowerBound_all_fanIn` consequently proves
 families as the main theorem. This is a baseline, not a priority or optimality claim for
 higher-fan-in circuit bounds.
 
-A route to sharper constants is to expand high-degree vertices into subcubic port trees,
-apply the cubic layout theorem, and project the order back. The missing checked ingredient
-is the projection's congestion bound, together with size, degree, connectivity, and cycle
-rank preservation. A Gaussian calculation only on regular degree-`d` graphs cannot
-replace that work: the compiler produces general multigraphs of maximum degree `d`.
+`Gaussian.vertexLayout_bound` improves the graph estimate in every fixed degree `d ≥ 2`:
+simple graphs have width at most `gamma_d |E| + o(|V|)`, where
+`gamma_d = arccos(2 sqrt(d-1)/d) / pi`. The truncated-kernel correlation, bounded-radius
+second moments, threshold grid, windows, tails, and ordering with ties are all checked.
+
+For degree four, terminal block compression produces a simple core with degrees three
+or four and no adjacent degree-three vertices. Weighting incidences proves `12h ≤ 7m`
+and hence `5m ≤ 12 beta1(G)`. Since `gamma_4 = 1/6`, `layoutBound_two_fifths` proves
+`LayoutBound 4 (2/5)` for the multigraphs needed by the compiler. The checked
+`lowerBound_fanInThree` gives `s > (7/4 - epsilon)n`; the finite-field and polynomial
+linear-map versions are `linear_finite_fanInThree` and `linear_polynomial_fanInThree`.
+The paper also derives the deterministic ternary counting exponent `4/7`; the algorithm
+and its runtime are not formalized. No optimality or priority claim is made.
+
+For degree five and above, the proposed sharper cycle-rank constants still require a
+multigraph compression and correlation argument: terminal quotients can have parallel
+edges. The simple-graph per-edge theorem alone does not prove the proposed `LayoutBound`
+coefficient. Joint signal routing and subcubic port-tree projection are other possible
+routes, but their universal congestion bounds remain to be proved.
 
 ## Verification
 
 Run `lake build --wfail` and `lake env lean scripts/Audit.lean`. The audit contains exact
-standard-axiom guards for the ten new principal endpoints as well as the fifteen existing
-ones. The paper includes proofs and a declaration index for each added result.
+standard-axiom guards for thirty-six principal endpoints. The paper includes proofs and
+a declaration index for the added results, with external constructions and unformalized
+algorithmic consequences identified separately.

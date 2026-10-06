@@ -113,6 +113,9 @@ With $m$ reachable inputs the sharper exponent is $\min\{m,A(s-m)\}+\eta s$; wit
 ledger $M$, counting costs $\card M^{O(1)}2^{(1/L+\eta)s_{\mathrm{ord}}}$ up to polynomial factors.
 The deterministic cubic layout construction has polynomial degree independent of its accuracy.
 A second capacity theorem charges distinct signal values instead of their repeated edge copies.
+Gaussian vertex scores also give $\LB_4(2/5)$ and a $7n/4-o(n)$ lower bound for ternary
+gates. Threshold charging extends to smooth decomposable representations, and mixed
+input--output recovery extends the finite-alphabet map bound beyond linear maps.
 
 A weighted frontier lemma bounds agreement of circuits of size $(L-\varepsilon)n$ with a
 sumset extractor of error $b$ by $1/2+b+2^{-\Omega_\varepsilon(n)}$ under uniform inputs.
@@ -450,7 +453,7 @@ instantiations, the signal-capacity inequality, the layout theorem, and the unif
 average-case bound from rectangle or sumset bias are
 formalized in Lean~4~\cite{Lean4} (toolchain \texttt{v4.35.0-rc3}),
 using Mathlib~\cite{Mathlib} (commit \texttt{9a6fbe0}) and CSLib~\cite{CSLib} (commit
-\texttt{89dc6fb}), in about 12,000 lines including documentation, available at
+\texttt{89dc6fb}), in about 13,000 lines including documentation, available at
 \begin{center}
 \url{https://github.com/SamuelSchlesinger/the-frontier-method}.
 \end{center}
@@ -468,10 +471,13 @@ flat-source bias hypothesis. The weighted inequality for coherent sweeps
 (\cref{prop:weighted-sweep}) and the uniform average-case circuit theorem
 (\cref{thm:average-case}) are checked. The general-degree layout and higher-fan-in bounds
 of \cref{sec:higher-fanin}, and the hypergraph, code, pruning, tree-frontier, and local-update
-results of \cref{sec:boundary}, are also checked. The explicit branching-program model and rectangle
+results of \cref{sec:boundary}, are also checked. So are the decomposable threshold bound
+of \cref{thm:decomposable}, the mixed-fiber cardinal inequality, and the nonlinear MDS bound
+of \cref{prop:mixed-fiber,thm:mds}. The explicit branching-program model and rectangle
 partition, the packing and arbitrary-distribution circuit statements
 (\cref{lem:weighted-frontier,thm:weighted-distribution,thm:weighted-circuit}), the random-set
-existence argument, the cubic-tree sharpness calculation, the signal-state counting algorithm,
+existence argument, the DNNF smoothing conversion, the cubic-tree sharpness calculation,
+the signal-state counting algorithm,
 and all algorithms and complexity bounds in \cref{sec:counting}, including derandomization,
 are outside the formalization.
 After checking out the indicated clean snapshot, the verification commands are
@@ -482,7 +488,7 @@ lake env lean scripts/Audit.lean
 python3 scripts/check_algorithms.py
 ./scripts/build-paper.sh
 \end{verbatim}
-The audit checks the exact axiom lists of twenty-five principal results, including weighted
+The audit checks the exact axiom lists of thirty-six principal results, including weighted
 peeling, the average-case endpoints, and the new capacity and layout results; a changed
 list fails the check.
 The Python script checks the reference edge, signal, and ledger counting
@@ -499,9 +505,11 @@ and \cref{app:index} is an index from the paper to the code.
 counting lemma, with no graphs or circuits. \Cref{sec:networks} introduces constraint networks
 and sweeps along layouts, and \cref{sec:compiler} compiles circuits into networks.
 \Cref{sec:lowerbound} compares demand and supply and proves \cref{thm:main}, and
-\cref{sec:layouts} proves the layout bound. \Cref{sec:linear,sec:ledgers} treat linear maps and
-aggregate gates, and \cref{sec:counting} the counting algorithm. \Cref{sec:boundary} refines
-the boundary capacities and proves the local median update. \Cref{sec:design} discusses
+\cref{sec:layouts} proves the binary and higher-fan-in layout bounds.
+\Cref{sec:linear,sec:ledgers} treat linear maps, mixed input--output recovery, and
+aggregate gates, and \cref{sec:counting} the counting algorithms. \Cref{sec:boundary} refines
+the boundary capacities, proves the decomposable threshold theorem, and gives the local
+median update. \Cref{sec:design} discusses
 the formalization and \cref{sec:open} open problems.
 
 % ===========================================================================
@@ -1989,12 +1997,124 @@ for every circuit of fan-in at most $r$ deciding $S_n$.
 Apply \cref{thm:main} with $A=1$ and \cref{thm:general-layout} at degree $r+1$.
 \end{proof}
 
-Thus the leading gate coefficients supplied here are $1$ for fan-in three, $2/3$ for
-fan-in four, and $2/(r-1)$ in general. These are baseline consequences of the layout
-method, not claims of optimal higher-fan-in lower bounds. For fan-in two,
-\cref{cor:unconditional} gives the stronger coefficient $L$. A calculation restricted to
-$d$-regular graphs would not suffice to sharpen \cref{cor:all-fanin}: the compiler needs
-all loopless multigraphs of maximum degree $d=r+1$, including irregular ones.
+These are baseline consequences of the layout method. The following Gaussian construction
+sharpens the ternary bound. We make no claim that these higher-fan-in constants are optimal
+or historically best possible in their respective circuit models.
+
+\begin{theorem}[Gaussian vertex layouts in bounded degree]
+\label{thm:vertex-layout}
+For every fixed integer $d\ge2$ and $\xi>0$, every sufficiently large simple graph $H$
+of maximum degree at most $d$, with $h$ vertices and $m$ edges, has a layout of width at most
+\[
+  \gamma_d m+\xi h,\qquad
+  \rho_d=\frac{2\sqrt{d-1}}d,\qquad
+  \gamma_d=\frac{\arccos\rho_d}{\pi}.
+\]
+\leanref{Frontier.Gaussian.vertexLayout_bound}
+\end{theorem}
+
+\begin{proof}
+Use the normalized truncated distance kernels of \cref{lem:kernel}, now with
+$0<\lambda<1/\sqrt{d-1}$. A sphere of positive radius $j$ has at most
+$d(d-1)^{j-1}$ vertices. The pointwise kernel defect proof is unchanged: adjacent distances
+differ by at most one, and a one-sided truncation error lies on a radius-$R$ sphere.
+Thus adjacent unit rows satisfy
+\[
+  \langle x_u,x_v\rangle\ge
+  \frac{2\lambda}{1+\lambda^2}-d\bigl((d-1)\lambda^2\bigr)^R.
+\]
+This tends to $\rho_d$ by first taking $\lambda$ close to $1/\sqrt{d-1}$ from below
+and then taking $R$ large. This estimate holds on every graph of the stated maximum
+degree, including graphs with short cycles
+(\lean{Frontier.Gaussian.sum_unitKernel_mul_ge_degree}).
+
+Give vertex $v$ the score $Z_v=\langle x_v,\omega\rangle$ and order vertices by score,
+breaking ties by a fixed enumeration. If the adjacent correlation is at least $\rho$,
+\cref{lem:sheppard} bounds the probability that an edge crosses any fixed threshold by
+$\arccos\rho/\pi$. The mean crossing count is therefore at most that quantity times $m$.
+
+Here is the simultaneous estimate needed to obtain an ordering. Fix a grid of $M$ windows
+covering $[-T,T]$, of length $\delta=2T/M$. Count crossing edges at each grid threshold,
+vertices in each window, and vertices in either tail. Each indicator depends on a bounded
+ball of independent Gaussian coordinates. For fixed $d,R$, each support meets only boundedly
+many others, so the second-moment argument in the proof of \cref{thm:layout} bounds every
+variance by $O_{d,R}(h)$.
+For fixed $M$ and $\epsilon>0$, a union bound gives a sample in which all counts are at most
+their means plus $\epsilon h$, once $h$ is large enough.
+
+For a prefix ending at a score in a grid window, every crossing edge either crosses the
+window's left threshold or touches a vertex in the window. A window has mean at most
+$h\delta/\sqrt{2\pi}$ vertices, and each vertex touches at most $d$ edges. A prefix ending
+in either tail is bounded by $d$ times the corresponding tail count, whose mean is at most
+$h/T^2$. Consequently every prefix is bounded by
+\[
+  \frac{\arccos\rho}{\pi}m+
+  h\left(\frac d{T^2}+\frac{d\delta}{\sqrt{2\pi}}+(d+1)\epsilon\right).
+\]
+The window argument includes all tied vertices. Choose $\rho<\rho_d$ so that the crossing
+coefficient differs from $\gamma_d$ by at most $\xi/(4d)$, then choose $T,M,\epsilon$
+to make each of the three displayed error terms at most $\xi/4$. Since $m\le dh$, the
+result follows. The ordering and sampling steps are checked separately by
+\lean{Frontier.exists_key_of_vertexScore} and \lean{Frontier.Gaussian.exists_vertex_sample}.
+\end{proof}
+
+\begin{theorem}[The degree-four layout constant]
+\label{thm:quartic-layout}
+$\LB_4(2/5)$ holds.
+\leanref{Frontier.layoutBound_two_fifths}
+\end{theorem}
+
+\begin{proof}
+Run the ordered-block compression of \cref{prop:compression}, with boundary budget four:
+merge adjacent blocks whenever their union has at most four outgoing edges, placing the
+larger block first. Every block has boundary at most four, and every proper prefix of its
+list has boundary at most $4\log_2\card B$. Each merge decreases the number of blocks,
+so the process terminates.
+
+If at least two blocks remain, let $H$ be the quotient. For adjacent blocks of degrees
+$a,b\le4$ joined by $e\ge1$ edges, termination says $a+b-2e>4$. Hence $a,b\ge3$,
+$e=1$, and $a+b\ge7$. Thus $H$ is simple, has degrees three or four, and has no edge
+between two degree-three vertices. Connectivity ensures that no block is isolated.
+
+Assign weight four to a degree-three endpoint and weight three to a degree-four endpoint.
+Each vertex contributes twelve across its incidences; each edge receives at most seven.
+Writing $h=\card{V(H)}$ and $m=\card{E(H)}$, this gives $12h\le7m$.
+If the original graph has $N$ vertices and $M$ edges, the compression invariant is
+$N\le h+(M-m)$: each merge moves at least one edge inside a block. Therefore
+\[
+  5m\le12(M-N)\le12\beta_1(G).
+\]
+The corresponding checked bound is
+\lean{Frontier.Multigraph.Compression.Terminal.edge_bound}.
+
+At degree four, $\rho_4=\sqrt3/2$ and $\gamma_4=1/6$. For a large quotient,
+\cref{thm:vertex-layout} gives width at most $m/6+\xi h$.
+Since $h\le m\le12\beta_1(G)/5$, choosing $\xi$ sufficiently small makes this at most
+$(2/5+\eta)\beta_1(G)$. Expanding the block lists adds at most $4\log_2 N+4$.
+Quotients below the fixed size threshold have boundedly many edges, and their width is
+absorbed in the constant. Finally absorb $4\log_2 N$ in $\eta N+C_\eta$.
+This treats every connected loopless multigraph of maximum degree four, as the compiler
+requires; a theorem only for regular graphs would not suffice.
+\end{proof}
+
+\begin{corollary}[Ternary gates]
+\label{cor:ternary}
+Under the hypotheses on $S_n$ in \cref{thm:main}, every circuit of fan-in at most three
+deciding $S_n$ has
+\[
+  s>\left(\frac74-\varepsilon\right)n
+\]
+for every fixed $\varepsilon>0$ and all sufficiently large $n$.
+\leanref{Frontier.lowerBound_fanInThree}
+\end{corollary}
+
+\begin{proof}
+Apply \cref{thm:main} with $r=3$ and $A=2/5$: the bound is
+$2s>(7/2-2\varepsilon)n$. The same substitution in \cref{thm:linear} proves the ternary
+bound for totally regular maps over finite fields with arbitrary bases, and over infinite
+fields with polynomial operations
+(\lean{Frontier.linear_finite_fanInThree, Frontier.linear_polynomial_fanInThree}).
+\end{proof}
 
 % ===========================================================================
 \section{Linear maps and arithmetic circuits}
@@ -2167,6 +2287,87 @@ Over $\R$, continuous operations would also do, without derivatives: a frontier 
 that determines $N$ inputs is a continuous injection from an open subset of $\R^N$ into
 $\R^k$, so $N \le k$ by invariance of domain. We have not formalized this variant.
 \end{remark}
+
+\subsection{Mixed input--output recovery}
+\label{sec:mixed-fibers}
+
+Linearity is one way to make a boundary determine its input. The more general property
+is small ambiguity after a mixed observation. Let $F:U^N\to U^N$, with $q=\card U\ge2$, and set
+\[
+  \Lambda_F(X,Y)=\max_{a\in U^X,\,b\in U^Y}
+    \card{\{x:x|_X=a,\ F(x)|_Y=b\}}.
+\]
+This definition involves the input and output coordinates, not the circuit's intermediate
+values. In Lean the maximum is indexed by an input realizing the observation; every
+nonempty fiber has such a representative.
+
+\begin{proposition}[Mixed-fiber demand]
+\label{prop:mixed-fiber}
+At any cut of the compiled network for $F$, let $X$ be the inputs read on one side,
+$Y$ the outputs on that side, and $L$ the distinct signals crossing the cut. Then
+\[
+  q^N\le q^{\card L}\Lambda_F(X,Y)\Lambda_F(\bar X,\bar Y).
+\]
+Equivalently,
+\[
+  \card L\ge N-\log_q\Lambda_F(X,Y)-\log_q\Lambda_F(\bar X,\bar Y).
+\]
+The cardinal inequality is the checked statement.
+\leanref{Frontier.Compiler.pow_le_cutSignals_mul_fibers}
+\end{proposition}
+
+\begin{proof}
+Fix a class of inputs with the same frontier values and a representative $x^0$ in that
+class. For every $x$ in the class, form the two splices
+\[
+  z=(x^0|_X,x|_{\bar X}),\qquad z'=(x|_X,x^0|_{\bar X}).
+\]
+By \cref{lem:outputs-cut}, $z$ agrees with $x^0$ on the mixed observation $(X,Y)$,
+and $z'$ agrees with $x^0$ on $(\bar X,\bar Y)$. The pair $(z,z')$ determines $x$.
+Hence the class has at most $\Lambda_F(X,Y)\Lambda_F(\bar X,\bar Y)$ members.
+There are at most $q^{\card L}$ classes. This also proves the more general interface
+\lean{Frontier.OutputSplicing.card_le}, with the number of used boundary messages in place
+of $q^{\card L}$.
+\end{proof}
+
+Call the graph code $\{(x,F(x)):x\in U^N\}$ \emph{MDS} when every $N$ of its $2N$
+coordinates determine the codeword. Equivalently, $\Lambda_F(X,Y)=1$ whenever
+$\card X+\card Y=N$.
+
+\begin{theorem}[Nonlinear MDS maps]
+\label{thm:mds}
+Suppose $\LB_{r+1}(A)$ holds with $A>0$ and fixed $r\ge2$. For every $\varepsilon>0$ and
+all sufficiently large $N$, every circuit of fan-in at most $r$ computing an MDS map
+$F:U^N\to U^N$ over any finite alphabet $U$ of size at least two, with an arbitrary basis, satisfies
+\[
+  (r-1)s>(1+1/A-\varepsilon)N.
+\]
+The size threshold is uniform in the alphabet and in $F$. In particular the binary
+coefficient is $L$, and the ternary coefficient is $7/4$.
+\leanref{Frontier.lowerBound_mds, Frontier.mds_gaussian}
+\end{theorem}
+
+\begin{proof}
+Every layout has a cut with $\card X+\card Y=N$: the count starts at zero, ends at least
+at $N$ because all outputs are present, and increases by at most one when a vertex is
+processed. Input sites and output sites are distinct. At this cut the complementary
+observation also contains $N$ terminals, so both mixed fibers are singletons.
+\Cref{prop:mixed-fiber} gives a frontier of at least $N$ signals, hence at least $N$ edges.
+
+Moreover, every output depends on every input. Otherwise fixing the other $N-1$ inputs
+and that output would fail to determine the remaining input, contrary to the MDS property.
+Thus every input reaches every output, so all inputs are read and the compiled graph is
+connected. Its cycle rank is at most $(r-1)s+1-N$ and it has at most $2rs+3N$ vertices.
+Comparing demand and supply now gives the bound exactly as in \cref{thm:linear}.
+\end{proof}
+
+Totally regular matrices satisfy this MDS property: after fixing $X$, the observations in
+$Y$ determine the remaining inputs using the square nonsingular block $M_{Y,\bar X}$.
+This implication is checked by \lean{Frontier.TotallyRegular.isMDS}. Applying arbitrary
+coordinatewise alphabet permutations before and after an MDS map preserves the property
+(\lean{Frontier.IsMDS.permute}), giving nonlinear variants of the finite-field Cauchy maps.
+As with the linear examples, the alphabet may need to grow with $N$. These variants do
+not assert a new one-output Boolean construction.
 
 % ===========================================================================
 \section{Gates of unbounded fan-in}
@@ -2639,6 +2840,36 @@ $c=4$ gives $0.8421058118\ldots+\varepsilon$. The cutoff for a constant improvem
 $2^n$ remains $c<L$. Reachability here is syntactic; no test for semantic dependence is used.
 \end{corollary}
 
+\begin{corollary}[Ternary counting; not formalized]
+\label{cor:ternary-counting}
+For every fixed $\eta>0$, satisfying assignments of a Boolean circuit of fan-in at most
+three can be counted deterministically in time and space
+\[
+  O^*\!\left(2^{\min\{m,\,(2/5)(2s-m)\}+\eta s}\right)
+  \le O^*\!\left(2^{(4/7+\eta)s}\right),
+\]
+where $s$ counts positive-arity gates and $m$ inputs reach the output.
+\end{corollary}
+
+\begin{proof}
+The degree-four compression is constructive by scanning adjacent block pairs and making
+eligible merges. Its quotient layout is constructible by the same local discretization
+and conditional-expectation argument as \cref{lem:derandomization}. The counts are now the
+vertex-score windows and tails and the edge-crossing tests in \cref{thm:vertex-layout}.
+Each test still depends on only a bounded neighborhood for fixed accuracy. Each vertex
+score is a unit Gaussian form, so the same tail truncation and one-dimensional
+anti-concentration estimates bound changes under finite-precision perturbations.
+The discretized tests therefore meet the hypotheses of \cref{lem:local-moments}; their
+first and second moments can be evaluated by enumerating their bounded supports.
+Conditional expectations select all coordinates in $f(\xi)h^3\operatorname{polylog}h$ time,
+and \cref{thm:vertex-layout}'s grid-to-order argument verifies the resulting layout.
+
+The compiler has cycle rank at most $2s+1-m$ and at most $6s+3$ vertices. Repeat the
+proof of \cref{thm:sat} with $A=2/5$. The two exponents meet at
+$m=(2/5)(2s-m)$, namely $m=4s/7$. Polynomial factors include the full circuit encoding
+and the number of inputs, as before.
+\end{proof}
+
 \subsection{Counting with a ledger}
 
 \begin{theorem}[Counting with aggregate gates]
@@ -2924,6 +3155,77 @@ related to the communication-complexity approach to knowledge
 compilation~\cite{BovaEtAl2016}; the theorem above states the weighted charging inequality
 directly, without assuming an equivalence with an unspecified branching-program model.
 
+\subsection{Decomposable representations with overlapping certificates}
+\label{sec:decomposable}
+
+A smooth decomposable representation is an acyclic DAG whose nodes denote sets of
+partial assignments. A union combines sets on the same coordinate scope; a binary
+product combines sets on disjoint scopes. The root's scope is $[n]$. Leaves represent
+individual coordinate values, or constants on the empty scope, so each leaf has at most
+one assignment. In the Boolean setting this is smooth DNNF. Union branches may overlap,
+and different branches may decompose the coordinates differently.
+
+\begin{theorem}[Decomposable threshold counting]
+\label{thm:decomposable}
+Let $S$ be $K$-rectangle-free, where $K\ge2$ and $\card S\ge K$. If a smooth decomposable
+representation of $S$ has $e_\cup$ outgoing union edges and $v_\times$ binary product nodes,
+then
+\[
+  \card S\le(K-1)^2 e_\cup+(K-1)^3 v_\times.
+\]
+In particular, if $D$ counts all vertices and edges, then $\card S\le(K-1)^3D$.
+\leanref{Frontier.Decomposable.ncard_le, Frontier.Decomposable.ncard_le_size}
+\end{theorem}
+
+\begin{proof}
+For a node $v$ with scope $I_v$, let $A_v$ be its denotation and let $C_v$ contain the
+assignments outside $I_v$ supplied by accepting certificates through $v$. The standard
+certificate-context construction for DNNFs~\cite{BovaEtAl2016} gives
+\[
+  A_v\times C_v\subseteq S.
+\]
+For completeness, substitute any assignment in $A_v$ at its occurrence in such a
+certificate and ascend toward the root. At a union, membership in the selected child
+implies membership in the parent. At a product, the sibling uses disjoint coordinates
+and its assignment is unchanged. The substituted assignment is therefore accepted at
+the root. This proves the rectangle inclusion even when nodes are shared or union
+branches overlap (\lean{Frontier.Decomposable.Occurs.substitute}). Rectangle-freeness gives
+$\card{C_v}\le K-1$ whenever $\card{A_v}\ge K$.
+
+For each $x\in S$, choose an accepting certificate and descend from the root, maintaining
+$\card{A_v}\ge K$. At a union, follow a selected accepting child $u$. If $\card{A_u}<K$,
+stop and charge $x$ to the edge $(v,u)$; smoothness gives the same scope, so there are at
+most $(K-1)^2$ possibilities in $A_u\times C_v$. At a product, descend into a child whose
+denotation has at least $K$ assignments, if there is one. If both children are smaller,
+stop and charge $x$ to the product node. The two child denotations and the parent context
+give at most $(K-1)^3$ possibilities. A decreasing DAG rank guarantees termination, since
+leaves have at most one assignment. Summing the charges proves the result. Neither
+deterministic unions nor uniqueness of certificates was used.
+\end{proof}
+
+Thus $\card{S_n}=2^{n-o(n)}$ and $\log K_n=o(n)$ imply smooth DNNF size $2^{n-o(n)}$.
+For the polynomial threshold and constant density supplied by \cref{cor:explicit}, the
+bound is $2^{n-O(\log n)}$. An ordinary Boolean DNNF can be smoothed with $O(n)$ overhead:
+on each union edge, conjoin the child with one tautology $x_i\vee\neg x_i$ for each
+coordinate missing from its parent's scope; implement this conjunction by binary
+products. These added scopes are disjoint from the child's scope. Missing root variables
+are treated in the same way. Binarizing product gates costs linear overhead in the number
+of edges, so the same asymptotic bounds hold for ordinary DNNFs. This syntactic conversion
+and the cited explicit extractor instantiation are outside the formalization; the finite
+threshold theorem itself is checked.
+
+The theorem strengthens the representation model beyond the single laminar tree of
+\cref{thm:tree-frontier}. It does not supply a weighted average-case bound for arbitrary
+DNNFs: their certificates may overlap, so the coherent deletion argument used for tree
+frontiers cannot simply be assumed. To improve the binary circuit constant through a
+branching compiler still requires a new universal bound on the joint merge capacity.
+For a full split $W=W_0\mathbin{\dot\cup}W_1$, that capacity is
+\[
+  \card{\delta(W_0)\cup\delta(W_1)}=
+  \frac{\card{\delta(W_0)}+\card{\delta(W_1)}+\card{\delta(W)}}2,
+\]
+which can exceed the largest individual boundary.
+
 \subsection{A nonlinear local improvement of vertex keys}
 
 The current Gaussian layout assigns a real key to each vertex. On a cubic graph, let
@@ -3098,12 +3400,14 @@ straddling estimate alone cannot improve its limiting constant. A different scor
 a stronger global layout argument, or signal compression would be needed.
 
 \paragraph{Larger fan-in.}
-\Cref{thm:general-layout} proves $\LB_d(1)$ in every fixed degree, giving
-$(r-1)s>(2-\varepsilon)n$. What sharper coefficients hold for $d\ge4$?
-A promising route is to replace higher-degree vertices by subcubic trees and control the
-congestion when projecting a cubic layout back to the original graph. Both that projection
-bound and the irregular-degree case must be proved before any regular-graph calculation
-can improve the circuit coefficient.
+\Cref{thm:general-layout} proves $\LB_d(1)$ in every fixed degree, and
+\cref{thm:quartic-layout} improves this to $\LB_4(2/5)$, giving the ternary coefficient $7/4$.
+What sharper cycle-rank coefficients hold for $d\ge5$? The Gaussian per-edge estimate of
+\cref{thm:vertex-layout} is already available for every fixed degree, but terminal
+compression can leave parallel edges when $d\ge5$. Its extension to these quotients,
+with a suitable edge-to-cycle-rank estimate, remains to be proved.
+Another possible route is to replace higher-degree vertices by subcubic trees and control
+the congestion when projecting a cubic layout back to the original graph.
 
 \paragraph{Other capacities.}
 \Cref{sec:boundary} proves code, pruning, and tree-frontier inequalities. The missing
@@ -3201,6 +3505,13 @@ Prop.~\ref{prop:straddle} & \lean{Gaussian.measureReal_straddleEvent_le} \\
 Cor.~\ref{cor:unconditional} & \lean{lowerBound_gaussian}, \lean{lowerBound_four} \\
 Thm.~\ref{thm:general-layout} & \lean{Multigraph.exists_layout_cycleRank}, \lean{layoutBound_one} \\
 Cor.~\ref{cor:all-fanin} & \lean{lowerBound_all_fanIn} \\
+Thm.~\ref{thm:vertex-layout} & \lean{Gaussian.vertexLayout_bound} \\
+ & \lean{Gaussian.sum_unitKernel_mul_ge_degree}, \lean{Gaussian.exists_vertex_sample} \\
+ & \lean{exists_key_of_vertexScore} \\
+Thm.~\ref{thm:quartic-layout} & \lean{layoutBound_two_fifths} \\
+ & \lean{Multigraph.Compression.Terminal.edge_bound} \\
+Cor.~\ref{cor:ternary} & \lean{lowerBound_fanInThree} \\
+ & \lean{linear_finite_fanInThree}, \lean{linear_polynomial_fanInThree} \\
 \midrule
 \multicolumn{2}{l}{\emph{Boundary refinements} (\lean{Boundary/*.lean}, \lean{Signals.lean})} \\*
 Prop.~\ref{prop:signal-hypergraph} & \lean{Compiler.signalCut_eq_hypergraph_cut} \\
@@ -3215,6 +3526,9 @@ Eq.~\eqref{eq:pruned-agreement} & \lean{agreement_le_pruned_sweeps} \\
 \multicolumn{2}{l}{\emph{Tree frontiers} (\lean{Tree.lean}, \lean{Tree/Network.lean})} \\*
 Thm.~\ref{thm:tree-frontier} & \lean{TreeFrontier.abs_sumOn_le_of_budget} \\
 Eq.~\eqref{eq:tree-network} & \lean{Network.abs_sumOn_accepted_le_tree} \\
+\multicolumn{2}{l}{\emph{Decomposable representations} (\lean{Decomposable.lean})} \\*
+Thm.~\ref{thm:decomposable} & \lean{Decomposable.ncard_le}, \lean{Decomposable.ncard_le_size} \\
+ & \lean{Decomposable.Occurs.substitute} \\
 \multicolumn{2}{l}{\emph{Local updates} (\lean{Layouts/Local.lean})} \\*
 Prop.~\ref{prop:local-median} & \lean{LocalLayout.cutSize_improve_cubic_le} \\
  & \lean{Multigraph.cutSize_eq_add_gain}, \lean{Multigraph.cutSize_lt_of_local} \\
@@ -3228,6 +3542,10 @@ Def.~\ref{def:capacity}, Lem.~\ref{lem:capacity} & \lean{LinearCapacity},
 Thm.~\ref{thm:linear} & \lean{lowerBound_linear} \\
 Lem.~\ref{lem:linearize} & \lean{exists_affine_circuit} \\
 Cor.~\ref{cor:cauchy} & \lean{linear_finite_gaussian}, \lean{linear_polynomial_gaussian} \\
+\multicolumn{2}{l}{\emph{Mixed recovery} (\lean{Boundary/Fiber.lean}, \lean{Boundary/MDS.lean})} \\*
+Prop.~\ref{prop:mixed-fiber} & \lean{OutputSplicing.card_le}, \lean{Compiler.pow_le_cutSignals_mul_fibers} \\
+Thm.~\ref{thm:mds} & \lean{lowerBound_mds}, \lean{mds_gaussian} \\
+ & \lean{TotallyRegular.isMDS}, \lean{IsMDS.permute} \\
 \midrule
 \multicolumn{2}{l}{\emph{Ledgers} (\lean{Ledger/*.lean}, \lean{Components.lean})} \\*
 Def.~\ref{def:ledger} & \lean{Ledger} \\
@@ -3263,7 +3581,7 @@ the text: \cref{prop:random,prop:network-program}, the remarks, all results in
 \cref{sec:counting} including conditional expectations and ledger counting, the signal-state
 algorithm of \cref{prop:signal-dp}, the program partition and packing statements of
 \cref{lem:weighted-frontier,thm:weighted-distribution,thm:weighted-circuit},
-the tree-limit calculation of \cref{prop:tree-sharpness},
+the tree-limit calculation of \cref{prop:tree-sharpness}, the DNNF smoothing conversion,
 and the cited extractor constructions.
 The authors take responsibility for
 all statements, proofs, and text in this paper.

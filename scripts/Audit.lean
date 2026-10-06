@@ -105,3 +105,47 @@ Run after `lake build --wfail` with `lake env lean scripts/Audit.lean`.
 /-- info: 'Frontier.LocalLayout.cutSize_improve_cubic_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Frontier.LocalLayout.cutSize_improve_cubic_le
+
+/-- info: 'Frontier.Decomposable.ncard_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Decomposable.ncard_le
+
+/-- info: 'Frontier.Gaussian.sum_unitKernel_mul_ge_degree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Gaussian.sum_unitKernel_mul_ge_degree
+
+/-- info: 'Frontier.Gaussian.vertexLayout_bound' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Gaussian.vertexLayout_bound
+
+/-- info: 'Frontier.layoutBound_two_fifths' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.layoutBound_two_fifths
+
+/-- info: 'Frontier.lowerBound_fanInThree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.lowerBound_fanInThree
+
+/-- info: 'Frontier.Compiler.pow_le_cutSignals_mul_fibers' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Compiler.pow_le_cutSignals_mul_fibers
+
+/-- info: 'Frontier.mds_gaussian' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.mds_gaussian
+
+/-- info: 'Frontier.TotallyRegular.isMDS' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.TotallyRegular.isMDS
+
+/-- info: 'Frontier.IsMDS.permute' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.IsMDS.permute
+
+/-- info: 'Frontier.linear_finite_fanInThree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.linear_finite_fanInThree
+
+/-- info: 'Frontier.linear_polynomial_fanInThree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.linear_polynomial_fanInThree

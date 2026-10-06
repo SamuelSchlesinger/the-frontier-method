@@ -8,6 +8,7 @@ module
 public import Frontier.Layouts.Compression
 public import Frontier.Layouts.Gaussian
 public import Frontier.Layouts.General
+public import Frontier.Layouts.Quartic
 
 /-!
 # Layout bounds
@@ -22,17 +23,21 @@ The graph-theoretic input of the lower bound, proved:
 * `layoutBound_one_third`: `LayoutBound 3 (1/3)`, since `2p ≤ 9/32 < 1/3`.
 * `layoutBound_one d`: coefficient one in every fixed degree, from a spanning tree of width
   at most `d log₂ |V|` and one additional edge per independent cycle.
+* `layoutBound_two_fifths`: coefficient `2/5` in degree four, from Gaussian vertex scores
+  and a terminal core whose edge count is at most `12/5` times the original cycle rank.
 
 ## Structure of the proof
 
 ```
-Frontier.Layouts.Kernel         distance kernels on graphs of maximum degree three
+Frontier.Layouts.Kernel         distance kernels on graphs of bounded maximum degree
 Frontier.Layouts.Probability    Gaussian forms; Sheppard's crossing bound; windows and tails
 Frontier.Layouts.SecondMoment   concentration of counts of local events
 Frontier.Layouts.Star           angles between vectors close to a common vector
 Frontier.Layouts.Median         ordering a cubic graph by median edge scores
 Frontier.Layouts.Gaussian       the random layout: CubicLayoutBound p
 Frontier.Layouts.Compression    from cubic graphs to subcubic multigraphs
+Frontier.Layouts.Vertex*        Gaussian vertex layouts in every fixed degree
+Frontier.Layouts.Quartic*       degree-four compression and the coefficient 2/5
 ```
 -/
 

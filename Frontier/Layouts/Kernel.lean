@@ -36,6 +36,10 @@ In a graph of maximum degree three:
 
 The ball lemmas `ball_subset_ball_of_adj` and `mem_ball_of_not_disjoint` bound the vertices on
 which a row, or a pair of rows, depends.
+
+The `_degree` variants prove the same statements in maximum degree `D ≥ 2`, replacing
+the sphere bound by `D * (D - 1) ^ d` and the correlation error by
+`D * ((D - 1) * q ^ 2) ^ R`.
 -/
 
 @[expose] public section
@@ -252,11 +256,12 @@ theorem unitKernel_nonneg {q : ℝ} (hq : 0 ≤ q) (R : ℕ) (v z : W) :
 
 variable [DecidableRel H.Adj]
 
-/-- A vertex at distance `d + 1` has at most two neighbours at distance `d + 2`, the third
-neighbour being at distance `d`. -/
-private theorem card_filter_neighborFinset_le (degree : ∀ v, H.degree v ≤ 3) {v w : W} {d : ℕ}
+/-- A vertex at positive distance has a neighbour one step closer, leaving at most
+`D - 1` neighbours one step farther. -/
+private theorem card_filter_neighborFinset_le {D : ℕ} (degree : ∀ v, H.degree v ≤ D)
+    {v w : W} {d : ℕ}
     (hw : H.edist v w = (d + 1 : ℕ)) :
-    ((H.neighborFinset w).filter fun y => H.edist v y = (d + 1 + 1 : ℕ)).card ≤ 2 := by
+    ((H.neighborFinset w).filter fun y => H.edist v y = (d + 1 + 1 : ℕ)).card ≤ D - 1 := by
   classical
   obtain ⟨p, hpw, hp⟩ := exists_adj_edist_eq H hw
   have hsub : ((H.neighborFinset w).filter fun y => H.edist v y = (d + 1 + 1 : ℕ)) ⊆
@@ -271,7 +276,7 @@ private theorem card_filter_neighborFinset_le (degree : ∀ v, H.degree v ≤ 3)
     _ = H.degree w - 1 := by
       rw [Finset.card_erase_of_mem ((H.mem_neighborFinset w p).mpr hpw.symm),
         H.card_neighborFinset_eq_degree]
-    _ ≤ 2 := by have := degree w; omega
+    _ ≤ D - 1 := Nat.sub_le_sub_right (degree w) 1
 
 /-- Every vertex of the sphere of radius `d + 1` is a neighbour of a vertex of the sphere of
 radius `d`. -/
@@ -284,22 +289,62 @@ private theorem card_sphere_succ_le_sum (v : W) (d : ℕ) :
   exact Finset.mem_biUnion.mpr ⟨w, (mem_sphere H).mpr hw,
     Finset.mem_filter.mpr ⟨(H.mem_neighborFinset w z).mpr hwz, (mem_sphere H).mp hz⟩⟩
 
-/-- In a graph of maximum degree three, the sphere of radius `d + 1` has at most
-`3 * 2 ^ d` vertices. -/
-theorem card_sphere_succ_le (degree : ∀ v, H.degree v ≤ 3) (v : W) (d : ℕ) :
-    (sphere H v (d + 1)).card ≤ 3 * 2 ^ d := by
+/-- In maximum degree `D`, the sphere of radius `d + 1` has at most
+`D * (D - 1) ^ d` vertices. -/
+theorem card_sphere_succ_le_degree {D : ℕ} (degree : ∀ v, H.degree v ≤ D) (v : W) (d : ℕ) :
+    (sphere H v (d + 1)).card ≤ D * (D - 1) ^ d := by
   induction d with
   | zero =>
     refine (card_sphere_succ_le_sum H v 0).trans ?_
-    rw [sphere_zero, Finset.sum_singleton]
+    rw [sphere_zero, Finset.sum_singleton, pow_zero, mul_one]
     exact (Finset.card_filter_le _ _).trans ((H.card_neighborFinset_eq_degree v).trans_le
       (degree v))
   | succ d ih =>
     refine (card_sphere_succ_le_sum H v (d + 1)).trans ?_
-    calc _ ≤ ∑ _w ∈ sphere H v (d + 1), 2 := Finset.sum_le_sum fun w hw =>
+    calc _ ≤ ∑ _w ∈ sphere H v (d + 1), (D - 1) := Finset.sum_le_sum fun w hw =>
           card_filter_neighborFinset_le H degree ((mem_sphere H).mp hw)
-      _ = 2 * (sphere H v (d + 1)).card := by rw [Finset.sum_const, smul_eq_mul, mul_comm]
-      _ ≤ 3 * 2 ^ (d + 1) := by rw [pow_succ]; omega
+      _ = (D - 1) * (sphere H v (d + 1)).card := by rw [Finset.sum_const, smul_eq_mul, mul_comm]
+      _ ≤ (D - 1) * (D * (D - 1) ^ d) := Nat.mul_le_mul_left _ ih
+      _ = D * (D - 1) ^ (d + 1) := by ring
+
+theorem card_sphere_succ_le (degree : ∀ v, H.degree v ≤ 3) (v : W) (d : ℕ) :
+    (sphere H v (d + 1)).card ≤ 3 * 2 ^ d := card_sphere_succ_le_degree H degree v d
+
+/-- Sphere growth in any fixed maximum degree. -/
+theorem card_sphere_le_degree {D : ℕ} (hD : 2 ≤ D) (degree : ∀ v, H.degree v ≤ D)
+    (v : W) (d : ℕ) : (sphere H v d).card ≤ D * (D - 1) ^ d := by
+  cases d with
+  | zero => simpa [sphere_zero] using (by lia : 1 ≤ D)
+  | succ d =>
+    refine (card_sphere_succ_le_degree H degree v d).trans ?_
+    rw [pow_succ, ← mul_assoc]
+    exact Nat.le_mul_of_pos_right _ (by lia)
+
+/-- A convenient locality bound; sharp ball growth is unnecessary for concentration. -/
+theorem card_ball_le_degree {D : ℕ} (hD : 2 ≤ D) (degree : ∀ v, H.degree v ≤ D)
+    (v : W) (r : ℕ) : (ball H v r).card ≤ D ^ (r + 1) := by
+  induction r with
+  | zero => simpa [ball_zero] using (by lia : 1 ≤ D)
+  | succ r ih =>
+    classical
+    have hsub : ball H v (r + 1) ⊆ ball H v r ∪ sphere H v (r + 1) := by
+      intro z hz
+      rw [mem_ball] at hz
+      rw [Finset.mem_union, mem_ball, mem_sphere]
+      obtain ⟨n, hn, hle⟩ := ENat.le_natCast_iff.mp hz
+      rw [hn]
+      rcases Nat.lt_or_ge n (r + 1) with h | h
+      · exact Or.inl (by exact_mod_cast (by lia : n ≤ r))
+      · exact Or.inr (by rw [show n = r + 1 by lia])
+    have hcard := (Finset.card_le_card hsub).trans (Finset.card_union_le _ _)
+    have hs := card_sphere_succ_le_degree H degree v r
+    have hp : (D - 1) ^ r ≤ D ^ r := Nat.pow_le_pow_left (by lia) r
+    have hmul := Nat.mul_le_mul_left D hp
+    have hg : D ^ (r + 1) + D ^ (r + 1) ≤ D ^ (r + 1) * D := by
+      nlinarith [Nat.mul_le_mul_left (D ^ (r + 1)) hD]
+    rw [← pow_succ'] at hmul
+    rw [pow_succ D (r + 1)]
+    nlinarith
 
 /-- In a graph of maximum degree three, the sphere of radius `d` has at most
 `3 * 2 ^ d` vertices. -/
@@ -340,10 +385,11 @@ theorem card_ball_le (degree : ∀ v, H.degree v ≤ 3) (v : W) (r : ℕ) :
 /-- **Pointwise correlation inequality, summed.** For adjacent vertices the kernel rows have
 inner product at least `κ` times the mean of their squared norms, up to the truncation
 boundary, where `κ = 2q/(1+q^2)`. -/
-theorem sum_kernel_mul_ge (degree : ∀ v, H.degree v ≤ 3) (q : ℝ) (R : ℕ) {u v : W}
+theorem sum_kernel_mul_ge_degree {D : ℕ} (hD : 2 ≤ D) (degree : ∀ v, H.degree v ≤ D)
+    (q : ℝ) (R : ℕ) {u v : W}
     (huv : H.Adj u v) :
     2 * q / (1 + q ^ 2) * ((∑ z, kernel H q R u z ^ 2) + ∑ z, kernel H q R v z ^ 2) / 2 -
-        3 * (2 * q ^ 2) ^ R ≤ ∑ z, kernel H q R u z * kernel H q R v z := by
+        D * ((D - 1 : ℕ) * q ^ 2) ^ R ≤ ∑ z, kernel H q R u z * kernel H q R v z := by
   have hsum : 2 * q / (1 + q ^ 2) *
         ((∑ z, kernel H q R u z ^ 2) + ∑ z, kernel H q R v z ^ 2) / 2 -
         ∑ z, kernel H q R u z * kernel H q R v z =
@@ -357,32 +403,39 @@ theorem sum_kernel_mul_ge (degree : ∀ v, H.degree v ≤ 3) (q : ℝ) (R : ℕ)
       (q ^ 2) ^ R / 2 * (((sphere H u R).card : ℝ) + (sphere H v R).card) := by
     rw [← Finset.mul_sum, Finset.sum_add_distrib, Finset.sum_boole, Finset.sum_boole]
     rfl
-  have hu : ((sphere H u R).card : ℝ) ≤ 3 * 2 ^ R := by
-    exact_mod_cast card_sphere_le H degree u R
-  have hv : ((sphere H v R).card : ℝ) ≤ 3 * 2 ^ R := by
-    exact_mod_cast card_sphere_le H degree v R
+  have hu : ((sphere H u R).card : ℝ) ≤ D * (D - 1 : ℕ) ^ R := by
+    exact_mod_cast card_sphere_le_degree H hD degree u R
+  have hv : ((sphere H v R).card : ℝ) ≤ D * (D - 1 : ℕ) ^ R := by
+    exact_mod_cast card_sphere_le_degree H hD degree v R
   have hP : 0 ≤ (q ^ 2) ^ R := by positivity
   have hbound : (q ^ 2) ^ R / 2 * (((sphere H u R).card : ℝ) + (sphere H v R).card) ≤
-      3 * (2 * q ^ 2) ^ R := by
+      D * ((D - 1 : ℕ) * q ^ 2) ^ R := by
     rw [mul_pow]
     nlinarith [mul_le_mul_of_nonneg_left (add_le_add hu hv) hP]
   linarith
 
+theorem sum_kernel_mul_ge (degree : ∀ v, H.degree v ≤ 3) (q : ℝ) (R : ℕ) {u v : W}
+    (huv : H.Adj u v) :
+    2 * q / (1 + q ^ 2) * ((∑ z, kernel H q R u z ^ 2) + ∑ z, kernel H q R v z ^ 2) / 2 -
+        3 * (2 * q ^ 2) ^ R ≤ ∑ z, kernel H q R u z * kernel H q R v z := by
+  simpa using sum_kernel_mul_ge_degree H (by norm_num : 2 ≤ 3) degree q R huv
+
 /-- **Correlation of adjacent rows.** For a nonnegative ratio `q`, the unit kernel rows of
-adjacent vertices have inner product at least `2q/(1+q^2) - 3 (2q^2)^R`. -/
-theorem sum_unitKernel_mul_ge (degree : ∀ v, H.degree v ≤ 3) {q : ℝ} (hq0 : 0 ≤ q) (R : ℕ)
+adjacent vertices have inner product at least `2q/(1+q^2) - D ((D-1)q^2)^R`. -/
+theorem sum_unitKernel_mul_ge_degree {D : ℕ} (hD : 2 ≤ D) (degree : ∀ v, H.degree v ≤ D)
+    {q : ℝ} (hq0 : 0 ≤ q) (R : ℕ)
     {u v : W} (huv : H.Adj u v) :
-    2 * q / (1 + q ^ 2) - 3 * (2 * q ^ 2) ^ R ≤
+    2 * q / (1 + q ^ 2) - D * ((D - 1 : ℕ) * q ^ 2) ^ R ≤
       ∑ z, unitKernel H q R u z * unitKernel H q R v z := by
   simp only [unitKernel, div_mul_div_comm, ← Finset.sum_div]
-  have hC := sum_kernel_mul_ge H degree q R huv
+  have hC := sum_kernel_mul_ge_degree H hD degree q R huv
   have hA := one_le_sum_kernel_sq H (q := q) R u
   have hB := one_le_sum_kernel_sq H (q := q) R v
   generalize ∑ z, kernel H q R u z * kernel H q R v z = C at hC ⊢
   generalize ∑ z, kernel H q R u z ^ 2 = A at hA hC ⊢
   generalize ∑ z, kernel H q R v z ^ 2 = B at hB hC ⊢
   have hκ : 0 ≤ 2 * q / (1 + q ^ 2) := by positivity
-  have he : 0 ≤ 3 * (2 * q ^ 2) ^ R := by positivity
+  have he : 0 ≤ (D : ℝ) * ((D - 1 : ℕ) * q ^ 2) ^ R := by positivity
   have hs : 1 ≤ Real.sqrt A := Real.one_le_sqrt.mpr hA
   have ht : 1 ≤ Real.sqrt B := Real.one_le_sqrt.mpr hB
   have hsA : Real.sqrt A ^ 2 = A := Real.sq_sqrt (by linarith)
@@ -392,6 +445,12 @@ theorem sum_unitKernel_mul_ge (degree : ∀ v, H.degree v ≤ 3) {q : ℝ} (hq0 
   have h1 : 1 ≤ Real.sqrt A * Real.sqrt B := by nlinarith
   rw [le_div_iff₀ (by positivity)]
   nlinarith [mul_le_mul_of_nonneg_left hamgm hκ, mul_le_mul_of_nonneg_left h1 he]
+
+theorem sum_unitKernel_mul_ge (degree : ∀ v, H.degree v ≤ 3) {q : ℝ} (hq0 : 0 ≤ q) (R : ℕ)
+    {u v : W} (huv : H.Adj u v) :
+    2 * q / (1 + q ^ 2) - 3 * (2 * q ^ 2) ^ R ≤
+      ∑ z, unitKernel H q R u z * unitKernel H q R v z := by
+  simpa using sum_unitKernel_mul_ge_degree H (by norm_num : 2 ≤ 3) degree hq0 R huv
 
 end Finite
 

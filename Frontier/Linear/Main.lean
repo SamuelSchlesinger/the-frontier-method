@@ -111,4 +111,32 @@ theorem cauchyZMod_gaussian {ε : ℝ} (hε : 0 < ε) :
   have : NeZero q := ⟨(Fact.out : q.Prime).ne_zero⟩
   exact hN (ZMod q) σ I _ c (totallyRegular_cauchyZMod q N hq) hfan hc
 
+/-- Totally regular maps over finite fields also have the ternary `7N/4 - o(N)` bound. -/
+theorem linear_finite_fanInThree {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ N in atTop, ∀ (F : Type u) [Field F] [Finite F] (σ : Signature.{v})
+      (I : Interpretation σ F) (M : Matrix (Fin N) (Fin N) F) (c : Circuit σ N N),
+        TotallyRegular M → c.FanInAtMost 3 → c.Computes I (fun x => M *ᵥ x) →
+          (7 / 4 - ε) * N < c.innerSize := by
+  filter_upwards [lowerBound_linear_finite.{u, v} (by norm_num : 2 ≤ 3)
+    (by norm_num : (0 : ℝ) < 2 / 5) layoutBound_two_fifths
+    (show 0 < 2 * ε by positivity)] with N hN
+  intro F _ _ σ I M c hM hfan hc
+  have H := hN F σ I M c hM hfan hc
+  norm_num at H
+  linarith
+
+/-- The ternary bound over infinite fields with polynomial operations. -/
+theorem linear_polynomial_fanInThree {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ N in atTop, ∀ (F : Type u) [Field F] [Infinite F] (σ : Signature.{v})
+      (I : Interpretation σ F), IsPolynomial I → ∀ (M : Matrix (Fin N) (Fin N) F)
+        (c : Circuit σ N N), TotallyRegular M → c.FanInAtMost 3 →
+          c.Computes I (fun x => M *ᵥ x) → (7 / 4 - ε) * N < c.innerSize := by
+  filter_upwards [lowerBound_linear_polynomial.{u, v} (by norm_num : 2 ≤ 3)
+    (by norm_num : (0 : ℝ) < 2 / 5) layoutBound_two_fifths
+    (show 0 < 2 * ε by positivity)] with N hN
+  intro F _ _ σ I hI M c hM hfan hc
+  have H := hN F σ I hI M c hM hfan hc
+  norm_num at H
+  linarith
+
 end Frontier
