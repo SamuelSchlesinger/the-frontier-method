@@ -114,8 +114,10 @@ The new boundary results are checked in Lean as well:
 * Pruning a coherent sweep to selected transitions preserves splicing. Discarded uniform
   probability mass `δ` contributes at most `δ/2` to the agreement bound.
 * Optimizing the pruning cost caps each transition's charge by the mass of its inputs.
-  Square-root moments give a Renyi-entropy criterion for average-case hardness; conditional
-  prefix potentials bound those moments without assuming independent signals.
+  Fractional moments give Renyi-entropy criteria for average-case hardness
+  (`Frontier.agreement_le_moment_sweeps`); conditional prefix potentials bound the
+  square-root moment without assuming independent signals. Sumset bias also survives
+  injective affine changes of input coordinates (`Frontier.FlatSumsetBias.affine_pullback`).
 * A binary tree of regions has a weighted frontier bound with residual factor `(K - 1)^3`.
   Its network realization charges the **union** of the parent and two child boundaries,
   together with locally read inputs. It assumes all inputs are read and unique satisfying traces.
@@ -125,6 +127,9 @@ The new boundary results are checked in Lean as well:
 These refine the method without establishing a better universal `4.5625…` coefficient.
 The [communication investigation](research/communication/README.md) records the exact
 missing supply bound and a shared-selector circuit that defeats a marginal-entropy shortcut.
+The [restriction investigation](research/communication/restrictions.md) derives adaptive
+branch accounting, gives two paid local reductions, and checks an affine compression of a
+low-fanout obstruction. It leaves the universal structural coverage theorem open.
 That still requires a capacity supply theorem or a uniform quantitative Gaussian gain bound.
 The paper gives complete proofs and credits the coding, communication-complexity, and
 tensor-network precedents; [RESEARCH.md](RESEARCH.md) records the remaining proof obligations.
@@ -186,9 +191,10 @@ lake build --wfail
 lake env lean scripts/Audit.lean
 python3 scripts/check_algorithms.py
 python3 scripts/check_communication.py
+python3 research/communication/restrictions.py
 ```
 
-The audit checks the exact axiom lists of forty-nine principal results and fails if any list changes.
+The audit checks the exact axiom lists of fifty-two principal results and fails if any list changes.
 It also runs in CI. The paper's theorem-to-declaration index identifies the checked statements;
 the audit does not verify the external extractor construction or the algorithmic claims.
 The Python script independently compares raw-edge, signal-state, and ledger counting with
@@ -201,6 +207,9 @@ bounds or implement the full Gaussian layout construction.
 The communication script checks capped costs on actual compiled traces, exhaustive codebook
 choices, conditional moment identities, and the shared-selector counterexample. Its local
 savings do not establish a universal improvement.
+The restriction script checks local normalization against exhaustive truth tables,
+fractional branch factors, and affine changes of basis. Its finite obstruction concerns
+the implemented local rules, not minimum circuit size.
 
 ## License
 

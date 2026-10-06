@@ -66,6 +66,10 @@ Run after `lake build --wfail` with `lake env lean scripts/Audit.lean`.
 #guard_msgs in
 #print axioms Frontier.averageCase_sumset
 
+/-- info: 'Frontier.FlatSumsetBias.affine_pullback' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.FlatSumsetBias.affine_pullback
+
 /-- info: 'Frontier.layoutBound_one' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Frontier.layoutBound_one
@@ -113,6 +117,14 @@ Run after `lake build --wfail` with `lake env lean scripts/Audit.lean`.
 /-- info: 'Frontier.agreement_le_root_sweeps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Frontier.agreement_le_root_sweeps
+
+/-- info: 'Frontier.Sweep.cappedCapacity_le_moment' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Sweep.cappedCapacity_le_moment
+
+/-- info: 'Frontier.agreement_le_moment_sweeps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.agreement_le_moment_sweeps
 
 /-- info: 'Frontier.Communication.rootPotential_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in

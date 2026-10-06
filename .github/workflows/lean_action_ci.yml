@@ -21,3 +21,5 @@ jobs:
         run: python scripts/check_algorithms.py
       - name: Check communication capacity experiments
         run: python scripts/check_communication.py
+      - name: Check restriction and affine preparation experiments
+        run: python research/communication/restrictions.py

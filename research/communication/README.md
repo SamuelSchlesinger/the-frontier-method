@@ -68,9 +68,13 @@ min(lambda, p) <= lambda^(1-theta) p^theta,
 error <= (1/2) lambda^(1-theta) sum_t 2^((1-theta) H_theta(Z_t)).
 ```
 
-This extension is not formalized; the checked moment endpoint is `theta = 1/2`.
-Taking theta close to one can give better coefficients for biased independent
-sources, at the expense of the exponential remainder's rate.
+The unnormalized fractional-moment inequality is now checked as
+`Sweep.cappedCapacity_le_moment` and `agreement_le_moment_sweeps`; the entropy
+formula above is its logarithmic restatement. Taking theta close to one can give
+better coefficients for biased independent sources and for restriction-tree
+accounting, at the expense of the exponential remainder's rate. The
+[restriction continuation](restrictions.md) derives that accounting and tests
+concrete structural reductions, without claiming a universal improvement.
 
 ## Where amortization enters
 
@@ -196,7 +200,7 @@ Run `python3 scripts/check_communication.py`:
   copies of communication problems. That theorem does not supply the circuit
   prefix-potential bound required here.
 
-The capped and square-root bounds and finite conditional telescoping are checked
+The capped and fractional-moment bounds and finite conditional telescoping are checked
 in Lean. The entropy restatements, shared-selector calculation, and special
 conditional-probability examples are paper proofs with finite checks. A stronger
 unrestricted circuit lower bound remains open in this investigation.
