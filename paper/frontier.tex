@@ -113,15 +113,18 @@ With $m$ reachable inputs the sharper exponent is $\min\{m,A(s-m)\}+\eta s$; wit
 ledger $M$, counting costs $\card M^{O(1)}2^{(1/L+\eta)s_{\mathrm{ord}}}$ up to polynomial factors.
 The deterministic cubic layout construction has polynomial degree independent of its accuracy.
 A second capacity theorem charges distinct signal values instead of their repeated edge copies.
-Gaussian vertex scores also give $\LB_4(2/5)$ and a $7n/4-o(n)$ lower bound for ternary
-gates. Threshold charging extends to smooth decomposable representations, and mixed
+Gaussian vertex scores give explicit layout coefficients in every fixed degree, including
+$\LB_4(2/5)$ and a $7n/4-o(n)$ lower bound for ternary gates.
+Threshold charging extends to smooth decomposable representations, and mixed
 input--output recovery extends the finite-alphabet map bound beyond linear maps.
 
 A weighted frontier lemma bounds agreement of circuits of size $(L-\varepsilon)n$ with a
 sumset extractor of error $b$ by $1/2+b+2^{-\Omega_\varepsilon(n)}$ under uniform inputs.
+The polynomial-error construction of Chattopadhyay and Liao therefore gives an explicit
+language in $\mathsf P$ with agreement at most $1/2+n^{-\Omega(1)}$ in this size range.
 The layout theorem, the general exact lower bounds, and this uniform average-case bound are
-formally verified in Lean~4. The explicit Boolean instantiations use a cited sumset-extractor
-construction. The counting algorithms are not formalized.
+formally verified in Lean~4. The explicit Boolean instantiations use cited sumset-extractor
+constructions. The counting algorithms are not formalized.
 \end{abstract}
 
 \newpage
@@ -185,10 +188,15 @@ than $(4 - \varepsilon)n$.
 \leanref{Frontier.lowerBound_gaussian}
 \end{corollary}
 
-For every fixed fan-in $r\ge2$, we also prove the baseline bound
-$(r-1)s>(2-\varepsilon)n$. It follows from the general-degree estimate
-$\cw(G)\le\beta_1(G)+d\lfloor\log_2\card V\rfloor$
-(\cref{thm:general-layout,cor:all-fanin}).
+For every fixed fan-in $r\ge2$, Gaussian vertex scores give
+\[
+  (r-1)s>\left(1+\frac1{a_{r+1}}-\varepsilon\right)n,
+  \qquad a_d=\frac{3d}{2d-3}\frac{\arccos(2\sqrt{d-1}/d)}{\pi}<\frac34
+\]
+(\cref{thm:degree-layout,cor:degree-fanin}). In particular, $a_4=2/5$ gives
+$s>(7/4-\varepsilon)n$ for ternary gates. The median-edge coefficient above is sharper
+for binary gates. A spanning-tree argument also gives the simpler baseline
+$(r-1)s>(2-\varepsilon)n$ (\cref{thm:general-layout,cor:all-fanin}).
 
 \paragraph{Nondeterministic circuits.}
 The same lower bound holds for verifiers $C(x,y)$ with $n$ ordinary inputs and any number of
@@ -222,6 +230,9 @@ agreement at most $1/2+b_n+2^{-\Omega_\varepsilon(n)}$ under uniform inputs for 
 of size at most $(L-\varepsilon)n$ (\cref{thm:average-case,cor:extractor-average}). This is a
 bound for deterministic circuits; its proof uses uniqueness of the compiled trace.
 The ordinary bias $2b_n$ corresponds to prediction advantage $b_n$.
+The polynomial-error extractor of Chattopadhyay and Liao gives an explicit language in
+$\mathsf P$ with agreement at most $1/2+n^{-\Omega(1)}$ in this range
+(\cref{cor:explicit-average}). Its polylogarithmic entropy requirement is still $o(n)$.
 The weighted form also handles arbitrary input distributions through their min-entropy
 and permits exceptional inputs charged to a shared measure (\cref{thm:weighted-circuit}).
 
@@ -453,7 +464,7 @@ instantiations, the signal-capacity inequality, the layout theorem, and the unif
 average-case bound from rectangle or sumset bias are
 formalized in Lean~4~\cite{Lean4} (toolchain \texttt{v4.35.0-rc3}),
 using Mathlib~\cite{Mathlib} (commit \texttt{9a6fbe0}) and CSLib~\cite{CSLib} (commit
-\texttt{89dc6fb}), in about 13,000 lines including documentation, available at
+\texttt{89dc6fb}), in about 14,000 lines including documentation, available at
 \begin{center}
 \url{https://github.com/SamuelSchlesinger/the-frontier-method}.
 \end{center}
@@ -464,8 +475,8 @@ Formalized results below are tagged with their Lean declarations. These declarat
 depend only on Lean's standard axioms (\texttt{propext},
 \texttt{Classical.choice}, \texttt{Quot.sound}); there is no \texttt{sorry}. The formal
 statements quantify over every signature, interpretation, acceptance set and circuit, and their
-hypotheses match the corresponding general statements here. The extractor construction and its
-polynomial-time evaluation behind \cref{cor:explicit,cor:extractor-average} are cited, not
+hypotheses match the corresponding general statements here. The extractor constructions and their
+polynomial-time evaluation behind \cref{cor:explicit,cor:explicit-average} are cited, not
 formalized: Lean proves the bounds for every family satisfying the respective disperser or
 flat-source bias hypothesis. The weighted inequality for coherent sweeps
 (\cref{prop:weighted-sweep}) and the uniform average-case circuit theorem
@@ -488,7 +499,7 @@ lake env lean scripts/Audit.lean
 python3 scripts/check_algorithms.py
 ./scripts/build-paper.sh
 \end{verbatim}
-The audit checks the exact axiom lists of thirty-six principal results, including weighted
+The audit checks the exact axiom lists of forty-four principal results, including weighted
 peeling, the average-case endpoints, and the new capacity and layout results; a changed
 list fails the check.
 The Python script checks the reference edge, signal, and ledger counting
@@ -1639,12 +1650,34 @@ coordinates. Their sum is uniform on the rectangle and both sources have the req
 min-entropy. Error $b_n$ for a single output bit is exactly bias at most $2b_n$.
 \end{proof}
 
-Li's cited extractor gives this statement for any fixed positive constant error, with
-$\log K_n=O(\log n)$~\cite{Li2023}. No vanishing-error construction is needed for the stated
-constant-advantage hardness. A vanishing $b_n$ requires an extractor with the corresponding
-error guarantee; that does not follow by letting the error parameter vary in a theorem
-stated only for fixed constants. The exponential remainder also uses a fixed gap below $Ln$;
-the theorem does not assert the same remainder exactly at $s=Ln$.
+\begin{corollary}[Explicit polynomially small agreement advantage]
+\label{cor:explicit-average}
+There are a language $f$ in $\mathsf P$ and a constant $c>0$ such that, for every fixed
+$\varepsilon>0$ and all sufficiently large $n$, every Boolean circuit $C$ of fan-in at
+most two with at most $(L-\varepsilon)n$ positive-arity gates satisfies
+\[
+  \Pr_{x\sim U_n}[C(x)=f(x)]\le\frac12+n^{-c}.
+\]
+\end{corollary}
+
+\begin{proof}
+Chattopadhyay and Liao~\cite[Theorem~1]{ChattopadhyayLiao2022} construct a polynomial-time
+extractor for the sum of two sources of min-entropy $k_n=(\log n)^{O(1)}$, with error
+$b_n=n^{-\Omega(1)}$. Take its first output bit; projection cannot increase statistical
+distance. Set $K_n=\lceil2^{k_n}\rceil$. Then $\log K_n=o(n)$, so
+\cref{cor:extractor-average} applies. More precisely, if $b_n\le C_0n^{-a}$ for some
+$a>0$, its bound is eventually at most $1/2+(C_0+1)n^{-a}$, which is at most
+$1/2+n^{-a/2}$ for large $n$. The formal implication from the flat-source error bound,
+including absorption of the exponential remainder, is
+\lean{Frontier.averageCase_sumset_polynomial}; the construction and its polynomial-time
+evaluation are external.
+\end{proof}
+
+Li's logarithmic-entropy construction still supplies the sharper polynomial rectangle
+threshold used for the DNNF bound, and gives constant-error average-case hardness
+for every fixed error~\cite{Li2023}. The vanishing-error corollary instead uses the
+polynomial-error guarantee above. Both circuit agreement statements require a fixed gap
+below $Ln$; no exponentially small remainder is asserted exactly at $s=Ln$.
 
 % ===========================================================================
 \section{Layout bounds}
@@ -1998,24 +2031,25 @@ Apply \cref{thm:main} with $A=1$ and \cref{thm:general-layout} at degree $r+1$.
 \end{proof}
 
 These are baseline consequences of the layout method. The following Gaussian construction
-sharpens the ternary bound. We make no claim that these higher-fan-in constants are optimal
+sharpens them in every fixed degree. We make no claim that these higher-fan-in constants are optimal
 or historically best possible in their respective circuit models.
 
 \begin{theorem}[Gaussian vertex layouts in bounded degree]
 \label{thm:vertex-layout}
-For every fixed integer $d\ge2$ and $\xi>0$, every sufficiently large simple graph $H$
+For every fixed integer $d\ge2$ and $\xi>0$, every sufficiently large loopless multigraph $H$
 of maximum degree at most $d$, with $h$ vertices and $m$ edges, has a layout of width at most
 \[
   \gamma_d m+\xi h,\qquad
   \rho_d=\frac{2\sqrt{d-1}}d,\qquad
   \gamma_d=\frac{\arccos\rho_d}{\pi}.
 \]
-\leanref{Frontier.Gaussian.vertexLayout_bound}
+\leanref{Frontier.Gaussian.multigraph_vertexLayout_bound}
 \end{theorem}
 
 \begin{proof}
-Use the normalized truncated distance kernels of \cref{lem:kernel}, now with
-$0<\lambda<1/\sqrt{d-1}$. A sphere of positive radius $j$ has at most
+Use the normalized truncated distance kernels of \cref{lem:kernel} on the underlying simple
+graph, whose maximum degree is at most $d$, with $0<\lambda<1/\sqrt{d-1}$.
+A sphere of positive radius $j$ has at most
 $d(d-1)^{j-1}$ vertices. The pointwise kernel defect proof is unchanged: adjacent distances
 differ by at most one, and a one-sided truncation error lies on a radius-$R$ sphere.
 Thus adjacent unit rows satisfy
@@ -2039,6 +2073,9 @@ vertices in each window, and vertices in either tail. Each indicator depends on 
 ball of independent Gaussian coordinates. For fixed $d,R$, each support meets only boundedly
 many others, so the second-moment argument in the proof of \cref{thm:layout} bounds every
 variance by $O_{d,R}(h)$.
+Parallel edges remain distinct summands: at most $d$ edges are incident to any vertex,
+so multiplicity also respects the bounded-overlap estimate. No cut cardinality is replaced
+by a count in the underlying simple graph.
 For fixed $M$ and $\epsilon>0$, a union bound gives a sample in which all counts are at most
 their means plus $\epsilon h$, once $h$ is large enough.
 
@@ -2054,9 +2091,78 @@ $h/T^2$. Consequently every prefix is bounded by
 The window argument includes all tied vertices. Choose $\rho<\rho_d$ so that the crossing
 coefficient differs from $\gamma_d$ by at most $\xi/(4d)$, then choose $T,M,\epsilon$
 to make each of the three displayed error terms at most $\xi/4$. Since $m\le dh$, the
-result follows. The ordering and sampling steps are checked separately by
-\lean{Frontier.exists_key_of_vertexScore} and \lean{Frontier.Gaussian.exists_vertex_sample}.
+result follows. The multigraph ordering and sampling steps are checked separately by
+\lean{Frontier.Multigraph.exists_key_of_vertexScore} and
+\lean{Frontier.Gaussian.exists_multi_vertex_sample}.
 \end{proof}
+
+\begin{theorem}[Gaussian cycle-rank coefficients in every degree]
+\label{thm:degree-layout}
+For every fixed integer $d\ge3$, the layout bound $\LB_d(a_d)$ holds, where
+\[
+  a_d=\frac{3d}{2d-3}\,\frac{\arccos(2\sqrt{d-1}/d)}{\pi}.
+\]
+Moreover, $0<a_d<3/4$ and $a_4=2/5$.
+\leanref{Frontier.layoutBound_degree, Frontier.Gaussian.degreeCoefficient_lt_three_quarters}
+\end{theorem}
+
+\begin{proof}
+Run the ordered-block compression of \cref{prop:compression} with boundary budget $d$.
+The doubling invariant gives internal prefix boundary at most $d\log_2\card B$.
+If more than one block remains, form the loopless quotient multigraph $H$, keeping every
+edge between distinct blocks. Write $h=\card{V(H)}$ and $m=\card{E(H)}$.
+Adjacent blocks of degrees $a,b\le d$, joined by $e\ge1$ edges, satisfy
+$a+b-2e>d$ at termination. Thus $a+b\ge d+3$ and every degree lies between $3$ and $d$;
+connectivity ensures a neighbour for each block.
+
+Charge weight $d+3-a$ to each incidence at a vertex of degree $a$. Its total contribution is
+\[
+  a(d+3-a)=3d+(a-3)(d-a)\ge3d.
+\]
+Each edge receives weight $2(d+3)-a-b\le d+3$, so $3dh\le(d+3)m$.
+If the original graph has $N$ vertices and $M$ edges, compression gives
+$m+N\le M+h$: every merge moves at least one edge inside a block. Combining these yields
+\[
+  (2d-3)m\le3d(M-N)\le3d\beta_1(G).
+\]
+All counts retain multiplicity. The incidence and compression estimates are checked separately.
+\leanref{Frontier.Multigraph.core_density}
+\leanref{Frontier.Multigraph.Compression.Terminal.multi_edge_bound}
+
+For a sufficiently large quotient, \cref{thm:vertex-layout} gives width at most
+$\gamma_dm+\xi h$. Since $h\le m\le3\beta_1(G)$, taking $\xi=\eta/3$ bounds this by
+$(a_d+\eta)\beta_1(G)$. Expanding the block lists adds at most $d\log_2 N+d$;
+absorb this in $\eta N+C_{d,\eta}$. Quotients below the fixed size threshold have boundedly
+many edges and contribute only to the constant. A single block is handled by the same
+internal-prefix invariant.
+
+Finally, $\rho_d<1$ gives positivity. The inequality
+$\sin t\le t$ applied to $t=\pi/2-\arccos\rho_d$ gives
+$\arccos\rho_d\le\pi/2-\rho_d$. Since $8\sqrt{d-1}>3\pi$ for $d\ge3$, substitution
+gives $a_d<3/4$. At degree four, $\rho_4=\sqrt3/2$ and $\gamma_4=1/6$, so $a_4=2/5$.
+\end{proof}
+
+\begin{corollary}[Gaussian bounds for every fixed fan-in]
+\label{cor:degree-fanin}
+Under the hypotheses on $S_n$ in \cref{thm:main}, for every fixed $r\ge2$ and
+$\varepsilon>0$, every circuit of fan-in at most $r$ deciding $S_n$ satisfies
+\[
+  (r-1)s>\left(1+\frac1{a_{r+1}}-\varepsilon\right)n
+\]
+for all sufficiently large $n$. In particular, $(r-1)s>(7/3-\varepsilon)n$.
+\leanref{Frontier.lowerBound_degree}
+\end{corollary}
+
+\begin{proof}
+Apply \cref{thm:main} with $A=a_{r+1}$. The same substitution gives the coefficients for
+totally regular maps over finite fields with arbitrary operations, over infinite fields with
+polynomial operations, and for finite-alphabet MDS maps
+(\lean{Frontier.linear_finite_degree, Frontier.linear_polynomial_degree, Frontier.mds_degree}).
+\end{proof}
+
+For example, $a_5=15\arccos(4/5)/(7\pi)$ gives a gate coefficient
+$(1+1/a_5)/3\approx1.092760448$ for fan-in four. These are improvements over the
+spanning-tree baseline within this method; at fan-in two the median-edge theorem is stronger.
 
 \begin{theorem}[The degree-four layout constant]
 \label{thm:quartic-layout}
@@ -2065,36 +2171,10 @@ $\LB_4(2/5)$ holds.
 \end{theorem}
 
 \begin{proof}
-Run the ordered-block compression of \cref{prop:compression}, with boundary budget four:
-merge adjacent blocks whenever their union has at most four outgoing edges, placing the
-larger block first. Every block has boundary at most four, and every proper prefix of its
-list has boundary at most $4\log_2\card B$. Each merge decreases the number of blocks,
-so the process terminates.
-
-If at least two blocks remain, let $H$ be the quotient. For adjacent blocks of degrees
-$a,b\le4$ joined by $e\ge1$ edges, termination says $a+b-2e>4$. Hence $a,b\ge3$,
-$e=1$, and $a+b\ge7$. Thus $H$ is simple, has degrees three or four, and has no edge
-between two degree-three vertices. Connectivity ensures that no block is isolated.
-
-Assign weight four to a degree-three endpoint and weight three to a degree-four endpoint.
-Each vertex contributes twelve across its incidences; each edge receives at most seven.
-Writing $h=\card{V(H)}$ and $m=\card{E(H)}$, this gives $12h\le7m$.
-If the original graph has $N$ vertices and $M$ edges, the compression invariant is
-$N\le h+(M-m)$: each merge moves at least one edge inside a block. Therefore
-\[
-  5m\le12(M-N)\le12\beta_1(G).
-\]
-The corresponding checked bound is
-\lean{Frontier.Multigraph.Compression.Terminal.edge_bound}.
-
-At degree four, $\rho_4=\sqrt3/2$ and $\gamma_4=1/6$. For a large quotient,
-\cref{thm:vertex-layout} gives width at most $m/6+\xi h$.
-Since $h\le m\le12\beta_1(G)/5$, choosing $\xi$ sufficiently small makes this at most
-$(2/5+\eta)\beta_1(G)$. Expanding the block lists adds at most $4\log_2 N+4$.
-Quotients below the fixed size threshold have boundedly many edges, and their width is
-absorbed in the constant. Finally absorb $4\log_2 N$ in $\eta N+C_\eta$.
-This treats every connected loopless multigraph of maximum degree four, as the compiler
-requires; a theorem only for regular graphs would not suffice.
+Specialize \cref{thm:degree-layout} to $d=4$. In this case the terminal quotient is
+even simple: $a+b-2e>4$ with $a,b\le4$ forces $e=1$. Its degrees are three or four,
+and no edge joins two degree-three vertices. The incidence estimate becomes $12h\le7m$,
+hence $5m\le12\beta_1(G)$; combining with $\gamma_4=1/6$ gives $2/5$.
 \end{proof}
 
 \begin{corollary}[Ternary gates]
@@ -2840,19 +2920,21 @@ $c=4$ gives $0.8421058118\ldots+\varepsilon$. The cutoff for a constant improvem
 $2^n$ remains $c<L$. Reachability here is syntactic; no test for semantic dependence is used.
 \end{corollary}
 
-\begin{corollary}[Ternary counting; not formalized]
+\begin{corollary}[Counting at every fixed fan-in; not formalized]
 \label{cor:ternary-counting}
-For every fixed $\eta>0$, satisfying assignments of a Boolean circuit of fan-in at most
-three can be counted deterministically in time and space
+\label{cor:degree-counting}
+For every fixed $r\ge2$ and $\eta>0$, satisfying assignments of a Boolean circuit of fan-in
+at most $r$ can be counted deterministically in time and space
 \[
-  O^*\!\left(2^{\min\{m,\,(2/5)(2s-m)\}+\eta s}\right)
-  \le O^*\!\left(2^{(4/7+\eta)s}\right),
+  O^*\!\left(2^{\min\{m,\,a_{r+1}((r-1)s-m)\}+\eta s}\right)
+  \le O^*\!\left(2^{\left(\frac{(r-1)a_{r+1}}{1+a_{r+1}}+\eta\right)s}\right),
 \]
-where $s$ counts positive-arity gates and $m$ inputs reach the output.
+where $s$ counts positive-arity gates and $m$ inputs reach the output. In particular,
+the ternary exponent is $4/7+\eta$. For binary circuits, \cref{thm:sat} is sharper.
 \end{corollary}
 
 \begin{proof}
-The degree-four compression is constructive by scanning adjacent block pairs and making
+The degree-$(r+1)$ compression is constructive by scanning adjacent block pairs and making
 eligible merges. Its quotient layout is constructible by the same local discretization
 and conditional-expectation argument as \cref{lem:derandomization}. The counts are now the
 vertex-score windows and tails and the edge-crossing tests in \cref{thm:vertex-layout}.
@@ -2864,10 +2946,10 @@ first and second moments can be evaluated by enumerating their bounded supports.
 Conditional expectations select all coordinates in $f(\xi)h^3\operatorname{polylog}h$ time,
 and \cref{thm:vertex-layout}'s grid-to-order argument verifies the resulting layout.
 
-The compiler has cycle rank at most $2s+1-m$ and at most $6s+3$ vertices. Repeat the
-proof of \cref{thm:sat} with $A=2/5$. The two exponents meet at
-$m=(2/5)(2s-m)$, namely $m=4s/7$. Polynomial factors include the full circuit encoding
-and the number of inputs, as before.
+The compiler has cycle rank at most $(r-1)s+1-m$ and $O_r(s+1)$ vertices. Repeat the
+proof of \cref{thm:sat} with $A=a_{r+1}$. The two exponents meet at
+$m=A((r-1)s-m)$, namely $m=(r-1)As/(1+A)$. Constants may depend on the fixed fan-in
+and accuracy; polynomial factors include the full circuit encoding and number of inputs.
 \end{proof}
 
 \subsection{Counting with a ledger}
@@ -3384,8 +3466,8 @@ next to its circuit model.
 \label{sec:open}
 
 \paragraph{Better layouts.}
-Any improvement of $\LB_3(A)$ below $A \approx 0.2807$ improves every coefficient in this paper at
-once, and the running time of \cref{thm:sat}. Since random cubic graphs have bisection width at
+Any improvement of $\LB_3(A)$ below $A \approx 0.2807$ improves all the binary-circuit
+coefficients and the running time of \cref{thm:sat}. Since random cubic graphs have bisection width at
 least $0.103295\,h$~\cite{LichevMitsche2020}, $\LB_3(A)$ fails for $A < 0.20659$, so with layouts
 measured by their number of edges the method cannot exceed the coefficient
 $1 + 1/0.20659 \approx 5.8405$ for fan-in two. What is the least $A$ for which $\LB_3(A)$ holds?
@@ -3400,13 +3482,10 @@ straddling estimate alone cannot improve its limiting constant. A different scor
 a stronger global layout argument, or signal compression would be needed.
 
 \paragraph{Larger fan-in.}
-\Cref{thm:general-layout} proves $\LB_d(1)$ in every fixed degree, and
-\cref{thm:quartic-layout} improves this to $\LB_4(2/5)$, giving the ternary coefficient $7/4$.
-What sharper cycle-rank coefficients hold for $d\ge5$? The Gaussian per-edge estimate of
-\cref{thm:vertex-layout} is already available for every fixed degree, but terminal
-compression can leave parallel edges when $d\ge5$. Its extension to these quotients,
-with a suitable edge-to-cycle-rank estimate, remains to be proved.
-Another possible route is to replace higher-degree vertices by subcubic trees and control
+\Cref{thm:degree-layout} proves $\LB_d(a_d)$ in every fixed degree $d\ge3$, retaining
+parallel edges in both compression and concentration. Can one improve these coefficients
+by exploiting the joint degree and correlation profile, rather than bounding all adjacent
+correlations by $\rho_d$? Another route is to replace higher-degree vertices by subcubic trees and control
 the congestion when projecting a cubic layout back to the original graph.
 
 \paragraph{Other capacities.}
@@ -3423,6 +3502,8 @@ splicing or injectivity theorem.
 The formalization takes the hard sets as hypotheses. A formal construction of a sumset
 disperser, or of any dense rectangle-free family in $\mathsf P$ with $\log K_n = o(n)$, would
 make \cref{cor:explicit} unconditional in Lean.
+A polynomial-error sumset extractor would also formalize the explicit instantiation in
+\cref{cor:explicit-average}, whose conditional average-case implication is already checked.
 
 % ===========================================================================
 % ===========================================================================
@@ -3433,6 +3514,8 @@ make \cref{cor:explicit} unconditional in Lean.
 All declarations are in the namespace \lean{Frontier}, in the files under \lean{Frontier/}
 named in each group of the table, except for the upstreaming candidates in
 \lean{Frontier/ForMathlib} and \lean{Frontier/ForCslib}.
+For \cref{cor:explicit-average}, the indexed declaration proves the implication from
+polynomially small extractor error; the explicit construction is cited externally.
 
 {\small
 \begin{longtable}{ll}
@@ -3494,6 +3577,7 @@ Thm.~\ref{thm:average-case} & \lean{Network.sweep_coherent}, \lean{agreement_le_
  & \lean{agreement_le_unused}, \lean{averageCase}, \lean{averageCase_abs} \\
  & \lean{averageCase_gaussian} \\
 Cor.~\ref{cor:extractor-average} & \lean{FlatSumsetBias.rectangleBias}, \lean{averageCase_sumset} \\
+Cor.~\ref{cor:explicit-average} & \lean{averageCase_sumset_polynomial} \\
 \midrule
 \multicolumn{2}{l}{\emph{Layouts} (\lean{Layouts/*.lean}, \lean{Layouts.lean}, \lean{Main.lean})} \\*
 Thm.~\ref{thm:layout} & \lean{layoutBound_gaussian}, \lean{Gaussian.cubicLayoutBound_gaussian} \\
@@ -3505,9 +3589,15 @@ Prop.~\ref{prop:straddle} & \lean{Gaussian.measureReal_straddleEvent_le} \\
 Cor.~\ref{cor:unconditional} & \lean{lowerBound_gaussian}, \lean{lowerBound_four} \\
 Thm.~\ref{thm:general-layout} & \lean{Multigraph.exists_layout_cycleRank}, \lean{layoutBound_one} \\
 Cor.~\ref{cor:all-fanin} & \lean{lowerBound_all_fanIn} \\
-Thm.~\ref{thm:vertex-layout} & \lean{Gaussian.vertexLayout_bound} \\
- & \lean{Gaussian.sum_unitKernel_mul_ge_degree}, \lean{Gaussian.exists_vertex_sample} \\
- & \lean{exists_key_of_vertexScore} \\
+Thm.~\ref{thm:vertex-layout} & \lean{Gaussian.multigraph_vertexLayout_bound} \\
+ & \lean{Gaussian.sum_unitKernel_mul_ge_degree} \\
+ & \lean{Gaussian.exists_multi_vertex_sample} \\
+ & \lean{Multigraph.exists_key_of_vertexScore} \\
+Thm.~\ref{thm:degree-layout} & \lean{layoutBound_degree}, \lean{Multigraph.core_density} \\
+ & \lean{Gaussian.degreeCoefficient_lt_three_quarters} \\
+ & \lean{Multigraph.Compression.Terminal.multi_edge_bound} \\
+Cor.~\ref{cor:degree-fanin} & \lean{lowerBound_degree}, \lean{mds_degree} \\
+ & \lean{linear_finite_degree}, \lean{linear_polynomial_degree} \\
 Thm.~\ref{thm:quartic-layout} & \lean{layoutBound_two_fifths} \\
  & \lean{Multigraph.Compression.Terminal.edge_bound} \\
 Cor.~\ref{cor:ternary} & \lean{lowerBound_fanInThree} \\

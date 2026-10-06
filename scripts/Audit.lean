@@ -149,3 +149,35 @@ Run after `lake build --wfail` with `lake env lean scripts/Audit.lean`.
 /-- info: 'Frontier.linear_polynomial_fanInThree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Frontier.linear_polynomial_fanInThree
+
+/-- info: 'Frontier.layoutBound_degree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.layoutBound_degree
+
+/-- info: 'Frontier.Gaussian.degreeCoefficient_lt_three_quarters' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Gaussian.degreeCoefficient_lt_three_quarters
+
+/-- info: 'Frontier.Multigraph.Compression.Terminal.multi_edge_bound' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Multigraph.Compression.Terminal.multi_edge_bound
+
+/-- info: 'Frontier.lowerBound_degree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.lowerBound_degree
+
+/-- info: 'Frontier.linear_finite_degree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.linear_finite_degree
+
+/-- info: 'Frontier.linear_polynomial_degree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.linear_polynomial_degree
+
+/-- info: 'Frontier.mds_degree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.mds_degree
+
+/-- info: 'Frontier.averageCase_sumset_polynomial' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.averageCase_sumset_polynomial

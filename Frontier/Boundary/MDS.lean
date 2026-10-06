@@ -247,6 +247,15 @@ theorem mds_gaussian {ε : ℝ} (hε : 0 < ε) :
   norm_num at H
   exact H
 
+/-- **Every fixed fan-in for nonlinear MDS maps**, with the Gaussian degree coefficient. -/
+theorem mds_degree {r : ℕ} (hr : 2 ≤ r) {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ N in atTop, ∀ (U : Type u) [Finite U] [Nontrivial U]
+      (σ : Signature.{v}) (I : Interpretation σ U) (F : (Fin N → U) → (Fin N → U))
+      (c : Circuit σ N N), IsMDS F → c.FanInAtMost r → c.Computes I F →
+        (1 + 1 / Gaussian.degreeCoefficient (r + 1) - ε) * N <
+          (r - 1) * c.innerSize :=
+  lowerBound_mds hr (Gaussian.degreeCoefficient_pos (by lia)) (layoutBound_degree (by lia)) hε
+
 /-- Coordinatewise alphabet permutations preserve the MDS graph-code property. -/
 theorem IsMDS.permute {F : (Fin N → U) → (Fin N → U)} (hF : IsMDS F)
     (before after : Fin N → Equiv.Perm U) :

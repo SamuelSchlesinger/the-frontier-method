@@ -125,6 +125,27 @@ theorem linear_finite_fanInThree {ε : ℝ} (hε : 0 < ε) :
   norm_num at H
   linarith
 
+/-- **Every fixed fan-in over finite fields**, with the Gaussian degree coefficient. -/
+theorem linear_finite_degree {r : ℕ} (hr : 2 ≤ r) {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ N in atTop, ∀ (F : Type u) [Field F] [Finite F] (σ : Signature.{v})
+      (I : Interpretation σ F) (M : Matrix (Fin N) (Fin N) F) (c : Circuit σ N N),
+        TotallyRegular M → c.FanInAtMost r → c.Computes I (fun x => M *ᵥ x) →
+          (1 + 1 / Gaussian.degreeCoefficient (r + 1) - ε) * N <
+            (r - 1) * c.innerSize :=
+  lowerBound_linear_finite hr (Gaussian.degreeCoefficient_pos (by lia))
+    (layoutBound_degree (by lia)) hε
+
+/-- **Every fixed fan-in over infinite fields**, for polynomial operations. -/
+theorem linear_polynomial_degree {r : ℕ} (hr : 2 ≤ r) {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ N in atTop, ∀ (F : Type u) [Field F] [Infinite F] (σ : Signature.{v})
+      (I : Interpretation σ F), IsPolynomial I → ∀ (M : Matrix (Fin N) (Fin N) F)
+        (c : Circuit σ N N), TotallyRegular M → c.FanInAtMost r →
+          c.Computes I (fun x => M *ᵥ x) →
+            (1 + 1 / Gaussian.degreeCoefficient (r + 1) - ε) * N <
+              (r - 1) * c.innerSize :=
+  lowerBound_linear_polynomial hr (Gaussian.degreeCoefficient_pos (by lia))
+    (layoutBound_degree (by lia)) hε
+
 /-- The ternary bound over infinite fields with polynomial operations. -/
 theorem linear_polynomial_fanInThree {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ N in atTop, ∀ (F : Type u) [Field F] [Infinite F] (σ : Signature.{v})

@@ -28,7 +28,11 @@ The layout bound is proved for subcubic graphs with `A = (3/π) arccos((1 + 2√
   through min-entropy, asymmetric rectangle thresholds, and a shared exceptional measure.
   Lean checks the coherent-sweep weighted inequality, the uniform circuit theorem
   (`Frontier.averageCase`, `Frontier.averageCase_abs`), and its flat-source sumset instantiation
-  (`Frontier.averageCase_sumset`). The explicit program partition and general distributional
+  (`Frontier.averageCase_sumset`). The [Chattopadhyay–Liao extractor, Theorem 1](https://eccc.weizmann.ac.il/report/2021/147/revision/1/download/)
+  gives an explicit language in P with agreement at most `1/2 + n^(-Ω(1))`: its entropy
+  threshold is polylogarithmic and its error polynomially small. Lean checks the implication
+  from such error bounds (`Frontier.averageCase_sumset_polynomial`); the construction is external.
+  The explicit program partition and general distributional
   packing theorem remain paper proofs. The exponential remainder requires a fixed gap below `Ln`.
 * **Nondeterministic circuits**: the same coefficient holds for verifier circuits, uniformly
   in the number of existential witness inputs (`Frontier.lowerBound_nondeterministic_gaussian`).
@@ -38,16 +42,20 @@ The layout bound is proved for subcubic graphs with `A = (3/π) arccos((1 + 2√
   instead of their repeated edge copies (`Frontier.Compiler.ncard_accepted_le_signals`).
   This supplies a finer capacity theorem; improving the numerical coefficient still requires
   a stronger signal-layout bound.
-* **Every fixed fan-in**: a spanning tree gives
+* **Every fixed fan-in**: Gaussian vertex ordering and multigraph compression give
+  `LayoutBound d a_d` for every fixed `d ≥ 3`, with
+  `a_d = 3d/(2d-3) · arccos(2√(d-1)/d)/π < 3/4`
+  (`Frontier.layoutBound_degree`). Thus
+  `(r-1)s > (1 + 1/a_(r+1) - ε)n` (`Frontier.lowerBound_degree`).
+  At fan-in three this gives `s > (7/4 - ε)n`; at fan-in four the coefficient is
+  approximately `1.092760448`. The binary median-edge coefficient `L` above is sharper.
+  The checked graph proof counts parallel edges throughout; its per-edge estimate is
+  `cutwidth ≤ arccos(2√(d-1)/d)/π · |E| + o(|V|)`
+  (`Frontier.Gaussian.multigraph_vertexLayout_bound`). For comparison, a spanning tree gives
   `cutwidth(G) ≤ β₁(G) + d floor(log₂ |V|)` in maximum degree `d`, hence `LayoutBound d 1`.
   Thus `(r - 1)s > (2 - ε)n` for every fixed fan-in `r ≥ 2`
-  (`Frontier.layoutBound_one`, `Frontier.lowerBound_all_fanIn`). A Gaussian vertex ordering
-  and degree-four compression improve this to `LayoutBound 4 (2/5)` and
-  `s > (7/4 - ε)n` for fan-in three (`Frontier.layoutBound_two_fifths`,
-  `Frontier.lowerBound_fanInThree`). For every fixed degree `d ≥ 2`, the checked simple-graph
-  estimate is `cutwidth ≤ arccos(2√(d-1)/d)/π · |E| + o(|V|)`
-  (`Frontier.Gaussian.vertexLayout_bound`). Converting this into sharper cycle-rank
-  coefficients in degrees five and above remains open here.
+  (`Frontier.layoutBound_one`, `Frontier.lowerBound_all_fanIn`). No optimality or priority
+  claim is made for the higher-fan-in constants.
 * **Decomposable representations**: a smooth DNNF with `e` union edges and `v` binary product
   nodes representing a `K`-rectangle-free set `S`, with `K ≥ 2` and `|S| ≥ K`, satisfies
   `|S| ≤ (K-1)^2 e + (K-1)^3 v` (`Frontier.Decomposable.ncard_le`). Union branches may overlap.
@@ -56,15 +64,16 @@ The layout bound is proved for subcubic graphs with `A = (3/π) arccos((1 + 2√
 * **Mixed input-output recovery**: the product of two complementary mixed-observation fiber
   sizes bounds the inputs sharing a frontier message
   (`Frontier.Compiler.pow_le_cutSignals_mul_fibers`). Any finite-alphabet map whose graph
-  code is MDS inherits the binary coefficient `L` and ternary coefficient `7/4`
-  (`Frontier.lowerBound_mds`, `Frontier.mds_gaussian`). This includes totally regular maps
+  code is MDS inherits the binary coefficient `L` and every fixed fan-in coefficient above
+  (`Frontier.lowerBound_mds`, `Frontier.mds_gaussian`, `Frontier.mds_degree`). This includes totally regular maps
   and their nonlinear variants under coordinatewise alphabet permutations.
 * **Linear maps and arithmetic circuits**: circuits computing a totally regular map `x ↦ M x`,
   over finite fields with any basis and over infinite fields with polynomial operations, need
   `(L - ε) N` gates; over every field of characteristic zero, arithmetic circuits computing the
   Cauchy map need `(L - ε) N` additions and multiplications (`Frontier.lowerBound_linear`,
   `Frontier.arith_cauchy_gaussian`). The displayed Cauchy matrices also work over prime fields
-  of order `q ≥ 2N` (`Frontier.cauchyZMod_gaussian`).
+  of order `q ≥ 2N` (`Frontier.cauchyZMod_gaussian`). The general-degree coefficients also
+  apply (`Frontier.linear_finite_degree`, `Frontier.linear_polynomial_degree`).
 * **Gates of unbounded fan-in**: the bound survives special gates with a *ledger* in a monoid `M`
   with `log |M| = o(n)`, for instance `o(n)` unbounded AND, OR, parity, or fixed-modulus count gates
   (`Frontier.lowerBound_ledger`, `Frontier.lowerBound_aggregate_gaussian`). The proof charges
@@ -73,7 +82,7 @@ The layout bound is proved for subcubic graphs with `A = (3/π) arccos((1 + 2√
 The exact and uniform average-case lower bounds, arithmetic instantiations, and layout theorem
 are proved
 with no `sorry`, using only the standard axioms (`propext`, `Classical.choice`, `Quot.sound`),
-in about 13,000 lines of Lean. The accompanying paper also gives a deterministic #SAT algorithm
+in about 14,000 lines of Lean. The accompanying paper also gives a deterministic #SAT algorithm
 for circuits of fan-in two with `s` positive-arity gates, running for every fixed `η > 0` in
 time and space `O*(2^((1/L + η) s))`, where `1/L = 0.2191781936...`. Here `O*` suppresses
 polynomial factors in the full circuit encoding and the number of inputs. With `m` inputs
@@ -84,6 +93,9 @@ at an additional `O(k)` cost in the exponent.
 For fan-in three, the degree-four layout gives time and space
 `O*(2^((4/7 + η)s))`, with the sharper bound
 `O*(2^(min(m, (2/5)(2s-m)) + ηs))`.
+For every fixed fan-in `r`, the new coefficient gives gate exponent
+`(r-1)a_(r+1)/(1+a_(r+1)) + η`, with input-sensitive exponent
+`min(m, a_(r+1)((r-1)s-m)) + ηs`.
 
 The deterministic cubic-layout construction uses fixed-accuracy discretization and conditional
 expectations, taking `f(ξ) h^3 polylog(h)` time on an `h`-vertex cubic graph; the polynomial degree
@@ -135,6 +147,7 @@ tensor-network precedents; [RESEARCH.md](RESEARCH.md) records the remaining proo
 | `Frontier/Tree.lean`, `Frontier/Tree/Network.lean` | Weighted tree frontiers and joint merge capacity |
 | `Frontier/Layouts/General.lean`, `Frontier/Layouts/Local.lean` | Every fixed degree; independent local cut improvements |
 | `Frontier/Layouts/Vertex*.lean`, `Frontier/Layouts/Quartic*.lean` | General-degree Gaussian vertex ordering; degree-four compression and coefficient `2/5` |
+| `Frontier/Layouts/Multi*.lean`, `Frontier/Layouts/BoundedDegree.lean` | Multigraph compression, Gaussian concentration with multiplicities, and cycle-rank coefficients in every fixed degree |
 | `Frontier/Main.lean` | Binary, ternary, and every fixed fan-in bounds for dense rectangle-free families |
 | `Frontier/Linear/*.lean` | Totally regular maps, Cauchy matrices, linear capacity, linearization, arithmetic circuits |
 | `Frontier/Components.lean`, `Frontier/Ledger/*.lean` | Layouts of disconnected graphs; ledgers for gates of unbounded fan-in |
@@ -168,7 +181,7 @@ lake env lean scripts/Audit.lean
 python3 scripts/check_algorithms.py
 ```
 
-The audit checks the exact axiom lists of thirty-six principal results and fails if any list changes.
+The audit checks the exact axiom lists of forty-four principal results and fails if any list changes.
 It also runs in CI. The paper's theorem-to-declaration index identifies the checked statements;
 the audit does not verify the external extractor construction or the algorithmic claims.
 The Python script independently compares raw-edge, signal-state, and ledger counting with

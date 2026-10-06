@@ -47,8 +47,8 @@ A circuit lower bound from graph layouts, in independent pieces:
 * `Frontier.Demand`: demand and supply, the comparison that ends every lower bound.
 * `Frontier.Reduction` and `Frontier.LowerBound`: a small circuit yields a graph of small cycle
   rank all of whose layouts are wide; the layout hypothesis finishes the proof.
-* `Frontier.Layouts`: Gaussian layouts for subcubic and degree-four graphs, a Gaussian
-  per-edge estimate and a spanning-tree cycle-rank bound in every fixed degree.
+* `Frontier.Layouts`: Gaussian cycle-rank layout bounds in every fixed degree, including
+  the sharper median-edge estimate for subcubic graphs.
   `Frontier.Layouts.Local`: independent median updates
   cannot increase any threshold cut.
 * `Frontier.Linear`: totally regular linear maps, over finite fields with any basis and over
@@ -60,6 +60,7 @@ A circuit lower bound from graph layouts, in independent pieces:
 * `Frontier.Signals`: frontier capacity measured by distinct circuit signals.
 * `Frontier.AverageCase`: coherent weighted peeling and average-case circuit hardness from
   rectangle bias or sumset bias, with an exponentially small remainder below `L n`.
+  Polynomially small sumset bias gives polynomially small agreement advantage.
 * `Frontier.Boundary`: hypergraph signal boundaries, exact linear syndrome states, and
   transition codes; mixed input-output fiber demand and nonlinear MDS lower bounds.
   `Frontier.Decomposable`: threshold counting for smooth union/product DAGs with
@@ -78,4 +79,6 @@ coefficient holds for totally regular maps (`Frontier.lowerBound_linear`,
 The degree-four coefficient `2/5` gives `s > (7/4 - ε)n` for fan-in three
 (`Frontier.lowerBound_fanInThree`). Finite-alphabet MDS maps inherit these coefficients
 through `Frontier.lowerBound_mds`.
+For every fixed `r ≥ 2`, `Frontier.lowerBound_degree` gives
+`(r - 1)s > (1 + 1/A_(r+1) - ε)n`, where `A_d = 3d/(2d-3) * arccos(2√(d-1)/d)/π < 3/4`.
 -/
