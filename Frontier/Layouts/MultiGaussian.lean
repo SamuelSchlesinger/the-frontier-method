@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 module
 
-public import Frontier.Layouts.VertexParameters
+public import Frontier.Layouts.VertexGaussian
 public import Frontier.Layouts.MultiOrder
 import Mathlib.Analysis.Real.Pi.Bounds
 

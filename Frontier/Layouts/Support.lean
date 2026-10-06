@@ -5,7 +5,8 @@ Authors: Samuel Schlesinger
 -/
 module
 
-public import Frontier.Layouts.Compression
+public import Frontier.Multigraph
+public import Mathlib.Combinatorics.SimpleGraph.DegreeSum
 import Mathlib.Data.Set.Card.Arithmetic
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Tactic.Linarith

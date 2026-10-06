@@ -99,7 +99,7 @@ For every fixed fan-in `r`, the new coefficient gives gate exponent
 
 The deterministic cubic-layout construction uses fixed-accuracy discretization and conditional
 expectations, taking `f(ξ) h^3 polylog(h)` time on an `h`-vertex cubic graph; the polynomial degree
-is independent of accuracy. The paper also proves exact counting with signal states and gives
+is independent of accuracy. The paper also gives
 a tree-limit calculation showing that the current local Gaussian straddling estimate is sharp.
 The algorithms and their complexity bounds, this limiting calculation, the random-set existence
 argument, the explicit program partition and general distributional packing bounds, and the
@@ -147,8 +147,9 @@ The new rank-profile module checks mixed-fiber cardinalities and transfers syste
 code pathwidth to a wide cut in every circuit layout with all inputs reachable.
 A universal improvement still requires a capacity supply theorem or a uniform quantitative
 Gaussian gain bound.
-The paper gives complete proofs and credits the coding, communication-complexity, and
-tensor-network precedents; [RESEARCH.md](RESEARCH.md) records the remaining proof obligations.
+The paper presents the core method and the decomposable bound; the other refinements are
+checked in Lean but not expounded there. [RESEARCH.md](RESEARCH.md) records them and the
+remaining proof obligations.
 
 ## How the proof is factored
 
@@ -175,8 +176,8 @@ tensor-network precedents; [RESEARCH.md](RESEARCH.md) records the remaining proo
 | `Frontier/AverageCase/Capacity.lean`, `Frontier/Boundary/Communication.lean` | Capped transition masses, square-root agreement bounds, and conditional prefix potentials |
 | `Frontier/Tree.lean`, `Frontier/Tree/Network.lean` | Weighted tree frontiers and joint merge capacity |
 | `Frontier/Layouts/General.lean`, `Frontier/Layouts/Local.lean` | Every fixed degree; independent local cut improvements |
-| `Frontier/Layouts/Vertex*.lean`, `Frontier/Layouts/Quartic*.lean` | General-degree Gaussian vertex ordering; degree-four compression and coefficient `2/5` |
-| `Frontier/Layouts/Multi*.lean`, `Frontier/Layouts/BoundedDegree.lean` | Multigraph compression, Gaussian concentration with multiplicities, and cycle-rank coefficients in every fixed degree |
+| `Frontier/Layouts/VertexGaussian.lean` | Gaussian vertex scores and the per-edge crossing bound in every degree |
+| `Frontier/Layouts/Support.lean`, `Frontier/Layouts/Multi*.lean`, `Frontier/Layouts/BoundedDegree.lean` | Multigraph compression, Gaussian concentration with multiplicities, and cycle-rank coefficients in every fixed degree, `2/5` at degree four |
 | `Frontier/Main.lean` | Binary, ternary, and every fixed fan-in bounds for dense rectangle-free families |
 | `Frontier/Linear/*.lean` | Totally regular maps, Cauchy matrices, linear capacity, linearization, arithmetic circuits |
 | `Frontier/Components.lean`, `Frontier/Ledger/*.lean` | Layouts of disconnected graphs; ledgers for gates of unbounded fan-in |

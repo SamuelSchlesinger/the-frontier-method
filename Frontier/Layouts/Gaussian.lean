@@ -44,7 +44,9 @@ at most `(p_ρ + O(δ) + O(ε) + O(1/T^2)) h`.
 
 **The limit.** As `q` increases to `1/√2` and `R` grows, the adjacent correlation tends to
 `2√2/3`, the neighbour correlation of Gaussian waves on the 3-regular tree, and
-`(1 + 3 · 2√2/3)/4 = (1 + 2√2)/4`.
+`(1 + 3 · 2√2/3)/4 = (1 + 2√2)/4`. The parameter lemmas (`vertexCorrelation`,
+`exists_decay_radius_degree`) and the overlap bounds (`vertexOverlap`) are stated for every
+maximum degree, since the vertex-score layouts of `VertexGaussian` reuse them.
 -/
 
 @[expose] public section
@@ -185,59 +187,62 @@ theorem edgeSupport_subset_ball {R : ℕ} {v : W} {e : Sym2 W} (he : e ∈ H.inc
   exact union_subset (ball_mono H v (Nat.le_succ R))
     (ball_subset_ball_of_adj H ((SimpleGraph.mem_edgeSet H).mp hedge) R)
 
-/-- The number of supports that may meet a given one, in a graph of maximum degree three. -/
-def overlapBound (R : ℕ) : ℕ := 9 * 2 ^ (2 * R + 2)
+/-- At most `d |S|` edges have an endpoint in `S`. -/
+theorem card_incidence_biUnion_le {d : ℕ} (degree : ∀ v, H.degree v ≤ d) (S : Finset W) :
+    #(S.biUnion fun v => H.incidenceFinset v) ≤ d * #S := by
+  calc _ ≤ ∑ v ∈ S, #(H.incidenceFinset v) := card_biUnion_le
+    _ ≤ ∑ _v ∈ S, d := sum_le_sum fun v _ => by
+      rw [SimpleGraph.card_incidenceFinset_eq_degree]; exact degree v
+    _ = d * #S := by simp [Nat.mul_comm]
 
+/-- The number of kernel supports of radius `R` that may meet a given one, in maximum degree
+`d`: one bound serves vertex events and edge events alike. -/
+def vertexOverlap (d R : ℕ) : ℕ := d ^ (2 * R + 3)
+
+variable (H) in
+/-- Boundedly many balls of radius `R` meet a given one. -/
+theorem ball_overlap_le {d : ℕ} (hd : 2 ≤ d) (degree : ∀ v, H.degree v ≤ d) (R : ℕ) (v : W) :
+    #{w | ¬ Disjoint (ball H v R) (ball H w R)} ≤ vertexOverlap d R := by
+  calc _ ≤ #(ball H v (R + R)) :=
+        card_le_card fun w hw => mem_ball_of_not_disjoint H (mem_filter.mp hw).2
+    _ ≤ d ^ (R + R + 1) := card_ball_le_degree H hd degree v (R + R)
+    _ ≤ vertexOverlap d R := Nat.pow_le_pow_right (by lia) (by lia)
+
+variable (H) in
 /-- Boundedly many edge supports meet that of a given edge. -/
-theorem card_filter_not_disjoint_edgeSupport_le (degree : ∀ v, H.degree v ≤ 3) (R : ℕ)
+theorem edge_overlap_le {d : ℕ} (hd : 2 ≤ d) (degree : ∀ v, H.degree v ≤ d) (R : ℕ)
     {e : Sym2 W} (he : e ∈ H.edgeFinset) :
     #{l ∈ H.edgeFinset | ¬ Disjoint (edgeSupport H R e) (edgeSupport H R l)} ≤
-      overlapBound R := by
+      vertexOverlap d R := by
   induction e using Sym2.ind with
   | _ u v =>
   have huv : H.Adj u v := SimpleGraph.mem_edgeFinset.mp he
   have hsupp : edgeSupport H R s(u, v) ⊆ ball H u (R + 1) := by
     rw [edgeSupport_mk]
-    refine union_subset (ball_mono H u (Nat.le_succ R)) (ball_subset_ball_of_adj H huv R)
+    exact union_subset (ball_mono H u (Nat.le_succ R)) (ball_subset_ball_of_adj H huv R)
   have hsub : {l ∈ H.edgeFinset | ¬ Disjoint (edgeSupport H R s(u, v)) (edgeSupport H R l)} ⊆
-      (ball H u (2 * R + 1)).biUnion fun c => H.incidenceFinset c := by
+      (ball H u (2 * R + 1)).biUnion (fun c => H.incidenceFinset c) := by
     intro l hl
     obtain ⟨hlE, hdisj⟩ := mem_filter.mp hl
     induction l using Sym2.ind with
     | _ a b =>
     have hab : H.Adj a b := SimpleGraph.mem_edgeFinset.mp hlE
     obtain ⟨z, hz₁, hz₂⟩ := not_disjoint_iff.mp hdisj
-    have hzu := hsupp hz₁
-    rw [edgeSupport_mk, mem_union] at hz₂
-    have near : ∀ c, z ∈ ball H c R → c ∈ ball H u (2 * R + 1) := by
-      intro c hc
-      have := mem_ball_of_not_disjoint H (a := u) (b := c) (r := R + 1) (r' := R)
-        (not_disjoint_iff.mpr ⟨z, hzu, hc⟩)
+    have near (c : W) (hc : z ∈ ball H c R) : c ∈ ball H u (2 * R + 1) := by
+      have := mem_ball_of_not_disjoint H
+        (not_disjoint_iff.mpr ⟨z, hsupp hz₁, hc⟩)
       rwa [show R + 1 + R = 2 * R + 1 by ring] at this
-    rw [mem_biUnion]
+    rw [edgeSupport_mk, mem_union] at hz₂
     rcases hz₂ with hza | hzb
-    · exact ⟨a, near a hza, by simpa [SimpleGraph.mem_incidenceFinset,
-        SimpleGraph.incidenceSet] using hab⟩
-    · exact ⟨b, near b hzb, by simpa [SimpleGraph.mem_incidenceFinset,
-        SimpleGraph.incidenceSet] using hab⟩
+    · exact mem_biUnion.mpr ⟨a, near a hza, SimpleGraph.mem_incidenceFinset.mpr
+        ⟨(SimpleGraph.mem_edgeSet H).mpr hab, by simp⟩⟩
+    · exact mem_biUnion.mpr ⟨b, near b hzb, SimpleGraph.mem_incidenceFinset.mpr
+        ⟨(SimpleGraph.mem_edgeSet H).mpr hab, by simp⟩⟩
   calc _ ≤ #((ball H u (2 * R + 1)).biUnion fun c => H.incidenceFinset c) := card_le_card hsub
-    _ ≤ ∑ c ∈ ball H u (2 * R + 1), #(H.incidenceFinset c) := card_biUnion_le
-    _ ≤ ∑ _c ∈ ball H u (2 * R + 1), 3 := sum_le_sum fun c _ => by
-        rw [SimpleGraph.card_incidenceFinset_eq_degree]; exact degree c
-    _ = 3 * #(ball H u (2 * R + 1)) := by rw [sum_const, smul_eq_mul, mul_comm]
-    _ ≤ 3 * (3 * 2 ^ (2 * R + 1 + 1)) := by gcongr; exact card_ball_le H degree u (2 * R + 1)
-    _ = overlapBound R := by unfold overlapBound; ring
-
-/-- Boundedly many balls of radius `R` meet a given one. -/
-theorem card_filter_not_disjoint_ball_le (degree : ∀ v, H.degree v ≤ 3) (R : ℕ) (v : W) :
-    #{w | ¬ Disjoint (ball H v R) (ball H w R)} ≤ overlapBound R := by
-  calc _ ≤ #(ball H v (R + R)) :=
-        card_le_card fun w hw => mem_ball_of_not_disjoint H (mem_filter.mp hw).2
-    _ ≤ 3 * 2 ^ (R + R + 1) := card_ball_le H degree v (R + R)
-    _ ≤ overlapBound R := by
-        unfold overlapBound
-        have : 2 ^ (R + R + 1) ≤ 2 ^ (2 * R + 2) := Nat.pow_le_pow_right two_pos (by omega)
-        omega
+    _ ≤ d * #(ball H u (2 * R + 1)) := card_incidence_biUnion_le degree _
+    _ ≤ d * d ^ (2 * R + 1 + 1) := Nat.mul_le_mul_left d
+        (card_ball_le_degree H hd degree u _)
+    _ = vertexOverlap d R := by unfold vertexOverlap; rw [← pow_succ']
 
 end Locality
 
@@ -514,14 +519,14 @@ theorem exists_good_sample (regular : H.IsRegularOfDegree 3) {q : ℝ} (hq0 : 0 
     (R : ℕ) {ρ₀ : ℝ} (hρ₀ : 17 / 32 ≤ ρ₀)
     (hρ : ρ₀ ≤ 2 * q / (1 + q ^ 2) - 3 * (2 * q ^ 2) ^ R) {T ε : ℝ} (hT : 0 < T)
     (hε : 0 < ε) {M : ℕ} (hM : 0 < M)
-    (large : (3 * M + 3) * (overlapBound (R + 1) : ℝ) / ε ^ 2 < Fintype.card W) :
+    (large : (3 * M + 3) * (vertexOverlap 3 (R + 1) : ℝ) / ε ^ 2 < Fintype.card W) :
     ∃ key : W → ℕ, Function.Injective key ∧ ∀ t : ℕ,
       (#(H.cutFinset {w | key w < t}) : ℝ) ≤ Fintype.card W * cubicBound ρ₀ T ε M := by
   classical
   have degree : ∀ v, H.degree v ≤ 3 := fun v => (regular.degree_eq v).le
   set h : ℝ := (Fintype.card W : ℝ) with hh
   set P := gaussPi W
-  set Dn : ℝ := (overlapBound (R + 1) : ℝ)
+  set Dn : ℝ := (vertexOverlap 3 (R + 1) : ℝ)
   have hMpos : (0 : ℝ) < M := by exact_mod_cast hM
   set δ : ℝ := 2 * T / M with hδ
   have hδpos : 0 < δ := by positivity
@@ -549,7 +554,7 @@ theorem exists_good_sample (regular : H.IsRegularOfDegree 3) {q : ℝ} (hq0 : 0 
     have := pi_deviation_le (fun _ : W => gaussianReal 0 1) univ (straddle i)
       (fun v => ball H v (R + 1)) (fun v _ => measurableSet_straddleEvent q R (thr i) v)
       (fun v _ => dependsOn_straddleEvent q R (thr i) v)
-      (fun v _ => card_filter_not_disjoint_ball_le degree (R + 1) v) hcpos
+      (fun v _ => ball_overlap_le H (by norm_num) degree (R + 1) v) hcpos
     rwa [card_univ] at this
   have edgeDev : ∀ (A : Sym2 W → Set (W → ℝ)), (∀ e, MeasurableSet (A e)) →
       (∀ e, DependsOn (· ∈ A e) (edgeSupport H R e : Set W)) →
@@ -557,9 +562,9 @@ theorem exists_good_sample (regular : H.IsRegularOfDegree 3) {q : ℝ} (hq0 : 0 
     intro A hA hdep
     refine (pi_deviation_le (fun _ : W => gaussianReal 0 1) H.edgeFinset A (edgeSupport H R)
       (fun e _ => hA e) (fun e _ => hdep e)
-      (fun e he => card_filter_not_disjoint_edgeSupport_le degree R he) hcpos).trans ?_
-    have : overlapBound R ≤ overlapBound (R + 1) := by
-      unfold overlapBound; exact Nat.mul_le_mul_left 9 (Nat.pow_le_pow_right two_pos (by omega))
+      (fun e he => edge_overlap_le H (by norm_num) degree R he) hcpos).trans ?_
+    have : vertexOverlap 3 R ≤ vertexOverlap 3 (R + 1) := by
+      unfold vertexOverlap; exact Nat.pow_le_pow_right (by norm_num) (by omega)
     gcongr
     simp only [Dn]
     exact_mod_cast this
@@ -671,40 +676,69 @@ theorem continuous_correlation : Continuous fun q : ℝ => 2 * q / (1 + q ^ 2) :
   (continuous_const.mul continuous_id).div (continuous_const.add (continuous_pow 2))
     fun q => by positivity
 
-theorem correlation_limit :
-    2 * (Real.sqrt 2 / 2) / (1 + (Real.sqrt 2 / 2) ^ 2) = 2 * Real.sqrt 2 / 3 := by
-  have h2 : Real.sqrt 2 ^ 2 = 2 := Real.sq_sqrt (by norm_num)
-  rw [div_pow, h2]
-  field_simp
-  ring
+/-- The limiting adjacent correlation of the kernel rows in maximum degree `d`,
+`2 √(d - 1) / d`: the neighbour correlation of Gaussian waves on the `d`-regular tree. -/
+noncomputable def vertexCorrelation (d : ℕ) : ℝ := 2 * Real.sqrt (d - 1) / d
+
+theorem vertexCorrelation_pos {d : ℕ} (hd : 2 ≤ d) : 0 < vertexCorrelation d := by
+  have hd' : (2 : ℝ) ≤ d := by exact_mod_cast hd
+  have : 0 < (d : ℝ) - 1 := by linarith
+  unfold vertexCorrelation
+  positivity
+
+/-- The radial kernel reaches every correlation strictly below its limiting value. -/
+theorem exists_decay_radius_degree {d : ℕ} (hd : 2 ≤ d) {ρ : ℝ}
+    (hρ : ρ < vertexCorrelation d) :
+    ∃ (q : ℝ) (R : ℕ), 0 ≤ q ∧
+      ρ ≤ 2 * q / (1 + q ^ 2) - d * ((d - 1 : ℕ) * q ^ 2) ^ R := by
+  set D : ℝ := (d : ℝ)
+  have hD : 2 ≤ D := by dsimp [D]; exact_mod_cast hd
+  set g := vertexCorrelation d
+  set q₀ := Real.sqrt (D - 1) / (D - 1)
+  have hu : 0 < D - 1 := by linarith
+  have hq₀ : 0 < q₀ := by dsimp [q₀]; positivity
+  have hs : Real.sqrt (D - 1) ^ 2 = D - 1 := Real.sq_sqrt hu.le
+  have hsq : q₀ ^ 2 = 1 / (D - 1) := by dsimp [q₀]; rw [div_pow, hs]; field_simp
+  have hlim : 2 * q₀ / (1 + q₀ ^ 2) = g := by
+    rw [hsq]
+    dsimp [q₀, g, vertexCorrelation]
+    change 2 * (Real.sqrt (D - 1) / (D - 1)) / (1 + 1 / (D - 1)) =
+      2 * Real.sqrt (D - 1) / D
+    field_simp; ring
+  obtain ⟨δ, hδ, hκ⟩ := Metric.continuousAt_iff.mp continuous_correlation.continuousAt
+    ((g - ρ) / 2) (by linarith)
+  set q := q₀ - min δ q₀ / 2
+  have hmin : 0 < min δ q₀ := lt_min hδ hq₀
+  have hq0 : 0 ≤ q := by dsimp [q]; linarith [min_le_right δ q₀]
+  have hqq : q < q₀ := by dsimp [q]; linarith
+  have hκq : g - (g - ρ) / 2 < 2 * q / (1 + q ^ 2) := by
+    have hdist : dist q q₀ < δ := by
+      rw [Real.dist_eq, show q - q₀ = -(min δ q₀ / 2) by dsimp [q]; ring,
+        abs_neg, abs_of_pos (by positivity)]
+      linarith [min_le_left δ q₀]
+    have H := hκ hdist
+    rw [Real.dist_eq, hlim] at H
+    linarith [neg_abs_le (2 * q / (1 + q ^ 2) - g)]
+  have hdecay : (d - 1 : ℕ) * q ^ 2 < (1 : ℝ) := by
+    have hq2 : q ^ 2 < q₀ ^ 2 := by gcongr
+    have hq2' := mul_lt_mul_of_pos_left hq2 hu
+    rw [hsq, mul_one_div_cancel hu.ne'] at hq2'
+    simpa only [Nat.cast_sub (by lia : 1 ≤ d), Nat.cast_one, D] using hq2'
+  obtain ⟨R, hR⟩ := exists_pow_lt_of_lt_one
+    (by positivity : 0 < (g - ρ) / (2 * D)) hdecay
+  have hR' := mul_lt_mul_of_pos_left hR (by linarith : 0 < D)
+  have hcancel : D * ((g - ρ) / (2 * D)) = (g - ρ) / 2 := by field_simp
+  rw [hcancel] at hR'
+  exact ⟨q, R, hq0, by linarith⟩
 
 /-- **Decay rate and radius.** Every correlation target below `2√2/3` is met by the
 truncated kernel for some decay rate `q < 1/√2` and some radius. -/
 theorem exists_decay_radius {ρ₀ : ℝ} (hρ₀g : ρ₀ < 2 * Real.sqrt 2 / 3) :
     ∃ (q : ℝ) (R : ℕ), 0 ≤ q ∧ ρ₀ ≤ 2 * q / (1 + q ^ 2) - 3 * (2 * q ^ 2) ^ R := by
-  set g : ℝ := 2 * Real.sqrt 2 / 3 with hg
-  set q₀ : ℝ := Real.sqrt 2 / 2 with hq₀
-  have hq₀pos : 0 < q₀ := by positivity
-  obtain ⟨δ, hδ, hκ⟩ := Metric.continuousAt_iff.mp continuous_correlation.continuousAt
-    ((g - ρ₀) / 2) (by linarith)
-  set q := q₀ - min δ q₀ / 2 with hq
-  have hminq : 0 < min δ q₀ := lt_min hδ hq₀pos
-  have hq0 : 0 ≤ q := by rw [hq]; linarith [min_le_right δ q₀]
-  have hqq₀ : q < q₀ := by rw [hq]; linarith
-  have hκq : g - (g - ρ₀) / 2 < 2 * q / (1 + q ^ 2) := by
-    have hdist : dist q q₀ < δ := by
-      rw [Real.dist_eq, hq, abs_of_neg (by linarith)]
-      linarith [min_le_left δ q₀]
-    have := hκ hdist
-    rw [Real.dist_eq, hq₀, correlation_limit, ← hg] at this
-    linarith [neg_abs_le (2 * q / (1 + q ^ 2) - g)]
-  have hdecay : 2 * q ^ 2 < 1 := by
-    have h2 : Real.sqrt 2 ^ 2 = 2 := Real.sq_sqrt (by norm_num)
-    have : q ^ 2 < q₀ ^ 2 := by gcongr
-    rw [hq₀, div_pow, h2] at this
-    linarith
-  obtain ⟨R, hR⟩ := exists_pow_lt_of_lt_one (by linarith : 0 < (g - ρ₀) / 6) hdecay
-  exact ⟨q, R, hq0, by linarith⟩
+  have h3 : vertexCorrelation 3 = 2 * Real.sqrt 2 / 3 := by norm_num [vertexCorrelation]
+  obtain ⟨q, R, hq, hρ⟩ :=
+    exists_decay_radius_degree (by norm_num : 2 ≤ 3) (ρ := ρ₀) (by rw [h3]; exact hρ₀g)
+  exact ⟨q, R, hq, by simpa using hρ⟩
 
 theorem gaussianCoefficient_eq :
     gaussianCoefficient = straddleBound (2 * Real.sqrt 2 / 3) := by
@@ -830,9 +864,9 @@ cubic graph on `h` vertices has a layout whose prefixes are crossed by at most
 theorem cubicLayoutBound_gaussian : CubicLayoutBound gaussianCoefficient := by
   intro ξ hξ
   obtain ⟨q, R, ρ₀, T, ε, M, hq0, hρ₀, hρ, hT, hε, hM, hbound⟩ := exists_parameters hξ
-  refine ⟨⌈(3 * M + 3) * (overlapBound (R + 1) : ℝ) / ε ^ 2⌉₊,
+  refine ⟨⌈(3 * M + 3) * (vertexOverlap 3 (R + 1) : ℝ) / ε ^ 2⌉₊,
     fun W _ _ H _ regular large => ?_⟩
-  have large' : (3 * M + 3) * (overlapBound (R + 1) : ℝ) / ε ^ 2 < Fintype.card W :=
+  have large' : (3 * M + 3) * (vertexOverlap 3 (R + 1) : ℝ) / ε ^ 2 < Fintype.card W :=
     (Nat.le_ceil _).trans_lt (by exact_mod_cast large)
   obtain ⟨key, hinj, hcut⟩ := exists_good_sample regular hq0 R hρ₀ hρ hT hε hM large'
   refine ⟨key, hinj, fun t => (hcut t).trans ?_⟩

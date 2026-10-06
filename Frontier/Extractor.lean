@@ -120,7 +120,8 @@ universe u v
 a finite alphabet with an addition, that disperse sumsets of size `K_n` with `log K_n = o(n)` and
 take the value `true` on at least a fixed fraction `δ > 0` of all inputs. Then for every `ε > 0`
 and all large `n`, every circuit of fan-in two over any basis on `U` deciding where `f_n` is
-`true` has more than `(L - ε) n` gates, with `L = 1 + π / (3 arccos ((1 + 2√2)/4)) ≈ 4.5625`. -/
+`true` has more than `(L - ε) n` inner gates, with
+`L = 1 + π / (3 arccos ((1 + 2√2)/4)) ≈ 4.5625`. -/
 theorem lowerBound_sumsetDisperser {U : Type u} [AddZeroClass U] [Finite U] [Nontrivial U]
     (f : ∀ n, (Fin n → U) → Bool) (K : ℕ → ℕ) (hf : ∀ᶠ n in atTop, SumsetDisperser (f n) (K n))
     (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ)) {δ : ℝ} (hδ : 0 < δ)
@@ -128,10 +129,10 @@ theorem lowerBound_sumsetDisperser {U : Type u} [AddZeroClass U] [Finite U] [Non
     (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ n 1), c.FanInAtMost 2 → Decides c I Acc {x | f n x = true} →
-        (1 + Real.pi / (3 * Real.arccos ((1 + 2 * Real.sqrt 2) / 4)) - ε) * n < c.size := by
+        (1 + Real.pi / (3 * Real.arccos ((1 + 2 * Real.sqrt 2) / 4)) - ε) * n < c.innerSize := by
   filter_upwards [lowerBound_gaussian (fun n => {x | f n x = true}) K
     (hf.mono fun n hn => hn.rectangleFree true) hK (isLittleO_of_card_le _ hδ hbal) hε] with n hn
   intro σ I Acc c hfan hS
-  exact (hn σ I Acc c hfan hS).trans_le (by exact_mod_cast c.innerSize_le_size)
+  exact hn σ I Acc c hfan hS
 
 end Frontier

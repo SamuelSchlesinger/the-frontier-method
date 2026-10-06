@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 module
 
 public import Frontier.Layouts.Cubic
+public import Frontier.Layouts.Support
 public import Frontier.Multigraph
 public import Mathlib.Data.Nat.Log
 import Mathlib.Algebra.Order.Archimedean.Real.Basic
@@ -13,64 +14,65 @@ import Mathlib.Combinatorics.SimpleGraph.DegreeSum
 import Mathlib.Data.Finset.Sort
 import Mathlib.Data.Set.Finite.Lemmas
 import Mathlib.Order.Prod.Lex.Basic
+import Mathlib.Tactic.Linarith
 
 /-!
-# From cubic graphs to subcubic multigraphs
+# Compressing a graph to its core
 
-This file proves `LayoutBound.of_cubic`: a layout bound for simple cubic graphs with
-coefficient `c` (`CubicLayoutBound c`) gives the layout bound for connected multigraphs of
-maximum degree three with coefficient `2c`. Throughout, `G` has `N` vertices, `M` edges, and
-cycle rank `β₁ = M - N + 1`.
+A connected multigraph `G` of maximum degree `d` is compressed by merging adjacent blocks of
+vertices while the merged block keeps at most `d` outgoing edges. Throughout, `G` has `N`
+vertices, `M` edges, and cycle rank `β₁ = M - N + 1`.
 
-**Compression.** Partition the vertices of `G` into *blocks*, each listing its vertices in
-order, starting from single vertices. Two distinct blocks joined by an edge are *merged* when
-their union still has at most three edges leaving it, as happens when one of them has at most
-two edges leaving it or when two edges join them. The merged block lists the longer block first.
+**Compression.** Partition the vertices into *blocks*, each listing its vertices in order,
+starting from single vertices. Two distinct blocks joined by an edge are *merged* when their
+union still has at most `d` edges leaving it; the merged block lists the longer block first.
 A `Compression` records the invariants of this process:
 
-* at most three edges leave a block;
-* at most `3 log₂ |B|` edges leave a proper prefix of a block `B`. A proper prefix of a merged
+* at most `d` edges leave a block;
+* at most `d log₂ |B|` edges leave a proper prefix of a block `B`. A proper prefix of a merged
   block is a proper prefix of its first part, or all of its first part followed by a proper
   prefix of its second part, which has at most half as many vertices;
 * there are at least as many blocks and edges inside blocks as vertices, since a merge loses
   one block and moves at least one edge inside.
 
-Each merge loses a block, so merging ends in a *final* compression (`exists_final`).
+Each merge loses a block, so merging ends in a *terminal* compression, in which no adjacent
+pair can merge (`exists_terminal`). Up to degree four a terminal compression is *final*: two
+blocks are joined by at most one edge, and at least three edges leave each block that has a
+neighbour (`Terminal.final`).
 
-**The quotient.** In a final compression two distinct blocks are joined by at most one edge,
-and if there are at least two blocks then exactly three edges leave each block: by
-connectivity, a block with fewer would merge with a neighbor. So the `quotient`, the graph on
-the blocks in which two blocks are adjacent when an edge joins them, is a simple cubic graph
-(`isRegularOfDegree`). Its `h` vertices span `3h/2` edges, which are the edges of `G` between
-blocks, and the counting invariant gives `h + 2N ≤ 2M` (`card_add_two_mul_le`). So the quotient
-has at most `2 β₁` vertices.
+**The quotients.** The `multiQuotient` keeps every edge between distinct blocks; it is a
+loopless multigraph of maximum degree `d`, and the terminal core satisfies the density estimate
+`(2d - 3) |E(core)| ≤ 3d β₁` (`Terminal.multi_edge_bound`). In degree three the simple
+`quotient`, with blocks adjacent when an edge joins them, is a cubic graph on at most `2 β₁`
+vertices (`isRegularOfDegree`, `card_add_two_mul_le`).
 
 **Expansion.** Lay out `G` block by block, ordering the blocks by a layout of the quotient and
 each block by its list. A frontier consists of whole blocks followed by a prefix of one more
-block. The edges leaving the whole blocks are edges of the quotient crossing its frontier
-(`ncard_cut_le`), and at most `3 log₂ N + 3` edges leave the prefix (`exists_layout`).
+block: the edges leaving the whole blocks are edges of the quotient crossing its frontier, and
+at most `d log₂ N + d` edges leave the prefix (`exists_layout`).
 
-**The bound.** Given `η > 0`, take the cubic bound with slack `ξ = η/2`. A quotient on `h > N₀`
-vertices has a layout whose frontiers have at most `(c + ξ) h + 2 ≤ (2c + η) β₁ + 2` edges, and
-a quotient on at most `N₀ + 1` vertices has at most `(N₀ + 1) N₀ / 2` edges. So every frontier
-of `G` has at most `(2c + η) β₁ + 3 log₂ N + C` edges, for a constant `C`, and
-`3 log₂ N ≤ η N + C'` (`exists_log_le_mul_add`).
-
-The compression structure, merging, quotient, and expansion also work at any boundary
-budget `d`. `QuarticCompression` supplies the terminal-core argument at degree four.
+**The cubic bound.** Given `η > 0`, take the cubic bound with slack `ξ = η/2`. A quotient on
+`h > N₀` vertices has a layout whose frontiers have at most `(c + ξ) h + 2 ≤ (2c + η) β₁ + 2`
+edges, and a quotient on at most `N₀ + 1` vertices has at most `(N₀ + 1) N₀ / 2` edges. So every
+frontier of `G` has at most `(2c + η) β₁ + 3 log₂ N + C` edges for a constant `C`, and
+`3 log₂ N ≤ η N + C'` (`exists_log_le_mul_add`): this is `LayoutBound.of_cubic`.
 
 ## Main definitions
 
 * `Frontier.Multigraph.Compression`: a partition into ordered blocks, with its invariants.
-* `Frontier.Multigraph.Compression.Final`: no merge applies.
-* `Frontier.Multigraph.Compression.quotient`: the simple graph on the blocks.
+* `Frontier.Multigraph.Compression.Terminal`, `Final`: no merge applies; the cubic quotient
+  properties.
+* `Frontier.Multigraph.Compression.quotient`, `multiQuotient`: the simple graph on the blocks,
+  and the multigraph retaining every edge between blocks.
 
 ## Main results
 
-* `Frontier.Multigraph.Compression.exists_final`: merging terminates.
-* `Frontier.Multigraph.Compression.isRegularOfDegree`: the quotient is cubic.
-* `Frontier.Multigraph.Compression.card_add_two_mul_le`: the quotient is small.
-* `Frontier.Multigraph.Compression.exists_layout`: expanding a layout of the quotient.
+* `Frontier.Multigraph.Compression.exists_terminal`, `exists_final`: merging terminates.
+* `Frontier.Multigraph.Compression.isRegularOfDegree`, `card_add_two_mul_le`: the cubic
+  quotient is cubic and small.
+* `Frontier.Multigraph.Compression.Terminal.multi_edge_bound`: the core density in every
+  degree.
+* `Frontier.Multigraph.Compression.exists_layout`: expanding a layout of the core.
 * `Frontier.LayoutBound.of_cubic`: the layout bound.
 -/
 
@@ -83,15 +85,6 @@ open Set
 variable {V E : Type*}
 
 /-! ### Preliminaries -/
-
-/-- Listing the vertices in increasing order of an injective key gives a layout that is
-monotone in the key. -/
-theorem Layout.exists_monotone [Finite V] {α : Type*} [LinearOrder α] {f : V → α}
-    (hf : f.Injective) : ∃ π : Layout V, ∀ v w, f v ≤ f w → π v ≤ π w := by
-  let := LinearOrder.lift' f hf
-  have := Fintype.ofFinite V
-  let e := (Fintype.orderIsoFinOfCardEq V Nat.card_eq_fintype_card.symm).symm
-  exact ⟨e.toEquiv, fun v w h => e.monotone h⟩
 
 /-- `log₂ N` is at most `ε N` plus a constant. -/
 theorem exists_log_le_mul_add {ε : ℝ} (hε : 0 < ε) :
@@ -339,35 +332,52 @@ end General
 
 variable {d : ℕ} (c : Compression G d)
 
-/-- The quotient properties needed for expansion: adjacent blocks are joined by only one
-edge, and at least three edges leave each nonisolated block. In degree three these
-characterize a terminal compression. -/
+/-- No adjacent pair of blocks can still be merged within the degree budget. -/
+def Terminal : Prop :=
+  ∀ B ∈ c.blocks, ∀ B' ∈ c.blocks, B ≠ B' →
+    (G.cut {v | v ∈ B} ∩ G.cut {v | v ∈ B'}).Nonempty →
+      d < (G.cut ({v | v ∈ B} ∪ {v | v ∈ B'})).ncard
+
+/-- **Merging terminates.** A compression with fewest blocks is terminal, in every degree. -/
+theorem exists_terminal [Finite V] [Finite E] (hG : G.MaxDegreeLE d) :
+    ∃ c : Compression G d, c.Terminal := by
+  classical
+  have := Fintype.ofFinite V
+  obtain ⟨c, -, hmin⟩ := (measure fun c : Compression G d => c.blocks.card).wf.has_min univ
+    ⟨initial hG, trivial⟩
+  refine ⟨c, fun B hB B' hB' hne hjoin => ?_⟩
+  by_contra! h
+  obtain ⟨c', hc'⟩ := c.exists_merge hB hB' hne hjoin h
+  exact hmin c' trivial hc'
+
+/-- The quotient properties needed for the simple cubic quotient: adjacent blocks are joined
+by only one edge, and at least three edges leave each nonisolated block. -/
 def Final : Prop :=
   ∀ B ∈ c.blocks, ∀ B' ∈ c.blocks, B ≠ B' →
     (G.cut {v | v ∈ B} ∩ G.cut {v | v ∈ B'}).Nonempty →
       (G.cut {v | v ∈ B} ∩ G.cut {v | v ∈ B'}).ncard ≤ 1 ∧
         3 ≤ (G.cut {v | v ∈ B}).ncard
 
-/-- **Merging terminates.** Every multigraph of maximum degree three has a final
-compression: one with fewest blocks. -/
-theorem exists_final [Finite V] [Finite E] (hG : G.MaxDegreeLE 3) :
-    ∃ c : Compression G, c.Final := by
-  classical
-  have := Fintype.ofFinite V
-  obtain ⟨c, -, hmin⟩ := (measure fun c : Compression G => c.blocks.card).wf.has_min univ
-    ⟨initial hG, trivial⟩
-  refine ⟨c, fun B hB B' hB' hne hjoin => ?_⟩
-  by_contra h
-  have hd : Disjoint {v | v ∈ B} {v | v ∈ B'} :=
-    Set.disjoint_left.2 fun v hv hv' => hne (c.eq_of_mem B hB B' hB' v hv hv')
-  have := G.ncard_cut_union_add hd
-  have := c.cut_le B hB
-  have := c.cut_le B' hB'
-  have := hjoin.ncard_pos
-  obtain ⟨c', hc'⟩ := c.exists_merge hB hB' hne hjoin (by omega)
-  exact hmin c' trivial hc'
+/-- Up to degree four a terminal compression is final: two edges between adjacent blocks
+would let them merge, and a block with fewer than three outgoing edges would merge with a
+neighbour. -/
+theorem Terminal.final [Finite E] (hc : c.Terminal) (hd : d ≤ 4) : c.Final := by
+  intro B hB B' hB' hne hjoin
+  have hdis : Disjoint {v | v ∈ B} {v | v ∈ B'} :=
+    disjoint_left.mpr fun v hv hv' => hne (c.eq_of_mem B hB B' hB' v hv hv')
+  have hsum := G.ncard_cut_union_add hdis
+  have hlt := hc B hB B' hB' hne hjoin
+  have hBdeg := c.cut_le B hB
+  have hB'deg := c.cut_le B' hB'
+  have hpos := hjoin.ncard_pos
+  constructor <;> lia
 
-/-! ### The quotient -/
+/-- Every multigraph of maximum degree three has a final compression. -/
+theorem exists_final [Finite V] [Finite E] (hG : G.MaxDegreeLE 3) :
+    ∃ c : Compression G, c.Final :=
+  (exists_terminal hG).imp fun c hc => Terminal.final c hc (by norm_num)
+
+/-! ### The quotients -/
 
 /-- The block containing a vertex. -/
 noncomputable def blockOf (v : V) : c.blocks :=
@@ -404,6 +414,78 @@ theorem edgeSet_quotient :
   · rintro ⟨e, he, rfl⟩
     exact c.ends_mem_edgeSet.2 he
 
+/-- Edges whose endpoints lie in different blocks. -/
+def External : Set E := {e | c.blockOf (G.src e) ≠ c.blockOf (G.tgt e)}
+
+/-- The quotient retaining every edge between blocks. -/
+noncomputable def multiQuotient : Multigraph c.blocks c.External where
+  src e := c.blockOf (G.src e.1)
+  tgt e := c.blockOf (G.tgt e.1)
+
+theorem multiQuotient_loopless : c.multiQuotient.Loopless := fun e => e.2
+
+theorem external_of_cut {B : c.blocks} {e : E} (he : e ∈ G.cut {v | v ∈ B.1}) :
+    e ∈ c.External := by
+  simp only [mem_cut, mem_ofPred_eq, mem_iff_blockOf_eq] at he
+  intro h
+  exact he (by rw [h])
+
+theorem ncard_edgesAt_multiQuotient (B : c.blocks) :
+    (c.multiQuotient.edgesAt B).ncard = (G.cut {v | v ∈ B.1}).ncard := by
+  have heq : c.multiQuotient.edgesAt B =
+      {e : c.External | e.1 ∈ G.cut {v | v ∈ B.1}} := by
+    ext e
+    have hne := e.2
+    simp only [edgesAt, Incident, multiQuotient, mem_ofPred_eq, mem_cut,
+      mem_iff_blockOf_eq]
+    change c.blockOf (G.src e.1) ≠ c.blockOf (G.tgt e.1) at hne
+    grind
+  rw [heq, ncard_subtype]
+  congr 1
+  exact inter_eq_left.mpr fun e he => c.external_of_cut he
+
+theorem multiQuotient_maxDegreeLE : c.multiQuotient.MaxDegreeLE d := fun B =>
+  (c.ncard_edgesAt_multiQuotient B).trans_le (c.cut_le _ B.2)
+
+/-- The edges inside blocks are the complement of the external edges. -/
+theorem inside_eq_compl :
+    {e | ∃ B ∈ c.blocks, G.src e ∈ B ∧ G.tgt e ∈ B} =
+      {e | c.blockOf (G.src e) ≠ c.blockOf (G.tgt e)}ᶜ := by
+  ext e
+  simp only [mem_compl_iff, mem_ofPred_eq, not_not]
+  constructor
+  · rintro ⟨B, hB, hs, ht⟩
+    rw [(c.mem_iff_blockOf_eq (B := ⟨B, hB⟩)).1 hs, (c.mem_iff_blockOf_eq (B := ⟨B, hB⟩)).1 ht]
+  · intro h
+    exact ⟨_, (c.blockOf (G.src e)).2, c.mem_iff_blockOf_eq.2 rfl,
+      c.mem_iff_blockOf_eq.2 h.symm⟩
+
+/-- Every merge moves at least one edge inside a block: the external edges and the vertices
+together number at most the edges and the blocks. -/
+theorem external_add_vertices_le [Finite E] :
+    c.External.ncard + Nat.card V ≤ Nat.card E + c.blocks.card := by
+  have htotal : c.External.ncard + {e | c.blockOf (G.src e) ≠ c.blockOf (G.tgt e)}ᶜ.ncard =
+      Nat.card E := ncard_add_ncard_compl c.External
+  have hcard := c.card_le
+  rw [inside_eq_compl] at hcard
+  omega
+
+/-- In a connected graph with at least two blocks, some edge leaves any block for another. -/
+theorem exists_cut_other_block (hG : G.Connected) (two : 2 ≤ c.blocks.card) (B : c.blocks) :
+    ∃ e ∈ G.cut {v | v ∈ B.1}, ∃ B' : c.blocks, B' ≠ B ∧ e ∈ G.cut {v | v ∈ B'.1} := by
+  obtain ⟨B', hB', hne⟩ := Finset.exists_mem_ne two B.1
+  obtain ⟨u, hu⟩ := List.exists_mem_of_ne_nil _ (c.ne_nil _ B.2)
+  obtain ⟨w, hw⟩ := List.exists_mem_of_ne_nil _ (c.ne_nil _ hB')
+  obtain ⟨e, he⟩ := hG.cut_nonempty (S := {v | v ∈ B.1}) hu
+    fun h => hne (c.eq_of_mem _ hB' _ B.2 w hw h)
+  refine ⟨e, he, ?_⟩
+  simp only [mem_cut, mem_ofPred_eq, mem_iff_blockOf_eq] at he ⊢
+  by_cases h : c.blockOf (G.src e) = B
+  · simp only [h, true_iff] at he
+    exact ⟨_, he, by simp [h, Ne.symm he]⟩
+  · simp only [h, false_iff, not_not] at he
+    exact ⟨_, h, by simp [he, Ne.symm h]⟩
+
 /-- In a final compression, an edge between two distinct blocks is determined by its ends. -/
 theorem injOn_ends [Finite E] (hc : c.Final) :
     InjOn c.ends {e | c.blockOf (G.src e) ≠ c.blockOf (G.tgt e)} := by
@@ -420,21 +502,9 @@ theorem injOn_ends [Finite E] (hc : c.Final) :
 edges leave every block. -/
 theorem ncard_cut_eq_three (c : Compression G) [Finite E] (hc : c.Final) (hG : G.Connected)
     (two : 2 ≤ c.blocks.card) (B : c.blocks) : (G.cut {v | v ∈ B.1}).ncard = 3 := by
-  obtain ⟨B', hB', hne⟩ := Finset.exists_mem_ne two B.1
-  obtain ⟨u, hu⟩ := List.exists_mem_of_ne_nil _ (c.ne_nil _ B.2)
-  obtain ⟨w, hw⟩ := List.exists_mem_of_ne_nil _ (c.ne_nil _ hB')
-  obtain ⟨e, he⟩ := hG.cut_nonempty (S := {v | v ∈ B.1}) hu
-    fun h => hne (c.eq_of_mem _ hB' _ B.2 w hw h)
-  -- The other end of `e` lies in another block.
-  obtain ⟨B'', hB'', he''⟩ : ∃ B'' : c.blocks, B'' ≠ B ∧ e ∈ G.cut {v | v ∈ B''.1} := by
-    simp only [mem_cut, mem_ofPred_eq, mem_iff_blockOf_eq] at he ⊢
-    by_cases h : c.blockOf (G.src e) = B
-    · simp only [h, true_iff] at he
-      exact ⟨_, he, by simp [h, Ne.symm he]⟩
-    · simp only [h, false_iff, not_not] at he
-      exact ⟨_, h, by simp [he, Ne.symm h]⟩
+  obtain ⟨e, he, B', hB', he'⟩ := c.exists_cut_other_block hG two B
   exact le_antisymm (c.cut_le _ B.2)
-    (hc _ B.2 _ B''.2 (fun h => hB'' (Subtype.ext h).symm) ⟨e, he, he''⟩).2
+    (hc _ B.2 _ B'.2 (fun h => hB' (Subtype.ext h).symm) ⟨e, he, he'⟩).2
 
 /-- In a final compression, the quotient degree equals the block's boundary size. -/
 theorem degree_eq_cut [Finite E] (hc : c.Final) [c.quotient.LocallyFinite] (B : c.blocks) :
@@ -473,24 +543,96 @@ theorem card_add_two_mul_le (c : Compression G) [Finite E] (hc : c.Final) (hG : 
   have hdeg := c.quotient.sum_degrees_eq_twice_card_edges
   simp only [(c.isRegularOfDegree hc hG two).degree_eq, Finset.sum_const, Finset.card_univ,
     Fintype.card_coe, smul_eq_mul] at hdeg
-  have hE : c.quotient.edgeFinset.card =
-      {e | c.blockOf (G.src e) ≠ c.blockOf (G.tgt e)}.ncard := by
+  have hE : c.quotient.edgeFinset.card = c.External.ncard := by
     rw [← Set.ncard_coe_finset, SimpleGraph.coe_edgeFinset, edgeSet_quotient,
       (c.injOn_ends hc).ncard_image]
-  have hin : {e | ∃ B ∈ c.blocks, G.src e ∈ B ∧ G.tgt e ∈ B} =
-      {e | c.blockOf (G.src e) ≠ c.blockOf (G.tgt e)}ᶜ := by
-    ext e
-    simp only [mem_compl_iff, mem_ofPred_eq, not_not]
-    constructor
-    · rintro ⟨B, hB, hs, ht⟩
-      rw [(c.mem_iff_blockOf_eq (B := ⟨B, hB⟩)).1 hs, (c.mem_iff_blockOf_eq (B := ⟨B, hB⟩)).1 ht]
-    · intro h
-      exact ⟨_, (c.blockOf (G.src e)).2, c.mem_iff_blockOf_eq.2 rfl,
-        c.mem_iff_blockOf_eq.2 h.symm⟩
-  have := Set.ncard_add_ncard_compl {e | c.blockOf (G.src e) ≠ c.blockOf (G.tgt e)}
-  have := c.card_le
-  rw [hin] at this
+    rfl
+  have := c.external_add_vertices_le
   omega
+
+theorem Terminal.multi_degree_sum [Finite E] (hc : c.Terminal) (e : c.External) :
+    d + 3 ≤ (c.multiQuotient.edgesAt (c.multiQuotient.src e)).ncard +
+      (c.multiQuotient.edgesAt (c.multiQuotient.tgt e)).ncard := by
+  let B := c.multiQuotient.src e
+  let B' := c.multiQuotient.tgt e
+  have hne : B ≠ B' := e.2
+  have hne' : B.1 ≠ B'.1 := fun h => hne (Subtype.ext h)
+  have hjoin : (G.cut {v | v ∈ B.1} ∩ G.cut {v | v ∈ B'.1}).Nonempty := by
+    refine ⟨e.1, ?_⟩
+    simp only [mem_inter_iff, mem_cut, mem_ofPred_eq, mem_iff_blockOf_eq]
+    change (¬(B = B ↔ B' = B)) ∧ ¬(B = B' ↔ B' = B')
+    simp [hne, Ne.symm hne]
+  have hdis : Disjoint {v | v ∈ B.1} {v | v ∈ B'.1} :=
+    disjoint_left.mpr fun v hv hv' => hne' (c.eq_of_mem _ B.2 _ B'.2 v hv hv')
+  have hsum := G.ncard_cut_union_add hdis
+  have hlt := hc _ B.2 _ B'.2 hne' hjoin
+  have hpos := hjoin.ncard_pos
+  rw [c.ncard_edgesAt_multiQuotient, c.ncard_edgesAt_multiQuotient]
+  change d + 3 ≤ (G.cut {v | v ∈ B.1}).ncard + (G.cut {v | v ∈ B'.1}).ncard
+  lia
+
+theorem Terminal.multi_degree_ge_three [Finite E] (hc : c.Terminal) (hG : G.Connected)
+    (two : 2 ≤ c.blocks.card) (B : c.blocks) : 3 ≤ (c.multiQuotient.edgesAt B).ncard := by
+  obtain ⟨e, he, -⟩ := c.exists_cut_other_block hG two B
+  let e' : c.External := ⟨e, c.external_of_cut he⟩
+  have hsum := Terminal.multi_degree_sum c hc e'
+  have hs := c.multiQuotient_maxDegreeLE (c.multiQuotient.src e')
+  have ht := c.multiQuotient_maxDegreeLE (c.multiQuotient.tgt e')
+  have hi : c.multiQuotient.Incident B e' := by
+    have hmem : e' ∈ c.multiQuotient.edgesAt B := by
+      simp only [edgesAt, Incident, multiQuotient, mem_ofPred_eq]
+      simp only [mem_cut, mem_ofPred_eq, mem_iff_blockOf_eq] at he
+      tauto
+    exact hmem
+  rcases hi with h | h <;> rw [h] at hsum <;> lia
+
+/-- A nontrivial terminal core has at least as many edges as blocks. -/
+theorem Terminal.multi_blocks_le_edges [Finite E] (hc : c.Terminal) (hG : G.Connected)
+    (two : 2 ≤ c.blocks.card) : c.blocks.card ≤ c.External.ncard := by
+  classical
+  let := Fintype.ofFinite c.External
+  have hs := c.multiQuotient.sum_degree_mul c.multiQuotient_loopless (fun _ => 1)
+  have hmin := Finset.sum_le_sum (s := Finset.univ)
+    (fun B _ => Terminal.multi_degree_ge_three c hc hG two B)
+  simp only [mul_one, Finset.sum_const, Finset.card_univ, smul_eq_mul,
+    Fintype.card_coe] at hs hmin
+  rw [← Nat.card_eq_fintype_card, Nat.card_coe_set_eq] at hs
+  lia
+
+/-- The terminal multigraph core has at most `3d/(2d-3)` times the original cycle rank
+edges, expressed without division. -/
+theorem Terminal.multi_edge_bound [Finite E] (hc : c.Terminal) (hG : G.Connected)
+    (two : 2 ≤ c.blocks.card) :
+    (2 * d - 3) * c.External.ncard ≤ 3 * d * G.cycleRank := by
+  classical
+  let := Fintype.ofFinite c.External
+  have hd := Multigraph.core_density c.multiQuotient c.multiQuotient_loopless
+    (Terminal.multi_degree_ge_three c hc hG two) c.multiQuotient_maxDegreeLE
+    (Terminal.multi_degree_sum c hc)
+  rw [Fintype.card_coe, ← Nat.card_eq_fintype_card, Nat.card_coe_set_eq] at hd
+  have hcard := c.external_add_vertices_le
+  have hd3 : 3 ≤ d := (Terminal.multi_degree_ge_three c hc hG two
+    ⟨_, (Finset.card_pos.mp (by lia : 0 < c.blocks.card)).choose_spec⟩).trans
+      (c.multiQuotient_maxDegreeLE _)
+  have hmul := Nat.mul_le_mul_left (3 * d) hcard
+  have hβ : Nat.card E + 1 ≤ G.cycleRank + Nat.card V := by
+    unfold Multigraph.cycleRank
+    lia
+  have hmulβ := Nat.mul_le_mul_left (3 * d) hβ
+  have hsub : 2 * d - 3 + 3 = 2 * d := by lia
+  nlinarith
+
+/-- The cut of a union of whole blocks is the multigraph quotient's cut. -/
+theorem ncard_cut_multiQuotient [Finite E] (T : Set c.blocks) :
+    (G.cut {v | c.blockOf v ∈ T}).ncard = (c.multiQuotient.cut T).ncard := by
+  have heq : c.multiQuotient.cut T =
+      {e : c.External | e.1 ∈ G.cut {v | c.blockOf v ∈ T}} := rfl
+  rw [heq, ncard_subtype]
+  congr 1
+  symm
+  refine inter_eq_left.mpr fun e he => ?_
+  intro h
+  exact he (by change c.blockOf (G.src e) ∈ T ↔ c.blockOf (G.tgt e) ∈ T; rw [h])
 
 /-- The cut of a union of whole blocks embeds in the quotient's cut. -/
 theorem ncard_cut_le [Finite E] (hc : c.Final) [Fintype c.quotient.edgeSet]
@@ -505,6 +647,17 @@ theorem ncard_cut_le [Finite E] (hc : c.Final) [Fintype c.quotient.edgeSet]
   · intro h
     rw [mem_cut, mem_ofPred_eq, mem_ofPred_eq, h] at he
     exact he Iff.rfl
+
+/-- In a final compression the multigraph quotient's cut is at most the simple quotient's. -/
+theorem ncard_cut_multiQuotient_le [Finite E] (hc : c.Final) [Fintype c.quotient.edgeSet]
+    (p : c.blocks → Prop) [DecidablePred p] :
+    (c.multiQuotient.cut {B | p B}).ncard ≤
+      (c.quotient.cutFinset (Finset.univ.filter p)).card := by
+  rw [← c.ncard_cut_multiQuotient]
+  have : {v | c.blockOf v ∈ {B | p B}} = {v | c.blockOf v ∈ Finset.univ.filter p} := by
+    ext v; simp
+  rw [this]
+  exact c.ncard_cut_le hc _
 
 /-! ### Expansion -/
 
@@ -537,49 +690,48 @@ theorem ncard_cut_take_le [Finite V] [DecidableEq V] [Finite E] (B : c.blocks) (
     exact this.trans (Nat.le_add_left _ _)
 
 /-- **Expansion.** Lay out the vertices block by block, ordering the blocks by an injective
-key and each block by its list. If at most `X` edges of the quotient cross each prefix of the
-key, at most `X + d log₂ N + d` edges cross each frontier of the layout. -/
-theorem exists_layout [Finite V] [Finite E] (hc : c.Final) [Fintype c.quotient.edgeSet]
-    {key : c.blocks → ℕ} (hkey : key.Injective) {X : ℝ}
-    (hX : ∀ q,
-      ((c.quotient.cutFinset (Finset.univ.filter fun B => key B < q)).card : ℝ) ≤ X) :
+key and each block by its list. If at most `X` edges of the multigraph quotient cross each
+prefix of the key, at most `X + d log₂ N + d` edges cross each frontier of the layout. -/
+theorem exists_layout [Finite V] [Finite E] {key : c.blocks → ℕ}
+    (hkey : key.Injective) {X : ℝ}
+    (hX : ∀ q, ((c.multiQuotient.cut {B | key B < q}).ncard : ℝ) ≤ X) :
     ∃ π : Layout V, ∀ t,
       ((G.cut (π.initial t)).ncard : ℝ) ≤ X + d * Nat.log 2 (Nat.card V) + d := by
   classical
-  have := Fintype.ofFinite V
+  let := Fintype.ofFinite V
   let f (v : V) : ℕ ×ₗ ℕ := toLex (key (c.blockOf v), c.idx v)
   have hf : f.Injective := by
     intro v w h
     simp only [f, toLex_inj, Prod.mk.injEq] at h
     have hb := hkey h.1
-    have := h.2
-    rw [idx, idx, ← hb] at this
-    exact (List.idxOf_inj (c.mem_iff_blockOf_eq.2 rfl)).1 this
+    have hi := h.2
+    rw [idx, idx, ← hb] at hi
+    exact (List.idxOf_inj (c.mem_iff_blockOf_eq.mpr rfl)).mp hi
   obtain ⟨π, hπ⟩ := Layout.exists_monotone hf
   refine ⟨π, fun t => ?_⟩
   have hX₀ : 0 ≤ X := (Nat.cast_nonneg _).trans (hX 0)
   rcases (π.initial t).eq_empty_or_nonempty with h | h
   · rw [h, cut_empty, ncard_empty, Nat.cast_zero]
-    positivity
+    exact le_add_of_le_of_nonneg (le_add_of_le_of_nonneg hX₀ (by positivity)) (by positivity)
   obtain ⟨v₀, hv₀, hmax⟩ := Set.exists_max_image _ f (toFinite _) h
-  -- The frontier is the blocks before that of `v₀`, and a prefix of the block of `v₀`.
-  have hL : π.initial t =
-      {v | c.blockOf v ∈ Finset.univ.filter fun B => key B < key (c.blockOf v₀)} ∪
-        {v | c.blockOf v = c.blockOf v₀ ∧ c.idx v < c.idx v₀ + 1} := by
+  have hL : π.initial t = {v | key (c.blockOf v) < key (c.blockOf v₀)} ∪
+      {v | c.blockOf v = c.blockOf v₀ ∧ c.idx v < c.idx v₀ + 1} := by
     ext v
     have : v ∈ π.initial t ↔ f v ≤ f v₀ :=
-      ⟨hmax v, fun h => show (π v : ℕ) < t from Nat.lt_of_le_of_lt (hπ v v₀ h) hv₀⟩
+      ⟨hmax v, fun h => Nat.lt_of_le_of_lt (hπ v v₀ h) hv₀⟩
     rw [this]
     simp [f, Prod.Lex.toLex_le_toLex, hkey.eq_iff]
-  have : (G.cut (π.initial t)).ncard ≤ (c.quotient.cutFinset
-      (Finset.univ.filter fun B => key B < key (c.blockOf v₀))).card +
-      (d * Nat.log 2 (Nat.card V) + d) := by
+  have hnat : (G.cut (π.initial t)).ncard ≤
+      (c.multiQuotient.cut {B | key B < key (c.blockOf v₀)}).ncard +
+        (d * Nat.log 2 (Nat.card V) + d) := by
     rw [hL]
-    exact (Set.ncard_le_ncard (G.cut_union_subset _ _)).trans ((Set.ncard_union_le _ _).trans
-      (add_le_add (c.ncard_cut_le hc _) (c.ncard_cut_take_le _ _)))
+    have hwhole := c.ncard_cut_multiQuotient {B | key B < key (c.blockOf v₀)}
+    have hpart := c.ncard_cut_take_le (c.blockOf v₀) (c.idx v₀ + 1)
+    have hbound := add_le_add hwhole.le hpart
+    exact (ncard_le_ncard (G.cut_union_subset _ _)).trans ((ncard_union_le _ _).trans hbound)
   have hq := hX (key (c.blockOf v₀))
-  have : ((G.cut (π.initial t)).ncard : ℝ) ≤ _ := Nat.cast_le.2 this
-  push_cast at this
+  have hreal := Nat.cast_le (α := ℝ).mpr hnat
+  push_cast at hreal
   linarith
 
 end Compression
@@ -622,7 +774,8 @@ theorem LayoutBound.of_cubic {c : ℝ} (hc : 0 ≤ c) (h : CubicLayoutBound c) :
         (SimpleGraph.mem_cutFinset.1 hs).1).trans
           (SimpleGraph.card_edgeFinset_le_card_choose_two.trans
             (Nat.choose_le_choose 2 (by rw [Fintype.card_coe]; omega)))
-  obtain ⟨π, hπ⟩ := Q.exists_layout hQ hkey hX
+  obtain ⟨π, hπ⟩ := Q.exists_layout hkey fun q =>
+    (Nat.cast_le.mpr (Q.ncard_cut_multiQuotient_le hQ fun B => key B < q)).trans (hX q)
   norm_num only [Nat.cast_ofNat] at hπ
   exact ⟨π, fun t => by linarith [hπ t, hK (Nat.card V)]⟩
 

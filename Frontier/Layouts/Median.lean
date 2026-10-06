@@ -6,9 +6,8 @@ Authors: Samuel Schlesinger
 module
 
 public import Frontier.Layouts.Cubic
+public import Frontier.Multigraph
 public import Mathlib.Combinatorics.SimpleGraph.DegreeSum
-import Mathlib.Algebra.Order.Archimedean.Real.Basic
-import Mathlib.Algebra.Order.Floor.Semiring
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -305,16 +304,7 @@ theorem card_cutFinset_le (regular : H.IsRegularOfDegree 3)
     have hnat : #(H.cutFinset P) ≤ 3 * #{e ∈ H.edgeFinset | top ≤ score e} := by omega
     exact (by exact_mod_cast hnat : (#(H.cutFinset P) : ℝ) ≤ _).trans high
   -- Inside the grid: `t = a + i δ ≤ m < a + (i + 1) δ`.
-  set i := ⌊(m - a) / δ⌋₊
-  have hdiv : 0 ≤ (m - a) / δ := div_nonneg (by linarith) hδ.le
-  have ht : a + i * δ ≤ m := by
-    have := (le_div_iff₀ hδ).mp (Nat.floor_le hdiv); linarith
-  have ht' : m < a + (i + 1) * δ := by
-    have := (div_lt_iff₀ hδ).mp (Nat.lt_floor_add_one ((m - a) / δ)); linarith
-  have hiM : i < M := by
-    by_contra! hMi
-    have : (M : ℝ) * δ ≤ i * δ := by gcongr
-    linarith
+  obtain ⟨i, hiM, ht, ht'⟩ := exists_grid_index hδ (M := M) hge hlt
   set t := a + i * δ
   set t' := a + (i + 1) * δ
   set window : Finset (Sym2 W) := {e ∈ H.edgeFinset | t ≤ score e ∧ score e < t'}
@@ -375,38 +365,14 @@ theorem exists_key_of_edgeScore (regular : H.IsRegularOfDegree 3) (score : Sym2 
   classical
   choose med hmed using exists_isMedian regular score
   -- List the vertices by median, breaking ties by a fixed enumeration.
-  let rank : W → Lex (ℝ × ℕ) := fun v => toLex (med v, (Fintype.equivFin W v : ℕ))
-  have rank_inj : Function.Injective rank := fun v w h => by
-    have := congrArg (fun x => (ofLex x).2) h
-    exact (Fintype.equivFin W).injective (Fin.ext this)
-  let key : W → ℕ := fun v => #{w | rank w < rank v}
-  have key_lt : ∀ {u v}, key u < key v → rank u < rank v := by
-    intro u v h
-    by_contra! hle
-    exact absurd h (not_lt.mpr (card_le_card fun w hw =>
-      mem_filter.mpr ⟨mem_univ _, ((mem_filter.mp hw).2).trans_le hle⟩))
-  refine ⟨key, fun u v h => ?_, fun t => ?_⟩
-  · -- A smaller rank has strictly fewer vertices below it.
-    have key_strict : ∀ {u v}, rank u < rank v → key u < key v := fun {u v} hlt =>
-      card_lt_card ⟨fun w hw => mem_filter.mpr ⟨mem_univ _, ((mem_filter.mp hw).2).trans hlt⟩,
-        fun hsub => lt_irrefl _ ((mem_filter.mp (hsub (mem_filter.mpr ⟨mem_univ _, hlt⟩))).2)⟩
-    by_contra hne
-    rcases lt_or_gt_of_ne (rank_inj.ne hne) with hlt | hlt
-    · exact absurd h (key_strict hlt).ne
-    · exact absurd h (key_strict hlt).ne'
-  · set P : Finset W := {w | key w < t}
-    have hmono : ∀ u ∈ P, ∀ v ∉ P, med u ≤ med v := by
-      intro u hu v hv
-      have hlt : rank u < rank v := key_lt (lt_of_lt_of_le (mem_filter.mp hu).2
-        (not_lt.mp fun h => hv (mem_filter.mpr ⟨mem_univ _, h⟩)))
-      rcases Prod.Lex.lt_iff.mp hlt with h | ⟨h, -⟩
-      · exact h.le
-      · exact h.le
-    rcases P.eq_empty_or_nonempty with hP | hP
-    · have hB : (0 : ℝ) ≤ B := le_trans (by positivity) low
-      simpa [hP, SimpleGraph.cutFinset] using hB
-    obtain ⟨u₀, hu₀, hmax⟩ := P.exists_max_image med hP
-    exact card_cutFinset_le regular hmed (P := P) (m := med u₀) hmax
-      (fun v hv => hmono u₀ hu₀ v hv) hδ M low high mid
+  obtain ⟨key, hinj, hkey⟩ := exists_key_of_score med
+  refine ⟨key, hinj, fun t => ?_⟩
+  rcases hkey t with hempty | ⟨m, hP, hPc⟩
+  · have hB : (0 : ℝ) ≤ B := le_trans (by positivity) low
+    have : ({w | key w < t} : Finset W) = ∅ := filter_eq_empty_iff.mpr fun w _ => hempty w
+    simpa [this, SimpleGraph.cutFinset] using hB
+  · exact card_cutFinset_le regular hmed (P := {w | key w < t}) (m := m)
+      (fun v hv => hP v (mem_filter.mp hv).2)
+      (fun v hv => hPc v fun h => hv (mem_filter.mpr ⟨mem_univ _, h⟩)) hδ M low high mid
 
 end Frontier

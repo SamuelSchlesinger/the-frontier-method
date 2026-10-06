@@ -6,7 +6,7 @@ Authors: Samuel Schlesinger
 module
 
 public import Frontier.Layouts.MultiGaussian
-public import Frontier.Layouts.MultiCompression
+public import Frontier.Layouts.Compression
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
@@ -18,6 +18,8 @@ import Mathlib.Analysis.Real.Pi.Bounds
 Terminal compression and Gaussian vertex ordering give
 `A_d = 3d/(2d-3) * arccos(2 sqrt(d-1)/d)/pi` for every fixed `d ≥ 3`.
 All multigraph edges are retained in both the compression and the probabilistic proof.
+At `d = 4` the coefficient is exactly `2/5` (`layoutBound_two_fifths`), the input for
+ternary circuits.
 -/
 
 @[expose] public section
@@ -129,12 +131,18 @@ theorem layoutBound_degree {d : ℕ} (hd : 3 ≤ d) : LayoutBound d (Gaussian.de
         exact_mod_cast he.trans (Nat.mul_le_mul_left d hv)
       exact (Nat.cast_le.mpr (Set.ncard_le_card _)).trans (by
         rw [Nat.card_coe_set_eq]; linarith)
-  obtain ⟨π, hπ⟩ := Q.exists_layout_multi hkey hX
+  obtain ⟨π, hπ⟩ := Q.exists_layout hkey hX
   refine ⟨π, fun t => ?_⟩
   have hlog := mul_le_mul_of_nonneg_left (hK (Nat.card V)) (show (0 : ℝ) ≤ d by positivity)
   have hcancel : (d : ℝ) * (η / d * Nat.card V + K) = η * Nat.card V + d * K := by
     field_simp
   rw [hcancel] at hlog
   linarith [hπ t]
+
+/-- **Layouts in maximum degree four.** The general coefficient is `2/5` at `d = 4`, since
+`arccos (√3 / 2) = π / 6`; this supplies the coefficient for ternary circuits. -/
+theorem layoutBound_two_fifths : LayoutBound 4 (2 / 5) := by
+  rw [← Gaussian.degreeCoefficient_four]
+  exact layoutBound_degree (by norm_num)
 
 end Frontier

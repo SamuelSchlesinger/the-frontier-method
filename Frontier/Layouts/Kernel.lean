@@ -19,27 +19,26 @@ row* divides it by its Euclidean norm. Distances are extended distances, so an u
 lies in no sphere or ball and receives `0`. The row of `v` has entry `q ^ 0 = 1` at `v`, so its
 norm is at least one.
 
-In a graph of maximum degree three:
+In a graph of maximum degree `D`:
 
-* **Growth** (`card_sphere_le`, `card_ball_le`). The sphere of radius `d` has at most
-  `3 * 2 ^ d` vertices. A vertex at distance `d + 1` has a neighbour at distance `d`, the
-  penultimate vertex of a shortest walk; so a vertex at positive distance `d` has at most two
-  neighbours at distance `d + 1`.
-* **Correlation** (`sum_kernel_mul_ge`, `sum_unitKernel_mul_ge`). For adjacent `u` and `v` the
-  distances from `u` and from `v` to any vertex differ by at most one. Where both rows are
-  nonzero their entries `a, b` are equal or differ by the factor `q`, and in either case
-  `a b ≥ κ (a ^ 2 + b ^ 2) / 2` with `κ = 2q / (1 + q ^ 2) ≤ 1`. Where exactly one row is
-  nonzero the vertex lies on a truncation sphere of radius `R`, and the growth bound charges
-  these vertices at most `3 (2 q ^ 2) ^ R` in total. Dividing by the norms, for `q ≥ 0` the
-  unit rows of adjacent vertices have inner product at least `κ - 3 (2 q ^ 2) ^ R`. No girth
-  assumption is needed.
+* **Growth** (`card_sphere_le_degree`, `card_ball_le_degree`). The sphere of radius `d` has at
+  most `D (D - 1) ^ d` vertices. A vertex at distance `d + 1` has a neighbour at distance `d`,
+  the penultimate vertex of a shortest walk; so a vertex at positive distance `d` has at most
+  `D - 1` neighbours at distance `d + 1`. The ball of radius `r` has at most `D ^ (r + 1)`.
+* **Correlation** (`sum_kernel_mul_ge_degree`, `sum_unitKernel_mul_ge_degree`). For adjacent
+  `u` and `v` the distances from `u` and from `v` to any vertex differ by at most one. Where
+  both rows are nonzero their entries `a, b` are equal or differ by the factor `q`, and in
+  either case `a b ≥ κ (a ^ 2 + b ^ 2) / 2` with `κ = 2q / (1 + q ^ 2) ≤ 1`. Where exactly one
+  row is nonzero the vertex lies on a truncation sphere of radius `R`, and the growth bound
+  charges these vertices at most `D ((D - 1) q ^ 2) ^ R` in total. Dividing by the norms, for
+  `q ≥ 0` the unit rows of adjacent vertices have inner product at least
+  `κ - D ((D - 1) q ^ 2) ^ R`. No girth assumption is needed.
 
 The ball lemmas `ball_subset_ball_of_adj` and `mem_ball_of_not_disjoint` bound the vertices on
 which a row, or a pair of rows, depends.
 
-The `_degree` variants prove the same statements in maximum degree `D ≥ 2`, replacing
-the sphere bound by `D * (D - 1) ^ d` and the correlation error by
-`D * ((D - 1) * q ^ 2) ^ R`.
+`sum_unitKernel_mul_ge` restates the correlation bound in maximum degree three, where the
+error is `3 (2 q ^ 2) ^ R`.
 -/
 
 @[expose] public section
@@ -307,9 +306,6 @@ theorem card_sphere_succ_le_degree {D : ℕ} (degree : ∀ v, H.degree v ≤ D) 
       _ ≤ (D - 1) * (D * (D - 1) ^ d) := Nat.mul_le_mul_left _ ih
       _ = D * (D - 1) ^ (d + 1) := by ring
 
-theorem card_sphere_succ_le (degree : ∀ v, H.degree v ≤ 3) (v : W) (d : ℕ) :
-    (sphere H v (d + 1)).card ≤ 3 * 2 ^ d := card_sphere_succ_le_degree H degree v d
-
 /-- Sphere growth in any fixed maximum degree. -/
 theorem card_sphere_le_degree {D : ℕ} (hD : 2 ≤ D) (degree : ∀ v, H.degree v ≤ D)
     (v : W) (d : ℕ) : (sphere H v d).card ≤ D * (D - 1) ^ d := by
@@ -346,42 +342,6 @@ theorem card_ball_le_degree {D : ℕ} (hD : 2 ≤ D) (degree : ∀ v, H.degree v
     rw [pow_succ D (r + 1)]
     nlinarith
 
-/-- In a graph of maximum degree three, the sphere of radius `d` has at most
-`3 * 2 ^ d` vertices. -/
-theorem card_sphere_le (degree : ∀ v, H.degree v ≤ 3) (v : W) (d : ℕ) :
-    (sphere H v d).card ≤ 3 * 2 ^ d := by
-  cases d with
-  | zero => simp [sphere_zero]
-  | succ d => exact (card_sphere_succ_le H degree v d).trans (by rw [pow_succ]; omega)
-
-/-- A form of `card_ball_le` strong enough to carry the induction on the radius. -/
-private theorem card_ball_add_le (degree : ∀ v, H.degree v ≤ 3) (v : W) (r : ℕ) :
-    (ball H v r).card + 3 ≤ 3 * 2 ^ (r + 1) := by
-  induction r with
-  | zero => simp [ball_zero]
-  | succ r ih =>
-    classical
-    have hsub : ball H v (r + 1) ⊆ ball H v r ∪ sphere H v (r + 1) := by
-      intro z hz
-      rw [mem_ball] at hz
-      rw [Finset.mem_union, mem_ball, mem_sphere]
-      obtain ⟨n, hn, hle⟩ := ENat.le_natCast_iff.mp hz
-      rw [hn]
-      rcases Nat.lt_or_ge n (r + 1) with h | h
-      · exact Or.inl (by exact_mod_cast (by omega : n ≤ r))
-      · exact Or.inr (by rw [show n = r + 1 by omega])
-    have h1 := (Finset.card_le_card hsub).trans (Finset.card_union_le _ _)
-    have h2 := card_sphere_le H degree v (r + 1)
-    rw [pow_succ 2 (r + 1)]
-    omega
-
-/-- In a graph of maximum degree three, the ball of radius `r` has at most
-`3 * 2 ^ (r + 1)` vertices. -/
-theorem card_ball_le (degree : ∀ v, H.degree v ≤ 3) (v : W) (r : ℕ) :
-    (ball H v r).card ≤ 3 * 2 ^ (r + 1) := by
-  have := card_ball_add_le H degree v r
-  omega
-
 /-- **Pointwise correlation inequality, summed.** For adjacent vertices the kernel rows have
 inner product at least `κ` times the mean of their squared norms, up to the truncation
 boundary, where `κ = 2q/(1+q^2)`. -/
@@ -413,12 +373,6 @@ theorem sum_kernel_mul_ge_degree {D : ℕ} (hD : 2 ≤ D) (degree : ∀ v, H.deg
     rw [mul_pow]
     nlinarith [mul_le_mul_of_nonneg_left (add_le_add hu hv) hP]
   linarith
-
-theorem sum_kernel_mul_ge (degree : ∀ v, H.degree v ≤ 3) (q : ℝ) (R : ℕ) {u v : W}
-    (huv : H.Adj u v) :
-    2 * q / (1 + q ^ 2) * ((∑ z, kernel H q R u z ^ 2) + ∑ z, kernel H q R v z ^ 2) / 2 -
-        3 * (2 * q ^ 2) ^ R ≤ ∑ z, kernel H q R u z * kernel H q R v z := by
-  simpa using sum_kernel_mul_ge_degree H (by norm_num : 2 ≤ 3) degree q R huv
 
 /-- **Correlation of adjacent rows.** For a nonnegative ratio `q`, the unit kernel rows of
 adjacent vertices have inner product at least `2q/(1+q^2) - D ((D-1)q^2)^R`. -/

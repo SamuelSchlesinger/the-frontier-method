@@ -8,7 +8,6 @@ module
 public import Frontier.Layouts.Compression
 public import Frontier.Layouts.Gaussian
 public import Frontier.Layouts.General
-public import Frontier.Layouts.Quartic
 public import Frontier.Layouts.BoundedDegree
 
 /-!
@@ -24,11 +23,10 @@ The graph-theoretic input of the lower bound, proved:
 * `layoutBound_one_third`: `LayoutBound 3 (1/3)`, since `2p ≤ 9/32 < 1/3`.
 * `layoutBound_one d`: coefficient one in every fixed degree, from a spanning tree of width
   at most `d log₂ |V|` and one additional edge per independent cycle.
-* `layoutBound_two_fifths`: coefficient `2/5` in degree four, from Gaussian vertex scores
-  and a terminal core whose edge count is at most `12/5` times the original cycle rank.
 * `layoutBound_degree`: coefficient `A_d = 3d/(2d-3) * arccos(2√(d-1)/d)/π` in every
-  fixed degree `d ≥ 3`. It is below `3/4`, equals `2/5` at degree four, and keeps parallel
-  edges throughout the compression and Gaussian concentration argument.
+  fixed degree `d ≥ 3`. It is below `3/4` and keeps parallel edges throughout the compression
+  and Gaussian concentration argument.
+* `layoutBound_two_fifths`: the case `d = 4`, where `A_4 = 2/5` exactly.
 
 ## Structure of the proof
 
@@ -38,12 +36,13 @@ Frontier.Layouts.Probability    Gaussian forms; Sheppard's crossing bound; windo
 Frontier.Layouts.SecondMoment   concentration of counts of local events
 Frontier.Layouts.Star           angles between vectors close to a common vector
 Frontier.Layouts.Median         ordering a cubic graph by median edge scores
-Frontier.Layouts.Gaussian       the random layout: CubicLayoutBound p
-Frontier.Layouts.Compression    from cubic graphs to subcubic multigraphs
-Frontier.Layouts.Vertex*        Gaussian vertex layouts in every fixed degree
-Frontier.Layouts.Quartic*       degree-four compression and the coefficient 2/5
-Frontier.Layouts.Multi*         compression and Gaussian ordering with parallel edges
-Frontier.Layouts.BoundedDegree  the cycle-rank coefficient A_d in every degree d ≥ 3
+Frontier.Layouts.Gaussian       the random layout: CubicLayoutBound p; kernel parameters
+Frontier.Layouts.Compression    compressing a graph to its core, simple or multigraph
+Frontier.Layouts.VertexGaussian Gaussian vertex scores and the per-edge crossing bound
+Frontier.Layouts.Support        multigraph cuts, degrees, and the core density
+Frontier.Layouts.MultiOrder     vertex-score orderings with parallel edges
+Frontier.Layouts.MultiGaussian  Gaussian concentration with multiplicities
+Frontier.Layouts.BoundedDegree  the cycle-rank coefficient A_d in every degree d ≥ 3, and 2/5
 ```
 -/
 

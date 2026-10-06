@@ -157,8 +157,8 @@ the same ordered cuts. It uses the convention without an extra `1`.
 For connected compiled graphs with `s` binary gates, `O(n)` outputs, and all
 `n` inputs reachable, combining this demand with the existing supply gives
 `s >= n + pw([I;L])/A - o(n)` in the regime `s=O(n)`. This final asymptotic
-combination is stated as a paper consequence; the checked new theorem is the
-per-layout frontier demand. For disconnected graphs, do not silently add
+combination is not packaged as a Lean theorem and is not in the paper; the checked
+theorem is the per-layout frontier demand. For disconnected graphs, do not silently add
 component pathwidths: direct-sum pathwidth is their maximum. Componentwise
 circuit accounting and the Jacobian extension remain separate tasks.
 
@@ -225,6 +225,6 @@ but their universal congestion bounds remain to be proved.
 ## Verification
 
 Run `lake build --wfail` and `lake env lean scripts/Audit.lean`. The audit contains exact
-standard-axiom guards for the principal endpoints. The paper includes proofs and
-a declaration index for the added results, with external constructions and unformalized
-algorithmic consequences identified separately.
+standard-axiom guards for the principal endpoints. The paper presents the core method
+and indexes its formal statements; the refinements recorded here are checked in Lean but
+are not expounded in the paper, so that it stays focused.

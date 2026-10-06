@@ -162,9 +162,9 @@ Run after `lake build --wfail` with `lake env lean scripts/Audit.lean`.
 #guard_msgs in
 #print axioms Frontier.Gaussian.sum_unitKernel_mul_ge_degree
 
-/-- info: 'Frontier.Gaussian.vertexLayout_bound' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Frontier.Gaussian.multigraph_vertexLayout_bound' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
-#print axioms Frontier.Gaussian.vertexLayout_bound
+#print axioms Frontier.Gaussian.multigraph_vertexLayout_bound
 
 /-- info: 'Frontier.layoutBound_two_fifths' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
@@ -273,3 +273,31 @@ Run after `lake build --wfail` with `lake env lean scripts/Audit.lean`.
 /-- info: 'Frontier.LinearBoundary.sectionEncoding_injective' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Frontier.LinearBoundary.sectionEncoding_injective
+
+/-- info: 'Frontier.lowerBound' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.lowerBound
+
+/-- info: 'Frontier.lowerBound_four' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.lowerBound_four
+
+/-- info: 'Frontier.layoutBound_one_third' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.layoutBound_one_third
+
+/-- info: 'Frontier.lowerBound_mds' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.lowerBound_mds
+
+/-- info: 'Frontier.linear_finite_gaussian' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.linear_finite_gaussian
+
+/-- info: 'Frontier.linear_polynomial_gaussian' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.linear_polynomial_gaussian
+
+/-- info: 'Frontier.Decomposable.ncard_le_size' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Decomposable.ncard_le_size

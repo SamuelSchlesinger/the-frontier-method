@@ -5,9 +5,7 @@ Authors: Samuel Schlesinger
 -/
 module
 
-public import Frontier.Layouts.MultiGraph
-import Mathlib.Algebra.Order.Archimedean.Real.Basic
-import Mathlib.Algebra.Order.Floor.Semiring
+public import Frontier.Layouts.Support
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -73,18 +71,7 @@ theorem card_cut_le_grid {d : ℕ} (degree : G.MaxDegreeLE d) (score : W → ℝ
     obtain ⟨u, v, hedge, _, hv⟩ := G.mem_cutFinset_iff.mp he
     exact touch (u := v) (v := u) (hedge.elim Or.inr Or.inl)
       (mem_filter.mpr ⟨mem_univ _, hhi.trans (hPc v hv)⟩)
-  let i := ⌊(m - a) / δ⌋₊
-  have hdiv : 0 ≤ (m - a) / δ := div_nonneg (by linarith) hδ.le
-  have ht : a + i * δ ≤ m := by
-    have := (le_div_iff₀ hδ).mp (Nat.floor_le hdiv)
-    dsimp [i]; linarith
-  have ht' : m < a + (i + 1) * δ := by
-    have := (div_lt_iff₀ hδ).mp (Nat.lt_floor_add_one ((m - a) / δ))
-    dsimp [i]; linarith
-  have hi : i < M := by
-    by_contra! h
-    have : (M : ℝ) * δ ≤ i * δ := by gcongr
-    linarith
+  obtain ⟨i, hi, ht, ht'⟩ := exists_grid_index hδ (M := M) (not_lt.mp hlo) (not_le.mp hhi)
   let window : Finset W := {v | a + i * δ ≤ score v ∧ score v < a + (i + 1) * δ}
   have hsub : G.cutFinset P ⊆ G.cutFinset {v | score v < a + i * δ} ∪
       (G.touching (window : Set W)).toFinset := by
@@ -118,23 +105,13 @@ theorem exists_key_of_vertexScore {d : ℕ} (degree : G.MaxDegreeLE d) (score : 
     ∃ key : W → ℕ, Function.Injective key ∧ ∀ t,
       ((G.cutFinset {v | key v < t}).card : ℝ) ≤ B := by
   classical
-  let rank (v : W) : ℝ ×ₗ ℕ := toLex (score v, (Fintype.equivFin W v : ℕ))
-  have hrank : Function.Injective rank := fun v w h =>
-    (Fintype.equivFin W).injective (Fin.ext (congrArg (fun x => (ofLex x).2) h))
-  obtain ⟨π, hπ⟩ := Layout.exists_monotone hrank
-  refine ⟨fun v => π v, fun v w h => π.injective (Fin.ext h), fun t => ?_⟩
-  let P : Finset W := {v | (π v : ℕ) < t}
-  change ((G.cutFinset P).card : ℝ) ≤ B
-  have hmono (u : W) (hu : u ∈ P) (v : W) (hv : v ∉ P) : score u ≤ score v := by
-    by_contra! h
-    have hrev : rank v ≤ rank u := le_of_lt (Prod.Lex.lt_iff.mpr (Or.inl h))
-    have hpos := hπ v u hrev
-    exact hv (mem_filter.mpr ⟨mem_univ _, Nat.lt_of_le_of_lt hpos (mem_filter.mp hu).2⟩)
-  rcases P.eq_empty_or_nonempty with hP | hP
+  obtain ⟨key, hinj, hkey⟩ := exists_key_of_score score
+  refine ⟨key, hinj, fun t => ?_⟩
+  rcases hkey t with hempty | ⟨m, hP, hPc⟩
   · have hB : 0 ≤ B := le_trans (by positivity) low
-    simpa [hP, cutFinset] using hB
-  obtain ⟨u, hu, hmax⟩ := P.exists_max_image score hP
-  exact G.card_cut_le_grid degree score P hmax (fun v hv => hmono u hu v hv)
-    hδ M low high mid
+    have : ({v | key v < t} : Finset W) = ∅ := filter_eq_empty_iff.mpr fun v _ => hempty v
+    simpa [this, cutFinset] using hB
+  · exact G.card_cut_le_grid degree score _ (fun v hv => hP v (mem_filter.mp hv).2)
+      (fun v hv => hPc v fun h => hv (mem_filter.mpr ⟨mem_univ _, h⟩)) hδ M low high mid
 
 end Frontier.Multigraph

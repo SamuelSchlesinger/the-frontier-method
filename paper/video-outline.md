@@ -10,8 +10,10 @@ only. Every statement below is in the paper; section numbers refer to `frontier.
 - Circuits over a finite alphabet, any basis; count only inner gates (constants are free).
 - Rectangle-free sets (Def. 2.2) and the layout bound LB_d(A) (Hyp. 4.1).
 - Main theorem (Thm. 1.1): (r - 1) s > (1 + 1/A - ε) n.
-- Gaussian layouts (Thm. 1.2): A ≈ 0.2807, so L ≈ 4.5625 for fan-in two (Cor. 1.3).
-- An explicit language in P (Cor. 1.4), via sumset extractors (Chattopadhyay–Liao, Li).
+- Gaussian layouts (Thm. 1.2): A ≈ 0.2807; every cubic graph has cutwidth at most 0.14035h,
+  improving the Monien–Preis and Fomin–Høie bounds h/6 (Cor. 1.3 and Table 1); so L ≈ 4.5625
+  for fan-in two (Cor. 1.4).
+- An explicit language in P (Cor. 1.5), via sumset extractors (Chattopadhyay–Liao, Li).
 - Existential witness inputs preserve the same lower bound, uniformly in their number
   (Sec. 6, theorem on nondeterministic circuits).
 - Average case: extractor error b gives agreement at most
@@ -20,9 +22,9 @@ only. Every statement below is in the paper; section numbers refer to `frontier.
   Ln is required. The weighted form uses input min-entropy and allows a shared exceptional
   measure. Lean checks weighted coherent sweeps and the uniform average-case circuit and
   sumset-bias theorems; the general distributional packing statements remain paper proofs.
-- Same frontiers: linear maps and arithmetic circuits (Thm. 1.5, Cor. 1.6), aggregate gates
-  (Thm. 1.7), and deterministic #SAT in time and space O*(2^{(1/L + η)s}), where
-  1/L = 0.219178... (Thm. 1.8). O* suppresses polynomial factors in the full input size.
+- Same frontiers: linear maps and arithmetic circuits (Thm. 1.6, Cor. 1.7), aggregate gates
+  (Thm. 1.8), and deterministic #SAT in time and space O*(2^{(1/L + η)s}), where
+  1/L = 0.219178... (Thm. 1.9). O* suppresses polynomial factors in the full input size.
 - Formally verified in Lean 4: the exact and uniform average-case lower bounds, arithmetic
   instantiations, and layout theorem. The explicit Boolean construction and its polynomial-time evaluation are cited.
 
@@ -73,15 +75,15 @@ only. Every statement below is in the paper; section numbers refer to `frontier.
   expectations give deterministic cubic layouts in f(ξ) h^3 polylog(h) time with an absolute
   polynomial degree. These algorithms and their complexity bounds are not formalized.
 - Signal states: one value per distinct circuit signal, with a formally checked capacity
-  inequality and a paper proof of exact counting (Sec. 5).
+  inequality (Sec. 5).
 
 ## 6. Formalization and open problems (24:00–27:00)
 
-- Lean 4 on CSLib and Mathlib; about 10,000 lines; standard axioms only; statements read like
+- Lean 4 on CSLib and Mathlib; about 15,000 lines; standard axioms only; statements read like
   the paper; index in Appendix A.
 - Design choices worth a sentence: one frontier sweep for everything, constants free, minimal
-  layout hypothesis (Sec. 11).
-- Open problems (Sec. 12): better LB_3(A); finer frontier measures beyond 5.84n; larger
+  layout hypothesis (Sec. 12).
+- Open problems (Sec. 13): better LB_3(A); finer frontier measures beyond 5.84n; larger
   fan-in; a smaller universal signal-layout coefficient; explicit hard sets inside Lean.
   The present local Gaussian estimate is sharp in its cubic-tree limit; this alone does not
   show global optimality of the layout coefficient.
