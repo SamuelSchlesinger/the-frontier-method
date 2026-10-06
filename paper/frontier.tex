@@ -20,8 +20,9 @@
 % Lean declarations are typeset in typewriter type and may break at dots.
 \DeclareUrlCommand\lean{\urlstyle{tt}}
 \makeatletter\g@addto@macro\UrlBreaks{\do\_}\makeatother
-\newcommand{\leanref}[1]{{\unskip\nobreak\hfil\penalty50\hskip1em\null\nobreak\hfil
-  {\normalfont\small\lean{#1}}\parfillskip=0pt\finalhyphendemerits=0\par}}
+\newcommand{\leanrefs}[1]{{\unskip\nobreak\hfil\penalty50\hskip1em\null\nobreak\hfil
+  {\normalfont\small #1}\parfillskip=0pt\finalhyphendemerits=0\par}}
+\newcommand{\leanref}[1]{\leanrefs{\lean{#1}}}
 
 % Each environment gets its own counter, aliased to the shared one, so that cleveref
 % names references by their environment.
@@ -76,7 +77,7 @@
 \setlength{\emergencystretch}{3em}
 
 \begin{document}
-\pagenumbering{gobble}
+\pagenumbering{roman}
 \maketitle
 
 
@@ -108,7 +109,8 @@ $(r-1)s \ge (1 + 1/A - o(1))\,n$.
 We prove the layout theorem for subcubic graphs with
 $A = \frac{3}{\pi}\arccos\frac{1+2\sqrt2}{4} \approx 0.2807$, by listing the vertices of a cubic
 graph by the median of correlated Gaussian edge scores. In graph-theoretic terms, every cubic
-graph on $h$ vertices has a linear layout of cutwidth at most $(0.14035 + o(1))\,h$; this improves
+graph on $h$ vertices has a linear layout of cutwidth at most $(p + o(1))\,h$, where
+$p=A/2=0.140350968635\ldots$. This improves
 the bisection bound of Monien and Preis and the pathwidth bound of Fomin and H{\o}ie from $h/6$,
 and is within $0.0006\,h$ of the best bound known for random cubic graphs. Gaussian vertex scores
 give coefficients in every fixed degree, including $7n/4 - o(n)$ for ternary gates. Run forward
@@ -189,16 +191,17 @@ cubic multigraph satisfies the same bound through $\LB_3(2p)$, since its cycle r
 \centering
 \begin{tabular}{lll}
 \toprule
-Cubic graphs on $h$ vertices & Previous bound & \Cref{cor:cubic-graphs} \\
+Cubic graphs on $h$ vertices & Previous bound & This paper \\
 \midrule
-bisection width, every graph & $h/6$~\cite{MonienPreis2006} & $0.14035\,h$ \\
-pathwidth, every graph & $h/6$~\cite{FominHoie2006} & $0.14035\,h$ \\
+bisection width, every graph & $h/6$~\cite{MonienPreis2006} & $p\,h$ \\
+pathwidth, every graph & $h/6$~\cite{FominHoie2006} & $p\,h$ \\
 bisection width, random graphs & $0.139822\,h$, and at least $0.103295\,h$~\cite{LichevMitsche2020}
-  & $0.14035\,h$ \\
+  & $p\,h$ \\
 \bottomrule
 \end{tabular}
-\caption{Width parameters of cubic graphs, up to $o(h)$. The random-graph lower bound shows that
-no layout bound measured in edges can have $A < 0.20659$ (\cref{sec:limits}).}
+\caption{Width parameters of cubic graphs, up to $o(h)$, with the exact coefficient $p$ of
+\cref{cor:cubic-graphs}. The last row compares our bound, which holds for every cubic graph,
+with the stronger upper bound for random cubic graphs.}
 \label{tab:cubic}
 \end{table}
 
@@ -241,7 +244,7 @@ min-entropy down to $c \log n$, with polynomial-time evaluation.
 \begin{corollary}[An explicit language]
 \label{cor:explicit}
 There is a language in $\mathsf P$ such that for every $\varepsilon > 0$ and all large $n$, every
-circuit of fan-in two deciding it on inputs of length $n$, over any binary basis, has more than
+circuit of fan-in two deciding it on inputs of length $n$, over any basis of Boolean operations, has more than
 $(L - \varepsilon)\,n$ inner gates, where $L \approx 4.5625$.
 \leanref{Frontier.lowerBound_sumsetDisperser}
 \end{corollary}
@@ -275,19 +278,23 @@ inner gates of fan-in at most $r$ computing $x \mapsto Mx$ for a totally regular
 $M \in \F^{N \times N}$ has $(r-1)s > (1 + 1/A - \varepsilon)N$, if either $\F$ is finite and the
 basis is arbitrary, or $\F$ is infinite and the operations are polynomials, of any degree and
 with any coefficients. The threshold for $N$ does not depend on $\F$.
-\leanref{Frontier.lowerBound_linear}
+\leanrefs{\lean{Frontier.lowerBound_linear_finite}, \lean{Frontier.lowerBound_linear_polynomial}}
 \end{theorem}
 
 \begin{corollary}[Cauchy maps]
 \label{cor:cauchy-intro}
 For every $\varepsilon>0$ and all sufficiently large $N$, uniformly in the field, the following
-holds. Over every field of characteristic zero, such as $\Q$, $\R$, or $\C$, every arithmetic circuit
+holds. Over every field of characteristic zero, such as $\Q$, $\R$, or $\C$, every circuit over
+$\{+,\times,\text{constants}\}$
 computing $x \mapsto \bigl(\sum_j x_j / (i - N - j)\bigr)_{i < N}$ uses more than
 $(L - \varepsilon)N$ additions and multiplications, constants being free. Over $\Z/q$, for every
 prime $q \ge 2N$, every circuit of fan-in two over any basis computing the same map has more than
 $(L - \varepsilon)N$ inner gates.
 \leanref{Frontier.arith_cauchy_gaussian}
 \end{corollary}
+
+Subtraction and scalar-multiplication gates are also covered by \cref{thm:linear-intro},
+with each such gate counted as one positive-arity gate.
 
 \paragraph{Gates of unbounded fan-in.}
 A gate of fan-in $k$ costs $k - 1$ in the cycle rank, so the method cannot afford gates of
@@ -380,30 +387,44 @@ and the circuit-to-layout conversion to obtain a circuit-size bound.
 
 \paragraph{Cuts, width, and layouts.}
 Converting circuits into ordered decision diagrams through small cuts goes back at least to
-Berman~\cite{Berman1991}, who bounded the size of ordered binary decision diagrams by
-$2^{w(C)}$ for a circuit width $w(C)$, and Morizumi~\cite{Morizumi2023} proposed converting
-circuits into nondeterministic bounded-width circuits and branching programs as an approach to
-circuit lower bounds. There the cuts follow the order of evaluation. Here they are cuts of the
-undirected constraint graph in an arbitrary order, so the relevant width is cutwidth, and the
-relevant size of a circuit is the cycle rank of its graph. Relations between treewidth,
-pathwidth, and cutwidth are due to Korach and Solel~\cite{KorachSolel1993}. Fomin and
+Berman~\cite{Berman1991}, who obtained at most $nm2^{w(C)}$ nodes for a circuit with $n$ inputs,
+$m$ outputs, and circuit width $w(C)$. This width is tied to an evaluation order.
+Morizumi~\cite{Morizumi2023} proposed converting circuits into nondeterministic bounded-width
+circuits and branching programs as an approach to circuit lower bounds.
+
+The closest prior compilation result is due to Amarilli, Capelli, Monet, and
+Senellart~\cite[Theorem~4.4]{ACMS2019}: given a circuit over $\{\land,\lor,\neg\}$ and a path
+decomposition of width $k$, they construct an equivalent complete unambiguous OBDD of width at most
+$2^{2(k+1)}$, in time $O(|P|f(k))$ with $f(k)=O(2^{(2+\epsilon)k})$ for every $\epsilon>0$.
+Their pathwidth formulation already permits orders unrelated to circuit evaluation.
+Our refinement in \cref{prop:network-program} records one alphabet value per frontier edge
+of a bounded-degree constraint network: a cut of size $w$ has at most $q^w$ states, and the
+program, retaining its guess layers, has at most $\card V q^{w+r+2}+nq$ edges.
+The compiler also gives the exact accounting
+$\beta_1\le(r-1)s-m+1$, where $m$ is the number of reachable inputs
+(\cref{prop:counting}). Thus a cycle-rank layout bound gives frontier width
+$A((r-1)s-m)+o(s)$ for fixed fan-in. The frontier count and the credit for
+reachable inputs are the quantitative ingredients used here.
+
+Relations between treewidth, pathwidth, and cutwidth are due to Korach and
+Solel~\cite{KorachSolel1993}. Fomin and
 H{\o}ie~\cite{FominHoie2006} proved that cubic graphs on $h$ vertices have pathwidth
 $(1/6 + o(1))h$, through the bisection bound of Monien and Preis~\cite{MonienPreis2006}; this
 gives the layout coefficient $A = 1/3$ and the circuit coefficient $4$. Our Gaussian layouts
 improve the coefficient to $A \approx 0.2807$; their correlation $2\sqrt2/3$ is that of Gaussian
 waves on the $3$-regular tree~\cite{CGHV2015,Lyons2017}. In graph-theoretic terms,
-\cref{cor:cubic-graphs} bounds the cutwidth of every cubic graph by $(0.14035 + o(1))h$, which
-improves both the bisection bound of Monien and Preis and the pathwidth bound of Fomin and
-H{\o}ie from $h/6$. Lichev and Mitsche~\cite{LichevMitsche2020} proved that random cubic graphs
-have bisection width at least $0.103295\,h$ and at most $0.139822\,h$: the first bound shows that
-no layout bound can have $A < 0.20659$, and the second that the universal constant is within
-$0.0006$ of the random case.
+\cref{cor:cubic-graphs} bounds the cutwidth of every cubic graph by $(p+o(1))h$, with the
+exact $p$ defined there; \cref{tab:cubic} compares this with the earlier bounds.
 
 \paragraph{Linear maps.}
 Valiant~\cite{Valiant1977} observed that the graph of a linear circuit computing a totally
 regular map is a superconcentrator. Lev and Valiant~\cite{LevValiant1983} proved that a
-superconcentrator of in-degree two needs $4N-o(N)$ computed nodes, giving the corresponding
-bound on binary operations in this model. Our coefficient is $L\approx4.5625$, counting
+superconcentrator of in-degree two needs $4N-o(N)$ computed nodes, excluding inputs and
+including computed outputs. The precise bound $4N-O(\sqrt{N\log N})$ is
+\cite[Theorem~3.2, p.~61]{Lev1980}; Lev credits the result jointly to Valiant.
+Their separate bound of $5N-o(N)$ edges has no degree restriction
+\cite[Theorem~3.3]{Lev1980}. The computed-node theorem gives the corresponding bound on
+binary operations in this model. Our coefficient is $L\approx4.5625$, counting
 positive-arity gates, with arbitrary affine coefficients allowed and constants free.
 Superlinear lower bounds for
 unrestricted linear circuits are known for matrices whose entries generate number fields of
@@ -513,8 +534,10 @@ using Mathlib~\cite{Mathlib} (commit \texttt{9a6fbe0}) and CSLib~\cite{CSLib} (c
 \begin{center}
 \url{https://github.com/SamuelSchlesinger/the-frontier-method}.
 \end{center}
-The code snapshot for this PDF is
+The source base commit for this PDF is
 \href{https://github.com/SamuelSchlesinger/the-frontier-method/tree/\artifactcommit}{\texttt{\artifactshort}}\artifactstatus.
+If marked as a modified working tree, this version also requires the accompanying local
+source changes; the commit link alone recovers only the base version.
 The circuit model is CSLib's: signatures, interpretations, straight-line programs, and circuits.
 Formalized results below are tagged with their Lean declarations. These declarations
 depend only on Lean's standard axioms (\texttt{propext},
@@ -535,7 +558,8 @@ partition, the packing and arbitrary-distribution circuit statements
 existence argument, the DNNF smoothing conversion, the cubic-tree sharpness calculation,
 and all algorithms and complexity bounds in \cref{sec:counting}, including derandomization,
 are outside the formalization.
-After checking out the indicated clean snapshot, the verification commands are
+From the indicated snapshot, with any accompanying local source changes applied, the
+verification commands are
 \begin{verbatim}
 lake exe cache get
 lake build --wfail
@@ -1611,7 +1635,8 @@ positive-arity gates satisfies
 \]
 In fact, its absolute signed correlation with $f_n$ is at most
 $2b_n+2^{1-\gamma n}$. With the Gaussian layout theorem $L=4.562497\ldots$.
-\leanref{Frontier.averageCase, Frontier.averageCase_abs, Frontier.averageCase_gaussian}
+\leanrefs{\lean{Frontier.averageCase}, \lean{Frontier.averageCase_abs},
+  \lean{Frontier.averageCase_gaussian}}
 \end{theorem}
 
 \begin{proof}
@@ -1652,12 +1677,13 @@ With $r=(K-1)^2D$, this gives
 \[
   \left|2^{-n}\sum_x(-1)^{C(x)}w(x)\right|\le2b+2r\,2^{-n}.
 \]
+\leanrefs{\lean{Frontier.Network.sweep_coherent}, \lean{Frontier.agreement_le_layout},
+  \lean{Frontier.agreement_le_unused}}
+
 Now $r\,2^{-n}\le2^{-\gamma n}$ for large $n$: the two exponential rates in the remainder
 are at most $-A\varepsilon+O_A(\eta)+o(1)$ and $-1+o(1)$, respectively. Finally,
 $\Pr[C(x)=f_n(x)]=(1+\mathbb E(-1)^{C(x)+f_n(x)})/2$.
 The absolute-value bound also controls agreement after complementing the circuit output.
-\leanref{Frontier.Network.sweep_coherent, Frontier.agreement_le_layout,
-  Frontier.agreement_le_unused}
 \end{proof}
 
 \begin{corollary}[Sumset extractors]
@@ -1668,7 +1694,7 @@ family with $\log K_n=o(n)$ has agreement at most
 $1/2+b_n+2^{-\Omega_\varepsilon(n)}$ with circuits of size at most $(L-\varepsilon)n$.
 The formal hypothesis is just the flat-source guarantee: independent uniform sources on
 any two sets of size at least $K_n$ have XOR output bias at most $2b_n$.
-\leanref{Frontier.FlatSumsetBias.rectangleBias, Frontier.averageCase_sumset}
+\leanrefs{\lean{Frontier.FlatSumsetBias.rectangleBias}, \lean{Frontier.averageCase_sumset}}
 \end{corollary}
 
 \begin{proof}
@@ -1888,6 +1914,9 @@ fixed threshold with probability at most $\frac{3}{2\pi}\arccos\frac{1 + 3\rho_0
 \leanref{Frontier.Gaussian.measureReal_straddleEvent_le}
 \end{proposition}
 
+The threshold $17/32$ is a convenience of the formal proof; the argument below needs only
+$\rho_0\ge0$.
+
 \begin{proof}
 A straddling vertex has at least four separated ordered pairs among its three edges, so the
 probability is at most a quarter of the sum, over the six ordered pairs, of the separation
@@ -2024,7 +2053,7 @@ There is a layout of width at most
   \beta_1(G)+d\lfloor\log_2 N\rfloor.
 \]
 Consequently $\LB_d(1)$ holds for every fixed $d$.
-\leanref{Frontier.Multigraph.exists_layout_cycleRank, Frontier.layoutBound_one}
+\leanrefs{\lean{Frontier.Multigraph.exists_layout_cycleRank}, \lean{Frontier.layoutBound_one}}
 \end{theorem}
 
 \begin{proof}
@@ -2131,7 +2160,7 @@ For every fixed integer $d\ge3$, the layout bound $\LB_d(a_d)$ holds, where
   a_d=\frac{3d}{2d-3}\,\frac{\arccos(2\sqrt{d-1}/d)}{\pi}.
 \]
 Moreover, $0<a_d<3/4$ and $a_4=2/5$.
-\leanref{Frontier.layoutBound_degree, Frontier.Gaussian.degreeCoefficient_lt_three_quarters}
+\leanrefs{\lean{Frontier.layoutBound_degree}, \lean{Frontier.Gaussian.degreeCoefficient_lt_three_quarters}}
 \end{theorem}
 
 \begin{proof}
@@ -2177,7 +2206,8 @@ $\varepsilon>0$, every circuit of fan-in at most $r$ deciding $S_n$ satisfies
 \[
   (r-1)s>\left(1+\frac1{a_{r+1}}-\varepsilon\right)n
 \]
-for all sufficiently large $n$. In particular, $(r-1)s>(7/3-\varepsilon)n$.
+for all sufficiently large $n$. Since $a_{r+1}<3/4$ by \cref{thm:degree-layout}, this implies
+$(r-1)s>(7/3-\varepsilon)n$.
 \leanref{Frontier.lowerBound_degree}
 \end{corollary}
 
@@ -2185,7 +2215,8 @@ for all sufficiently large $n$. In particular, $(r-1)s>(7/3-\varepsilon)n$.
 Apply \cref{thm:main} with $A=a_{r+1}$. The same substitution gives the coefficients for
 totally regular maps over finite fields with arbitrary operations, over infinite fields with
 polynomial operations, and for finite-alphabet MDS maps
-(\lean{Frontier.linear_finite_degree, Frontier.linear_polynomial_degree, Frontier.mds_degree}).
+(\lean{Frontier.linear_finite_degree}, \lean{Frontier.linear_polynomial_degree},
+\lean{Frontier.mds_degree}).
 \end{proof}
 
 For example, $a_5=15\arccos(4/5)/(7\pi)$ gives a gate coefficient
@@ -2221,7 +2252,7 @@ Apply \cref{thm:main} with $r=3$ and $A=2/5$: the bound is
 $2s>(7/2-2\varepsilon)n$. The same substitution in \cref{thm:linear} proves the ternary
 bound for totally regular maps over finite fields with arbitrary bases, and over infinite
 fields with polynomial operations
-(\lean{Frontier.linear_finite_fanInThree, Frontier.linear_polynomial_fanInThree}).
+(\lean{Frontier.linear_finite_fanInThree}, \lean{Frontier.linear_polynomial_fanInThree}).
 \end{proof}
 
 % ===========================================================================
@@ -2452,7 +2483,7 @@ $F:U^N\to U^N$ over any finite alphabet $U$ of size at least two, with an arbitr
 \]
 The size threshold is uniform in the alphabet and in $F$. In particular the binary
 coefficient is $L$, and the ternary coefficient is $7/4$.
-\leanref{Frontier.lowerBound_mds, Frontier.mds_gaussian}
+\leanrefs{\lean{Frontier.lowerBound_mds}, \lean{Frontier.mds_gaussian}}
 \end{theorem}
 
 \begin{proof}
@@ -3063,7 +3094,7 @@ then
   \card S\le(K-1)^2 e_\cup+(K-1)^3 v_\times.
 \]
 In particular, if $D$ counts all vertices and edges, then $\card S\le(K-1)^3D$.
-\leanref{Frontier.Decomposable.ncard_le, Frontier.Decomposable.ncard_le_size}
+\leanrefs{\lean{Frontier.Decomposable.ncard_le}, \lean{Frontier.Decomposable.ncard_le_size}}
 \end{theorem}
 
 \begin{proof}
@@ -3233,15 +3264,13 @@ next to its circuit model.
 
 \paragraph{Better layouts.}
 Any improvement of $\LB_3(A)$ below $A \approx 0.2807$ improves all the binary-circuit
-coefficients and the running time of \cref{thm:sat}. Since random cubic graphs have bisection width at
-least $0.103295\,h$~\cite{LichevMitsche2020}, $\LB_3(A)$ fails for $A < 0.20659$, so with layouts
-measured by their number of edges the method cannot exceed the coefficient
-$1 + 1/0.20659 \approx 5.8405$ for fan-in two. What is the least $A$ for which $\LB_3(A)$ holds?
+coefficients and the running time of \cref{thm:sat}, subject to the obstruction in
+\cref{sec:limits}. What is the least $A$ for which $\LB_3(A)$ holds?
 
 \paragraph{Beyond edge counts.}
 \Cref{prop:signal-capacity} supplies a concrete alternative capacity: distinct
 signals on adjacent frontiers. A bound with $A_{\mathrm{sig}}<A$ would improve both headline
-constants. The random-cubic bisection obstruction above concerns raw edge counts and does not
+constants. The random-cubic bisection obstruction concerns raw edge counts and does not
 by itself bound signal capacity. What universal signal-layout theorem holds for compiled graphs?
 For the present Gaussian process, \cref{prop:tree-sharpness} shows that sharpening the local
 straddling estimate alone cannot improve its limiting constant. A different score process,
