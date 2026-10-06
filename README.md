@@ -133,14 +133,20 @@ low-fanout obstruction. It leaves the universal structural coverage theorem open
 The [additive continuation](research/communication/additive.md) proves threshold demand
 for generators that emit overlapping vectors. Its affine-interface compiler retains every
 code constraint in one syndrome state and can charge the exact trellis rank at each cut.
-The abstract demand and transition-code interface are checked in Lean; the compiler is a
+The abstract exact and coherent weighted demand theorems are checked in Lean; the compiler is a
 paper proof with finite checks. Its `4.7812…` bound for cubic parity prefixes with arbitrary
 nonlinear continuations is restricted to that architecture, not a universal improvement.
 Joint encoding further avoids charging visible interface values separately from syndrome
 information they already determine. The underlying subspace/rank identity is checked in
 `Frontier.LinearBoundary.finrank_joint`; the compiler instantiation remains a paper proof
 with finite checks, described in the [joint-code note](research/communication/joint.md).
-That still requires a capacity supply theorem or a uniform quantitative Gaussian gain bound.
+Unique generation also gives an average-case version: the checked additive peeling
+bound has remainder `(K-1)^2(D_0+D_1)/2^(n+1)`. The compiler's algebraic uniqueness
+certificate is checked, while its full circuit instantiation remains a paper proof.
+The new rank-profile module checks mixed-fiber cardinalities and transfers systematic
+code pathwidth to a wide cut in every circuit layout with all inputs reachable.
+A universal improvement still requires a capacity supply theorem or a uniform quantitative
+Gaussian gain bound.
 The paper gives complete proofs and credits the coding, communication-complexity, and
 tensor-network precedents; [RESEARCH.md](RESEARCH.md) records the remaining proof obligations.
 
@@ -151,7 +157,7 @@ tensor-network precedents; [RESEARCH.md](RESEARCH.md) records the remaining proo
 | `Frontier/Rectangle.lean` | Rectangle-free sets and the support lemma |
 | `Frontier/Extractor.lean` | Sumset dispersers have rectangle-free fibers |
 | `Frontier/Sweep.lean` | Abstract splicing messages and the frontier counting lemma |
-| `Frontier/AdditiveSweep.lean` | Sumset-free demand for additive generators and finite transition codes |
+| `Frontier/AdditiveSweep.lean`, `Frontier/AverageCase/Additive.lean` | Exact additive demand and coherent weighted peeling with flat-sumset bias |
 | `Frontier/Decomposable.lean` | Smooth decomposable DAGs, certificate substitution, and threshold counting |
 | `Frontier/Multigraph.lean` | Multigraphs, layouts, cycle rank, and the layout hypothesis |
 | `Frontier/Network.lean` | Constraint networks, the separator lemma, and the frontier sweep along a layout, from which every sweep in the development is built |
@@ -163,7 +169,7 @@ tensor-network precedents; [RESEARCH.md](RESEARCH.md) records the remaining proo
 | `Frontier/Signals.lean` | Frontier capacity measured by distinct signals |
 | `Frontier/Boundary/*.lean` | Hypergraph cuts, exact linear syndrome states, transition codes |
 | `Frontier/Boundary/Joint.lean` | Joint rank of visible observations and shared linear information |
-| `Frontier/Boundary/Fiber.lean`, `Frontier/Boundary/MDS.lean` | Mixed-observation fiber demand and nonlinear MDS lower bounds |
+| `Frontier/Boundary/Fiber.lean`, `Frontier/Boundary/Rank.lean`, `Frontier/Boundary/MDS.lean` | Mixed fibers, linear rank/pathwidth demand, and nonlinear MDS lower bounds |
 | `Frontier/AverageCase/*.lean` | Coherent weighted peeling, circuit agreement bounds, and sumset bias |
 | `Frontier/AverageCase/Pruning.lean` | Transition deletion with a weighted tail budget |
 | `Frontier/AverageCase/Capacity.lean`, `Frontier/Boundary/Communication.lean` | Capped transition masses, square-root agreement bounds, and conditional prefix potentials |
@@ -205,9 +211,11 @@ python3 scripts/check_algorithms.py
 python3 scripts/check_communication.py
 python3 research/communication/restrictions.py
 python3 research/communication/syndrome_generator.py
+python3 research/communication/unambiguous.py
+python3 research/communication/rank_profiles.py
 ```
 
-The audit checks the exact axiom lists of fifty-six principal results and fails if any list changes.
+The audit checks the exact axiom lists of the principal results and fails if any list changes.
 It also runs in CI. The paper's theorem-to-declaration index identifies the checked statements;
 the audit does not verify the external extractor construction or the algorithmic claims.
 The Python script independently compares raw-edge, signal-state, and ledger counting with

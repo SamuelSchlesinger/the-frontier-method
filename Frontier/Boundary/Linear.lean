@@ -92,4 +92,25 @@ theorem ncard_syndromes_le_states [Finite V] {D : Type*} (code : V → D)
   ncard_image_le_ncard_image_of_determines (toFinite _) _ _ fun x hx x' hx' h =>
     (completions_eq_iff L R hx).mp (hcode x hx x' hx' h)
 
+/-- A section of `L` plus a kernel element encodes an affine interface uniquely. Applying
+`L` recovers the interface value; subtraction then recovers the kernel choice. This is the
+algebraic unambiguity certificate for the affine-prefix additive generator. -/
+theorem sectionEncoding_injective (B : W →ₗ[F] V)
+    (hB : ∀ w ∈ LinearMap.range L, L (B w) = w) (a : W) :
+    Function.Injective (fun p : {y : W // y + a ∈ LinearMap.range L} × ↥(LinearMap.ker L) =>
+      B (p.1.1 + a) + p.2.1) := by
+  intro p q h
+  change B (p.1.1 + a) + p.2.1 = B (q.1.1 + a) + q.2.1 at h
+  have hp : L p.2.1 = 0 := p.2.2
+  have hq : L q.2.1 = 0 := q.2.2
+  have hy : p.1 = q.1 := by
+    apply Subtype.ext
+    have H := congrArg L h
+    rw [L.map_add, L.map_add, hB _ p.1.2, hB _ q.1.2, hp, hq, add_zero, add_zero] at H
+    exact add_right_cancel H
+  apply Prod.ext hy
+  apply Subtype.ext
+  rw [hy] at h
+  exact add_left_cancel h
+
 end Frontier.LinearBoundary

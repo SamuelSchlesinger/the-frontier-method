@@ -229,3 +229,47 @@ Run after `lake build --wfail` with `lake env lean scripts/Audit.lean`.
 /-- info: 'Frontier.averageCase_sumset_polynomial' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Frontier.averageCase_sumset_polynomial
+
+/-- info: 'Frontier.AdditiveSweep.ncard_le_of_small_sides' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.AdditiveSweep.ncard_le_of_small_sides
+
+/-- info: 'Frontier.AdditiveSweep.Coherent.add_injOn' does not depend on any axioms -/
+#guard_msgs in
+#print axioms Frontier.AdditiveSweep.Coherent.add_injOn
+
+/-- info: 'Frontier.AdditiveSweep.abs_sumOn_le_of_budget' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.AdditiveSweep.abs_sumOn_le_of_budget
+
+/-- info: 'Frontier.agreement_le_of_output_biases' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.agreement_le_of_output_biases
+
+/-- info: 'Frontier.FlatSumsetBias.additiveBudget' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.FlatSumsetBias.additiveBudget
+
+/-- info: 'Frontier.agreement_le_of_additive_sweeps' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.agreement_le_of_additive_sweeps
+
+/-- info: 'Frontier.LinearObservation.ncard_mixedFiber' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.LinearObservation.ncard_mixedFiber
+
+/-- info: 'Frontier.LinearObservation.pow_connectivity_le_messages' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.LinearObservation.pow_connectivity_le_messages
+
+/-- info: 'Frontier.Compiler.connectivity_le_cutSignals' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Compiler.connectivity_le_cutSignals
+
+/-- info: 'Frontier.Compiler.exists_cut_ge_pathwidth' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Compiler.exists_cut_ge_pathwidth
+
+/-- info: 'Frontier.LinearBoundary.sectionEncoding_injective' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.LinearBoundary.sectionEncoding_injective

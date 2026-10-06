@@ -6,7 +6,7 @@ truth-table support. All code constraints and local gate equations are retained.
 This checks the compiler, not a universal improvement of the circuit coefficient.
 """
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from itertools import product
 from pathlib import Path
 from random import Random
@@ -114,9 +114,13 @@ def signal_pattern(net, edges, assignment):
     return sum(value << j for j, value in observed.items() if j < net.n)
 
 
-def generated_support(net, order, checks, syndrome, labels, translation, kernel,
+def generated_paths(net, order, checks, syndrome, labels, translation, kernel,
                       prune_syndrome=True, joint=False, omit_code_check=False):
-    """Union/translation DP over boundary assignments and one syndrome register."""
+    """Count accepting paths by their emitted sum; also return the layered edges.
+
+    Integer multiplicities distinguish uniform original inputs from the generally
+    different distribution obtained by sampling an accepting path.
+    """
     assert net.unread == 0
     assert len(order) == len(net.vertices) and set(order) == set(net.vertices)
     if omit_code_check:
@@ -124,9 +128,10 @@ def generated_support(net, order, checks, syndrome, labels, translation, kernel,
         joint = False
     past, previous_cut = set(), []
     read = set()
-    table = {((), 0): {0}}
+    table = {((), 0): Counter({0: 1})}
     edge_count = 0
     layers = []
+    edge_layers = []
     c = max(checks, default=0).bit_length()
     for vertex in order:
         feasible, dimension = feasible_syndromes(checks, read, syndrome)
@@ -150,7 +155,7 @@ def generated_support(net, order, checks, syndrome, labels, translation, kernel,
         if is_input:
             read.add(vertex[1])
         next_feasible, _ = feasible_syndromes(checks, read, syndrome)
-        updated = defaultdict(set)
+        updated = defaultdict(Counter)
         transitions = set()
         for before, vectors in table.items():
             old_values = dict(zip(previous_cut, before[0]))
@@ -169,7 +174,7 @@ def generated_support(net, order, checks, syndrome, labels, translation, kernel,
                     if prune_syndrome and after[1] not in next_feasible:
                         continue
                     transitions.add((before, after, addition))
-                    updated[after].update(x ^ addition for x in vectors)
+                    updated[after].update({x ^ addition: count for x, count in vectors.items()})
         # One old syndrome determines the new one from the read value. There
         # is no second independent syndrome assignment in this count.
         budget = 1 << ((dimension if prune_syndrome else c)
@@ -185,15 +190,25 @@ def generated_support(net, order, checks, syndrome, labels, translation, kernel,
         assert len(transitions) <= budget
         layers.append((len(transitions), budget, independent_budget))
         edge_count += len(transitions)
+        edge_layers.append(list(transitions))
         table, previous_cut = updated, next_cut
     if omit_code_check:
-        values = set().union(*table.values()) if table else set()
+        values = sum(table.values(), Counter())
     else:
-        values = table.get(((), syndrome), set())
-    values = {x ^ translation for x in values}
+        values = table.get(((), syndrome), Counter())
+    values = Counter({x ^ translation: count for x, count in values.items()})
     for vector in kernel:
-        values |= {x ^ vector for x in values}
-    return values, edge_count + 1 + 2 * len(kernel), layers
+        values = values + Counter({x ^ vector: count for x, count in values.items()})
+    return values, edge_count + 1 + 2 * len(kernel), layers, edge_layers
+
+
+def generated_support(net, order, checks, syndrome, labels, translation, kernel,
+                      prune_syndrome=True, joint=False, omit_code_check=False):
+    """The support-set interface, retained for the original compiler checks."""
+    counts, edges, layers, _ = generated_paths(
+        net, order, checks, syndrome, labels, translation, kernel,
+        prune_syndrome=prune_syndrome, joint=joint, omit_code_check=omit_code_check)
+    return set(counts), edges, layers
 
 
 def direct_support(n, rows, offsets, gates, out):

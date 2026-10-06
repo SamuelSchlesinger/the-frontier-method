@@ -86,11 +86,12 @@ theorem sign_sum_split [Finite α] (f g : α → Bool) :
   rw [h1, h0]
   rfl
 
-/-- Two output-class bias bounds give the agreement bound with the correct factor of two. -/
-theorem agreement_le_of_output_bias [Finite α] [Nonempty α] (f g : α → Bool) {β R : ℝ}
+/-- Separate output-class remainders give their sum divided by twice the input count. -/
+theorem agreement_le_of_output_biases [Finite α] [Nonempty α] (f g : α → Bool)
+    {β : ℝ} {R : Bool → ℝ}
     (h : ∀ b : Bool, |sumOn (fun x => boolSign (f x)) {x | g x = b}| ≤
-      β * ({x | g x = b}.ncard : ℝ) + R) :
-    agreement f g ≤ (1 + β) / 2 + R / Nat.card α := by
+      β * ({x | g x = b}.ncard : ℝ) + R b) :
+    agreement f g ≤ (1 + β) / 2 + (R true + R false) / (2 * Nat.card α) := by
   have htotal : ({x | g x = true}.ncard : ℝ) + {x | g x = false}.ncard = Nat.card α := by
     have he : {x | g x = false} = {x | g x = true}ᶜ := by ext x; cases g x <;> simp
     rw [he]
@@ -99,7 +100,7 @@ theorem agreement_le_of_output_bias [Finite α] [Nonempty α] (f g : α → Bool
   rw [sign_sum_split] at hsign
   have htrue := h true
   have hfalse := h false
-  have hnum : 2 * ({x | f x = g x}.ncard : ℝ) ≤ (1 + β) * Nat.card α + 2 * R := by
+  have hnum : 2 * ({x | f x = g x}.ncard : ℝ) ≤ (1 + β) * Nat.card α + R true + R false := by
     have ht := le_abs_self (sumOn (fun x => boolSign (f x)) {x | g x = true})
     have hf := neg_le_abs (sumOn (fun x => boolSign (f x)) {x | g x = false})
     have hβtotal := congrArg (fun z : ℝ => β * z) htotal
@@ -109,6 +110,15 @@ theorem agreement_le_of_output_bias [Finite α] [Nonempty α] (f g : α → Bool
   apply (div_le_iff₀ hpos).2
   field_simp
   nlinarith
+
+/-- Two output-class bias bounds with the same remainder. -/
+theorem agreement_le_of_output_bias [Finite α] [Nonempty α] (f g : α → Bool) {β R : ℝ}
+    (h : ∀ b : Bool, |sumOn (fun x => boolSign (f x)) {x | g x = b}| ≤
+      β * ({x | g x = b}.ncard : ℝ) + R) :
+    agreement f g ≤ (1 + β) / 2 + R / Nat.card α := by
+  have H := agreement_le_of_output_biases f g h
+  convert H using 1
+  ring
 
 /-- If many inputs are unused, an output class is either a thick rectangle or has only
 `q K²` inputs. This is the weighted replacement for the support lemma. -/

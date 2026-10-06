@@ -202,6 +202,67 @@ the codewords supported on `P`. Cycle rank on disconnected graphs is
 `|E|-|V|+components`. Thus cycles completed entirely on either side save
 communication states. A split with two forests earns no such saving.
 
+## Uniform average-case hardness from unique generation
+
+The affine compiler above is unambiguous: every original input has exactly one
+accepting path for its output class. Applying `L` to `B(y+a)+u` recovers `y+a`,
+so the emitted input determines `y`. It then determines `u`, whose coordinates
+in the fixed kernel basis are unique. Finally, `y` determines the entire exact
+suffix trace, including all frontier assignments and partial syndromes, even
+in a non-topological order. Pruning impossible syndromes or joint states removes
+no accepting paths. `LinearBoundary.sectionEncoding_injective` checks the
+algebraic recovery step; the network-to-generator construction is still a
+paper proof, supported by finite path-multiplicity checks.
+
+This extra property permits weighted peeling. At a live state `v`, let `A_v`
+and `B_v` be the prefix and suffix sum sets. Addition on `A_v × B_v` is injective:
+two different decompositions of one input would give two accepting paths. Thus
+uniform inputs through `v` are precisely sums of independent uniform elements
+of `A_v` and `B_v`. Delete a state when both sets have size at least `K`. Unique
+paths make the removed input blocks disjoint and preserve unambiguity in the
+remaining generator. Once every state has a thin side, threshold charging
+bounds the residual by `(K-1)^2 D`. A nonempty generator is assumed to have
+positive length; a zero-labelled edge ensures this without changing its set.
+
+More generally, a nonnegative pointwise budget on thick direct sumsets is paid
+only once during peeling. This is the additive version of Sam McGuire's
+disjoint peeling argument for coordinate sweeps. The checked declarations are
+`AdditiveSweep.Coherent`, `Coherent.add_injOn`, and
+`AdditiveSweep.abs_sumOn_le_of_budget` in `Frontier/AverageCase/Additive.lean`.
+Coherence explicitly requires recovery of the two summands and preservation of
+the prefix/suffix message traces. It is stronger than ordinary additive splicing.
+
+If `f` has signed flat-sumset bias at most `beta`, the two coherent output-class
+sweeps of `g`, with total transition count `D=D_0+D_1`, satisfy
+
+```
+agreement(f,g) <= (1+beta)/2 + (K-1)^2 D / 2^(n+1).           (10)
+```
+
+`FlatSumsetBias.additiveBudget` and `agreement_le_of_additive_sweeps` prove (10)
+in Lean. For extractor error `b`, take `beta=2b`. This concerns uniform original
+inputs, not the distribution obtained from possibly colliding paths. No
+weighted theorem for arbitrary ambiguous additive generators is asserted.
+
+Combining (10) with (3) yields a paper-level average-case consequence for the
+same architectures as (7). Assume every supplied interface signal is
+syntactically reachable from the suffix output, all bypassed original inputs
+are included, and the target has `log K=o(n)`. For an anchored cubic edge-parity
+prefix, `ell=3n/2`, `m=3n/2+1`, `r=n`, and `c=n/2+1`. Hence
+
+```
+w+c <= A(s-3n) + n/2 + o(n),
+agreement(f,g) <= 1/2+b+2^(-Omega_epsilon(n))
+    when s <= (3+1/(2A)-epsilon)n.
+```
+
+The coefficient is `4.781248839...`. An anchored cycle prefix similarly gives
+`2+1/A = 5.562497678...`. Chattopadhyay--Liao's polynomial-error sumset extractor
+therefore supplies `b=n^(-Omega(1))` in these restricted architecture statements.
+These are consequences of the paper compiler and checked abstract demand;
+the architecture-to-circuit average-case theorems are not yet end-to-end Lean
+results. They do not improve the unrestricted coefficient.
+
 ## The next theorem to pursue
 
 For the exact lower bound, keep the restriction potential `5d-s`: a selected
@@ -238,10 +299,11 @@ give that saving. This sufficient simultaneous bound is **unproved**. The
 quartic case needs a larger saving, and handling either family alone would
 still not prove the global coverage theorem (9).
 
-No weighted additive-peeling theorem is established here. In particular, the
-coordinate average-case theorem does not automatically transfer through
-possibly colliding additive representations. Prove the exact coefficient first;
-an average-case extension would require its own compatible mass argument.
+The coherent weighted theorem above supplies the average-case demand for the
+unambiguous affine compiler. The missing step toward five remains the global
+capacity supply theorem (9), together with compatible branch accounting for
+average-case restrictions. Colliding additive representations still require
+a separate mass argument.
 
 ## Verification and sources
 
@@ -253,6 +315,12 @@ trellis, and joint-code versions are checked. Exhaustive edge bipartitions of tw
 small graphs check (8), including disconnected sides. A negative control with
 `y=(x,x)` and suffix XOR produces false accepted inputs if the syndrome
 constraint is dropped. These tests verify finite implementations, not (9).
+
+Run `python3 research/communication/unambiguous.py` to retain integer path
+multiplicities instead of merely support sets. It checks both output classes,
+rank-deficient interfaces, offsets, and arbitrary layouts in all three state
+models; it also checks state deletion, direct-sumset blocks, and residual bounds.
+The support-set interface remains available for the original checks.
 
 The thin-sumset threshold technique has close antecedents in Gashkov's and
 Gashkov--Sergeev's Minkowski-circuit lower bounds and Jukna's content-propagation
@@ -268,3 +336,9 @@ query branching programs. Our additive generator is a different model; their
 query-program theorem is not being substituted for (1) or the compiler proof.
 The adaptive-substitution framework is credited to Golovnev, Kulikov, Smal,
 and Tamaki in the restriction note.
+
+The extractor guarantee used in (10) is Theorem 1 of Chattopadhyay and Liao,
+[*Extractors for Sum of Two Sources*](https://eccc.weizmann.ac.il/report/2021/147/revision/1/download/).
+It supplies polynomially small error at polylogarithmic entropy. Their stronger
+results for restricted affine-source or linear-query models cannot be
+substituted here without checking the different source hypotheses.

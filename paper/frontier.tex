@@ -909,6 +909,68 @@ $|\int_{R\setminus E}f\,d\mu|\le\beta\mu(R\setminus E)$, take $\xi$ to be the re
 of $\mu$ to $E$. The triangle inequality gives the hypothesis of the theorem, and the
 exceptional mass is charged only once over all peeled rectangles.
 
+\subsection{Unambiguous additive generation}
+\label{sec:weighted-additive}
+
+A layered additive generator labels edges by vectors in $\F_2^n$ and generates
+an input by summing the labels on an accepting path. Unlike coordinate read-once
+programs, different labels may involve the same input coordinates. Assume one
+source, one accepting sink, positive length, and exactly one accepting path
+for each generated input. At a live state $v$, let $A_v,B_v$ be its prefix and
+suffix sum sets. Addition on $A_v\times B_v$ is injective: two representations
+of one sum would give distinct accepting paths for that input.
+
+\begin{proposition}[Additive weighted demand]
+\label{prop:weighted-additive}
+Let $K\ge2$, $\beta\ge0$, and let $f:\F_2^n\to\{0,1\}$ have signed bias at
+most $\beta$ on sums of two independent flat sources of size at least $K$.
+If the two output classes of $g$ have unambiguous additive generators with a
+total of $D$ edges, then under uniform inputs
+\[
+  \Pr[f(x)=g(x)]\le \frac{1+\beta}{2}+\frac{(K-1)^2D}{2^{n+1}}.
+\]
+The checked statement uses coherent additive sweeps: splicing recovers the
+chosen summands and splices the entire message trace.
+\leanref{Frontier.agreement_le_of_additive_sweeps}
+\end{proposition}
+
+\begin{proof}
+Whenever both $A_v$ and $B_v$ have size at least $K$, remove $v$ and record the
+inputs through it. Unique representation makes this block a direct sumset,
+so the flat-source bias guarantee bounds its signed sum by $\beta$ times
+its cardinality. Unambiguity makes the recorded blocks disjoint and leaves
+exactly the unrecorded inputs in the remaining generator. Repeat until every
+state has a thin side. First-threshold charging bounds the residual by
+$(K-1)^2D$: an input charged to a fixed edge is reconstructed from a small
+old-prefix set, its edge label, and a small new-suffix set. If the residual
+has fewer than $K$ inputs, the same bound follows from positive length.
+Summing the two output-class bounds and converting signed correlation to
+agreement gives the factor $2^{n+1}$ in the denominator.
+\end{proof}
+
+The more general checked theorem
+\lean{Frontier.AdditiveSweep.abs_sumOn_le_of_budget} permits a nonnegative
+pointwise budget on thick direct sumsets, adapting Sam McGuire's disjoint
+peeling argument above. No uniform-input bound for arbitrary ambiguous
+additive generators follows from this proof.
+
+The affine-interface construction in the accompanying research note is
+unambiguous. It generates $x=B(y+a)+u$, where $y=Lx+a$, $u\in\ker L$, and
+$LB$ is the identity on $\operatorname{im}L$. Applying $L$ recovers $y+a$;
+then $x$ recovers $u$, its kernel-basis coordinates, and the unique suffix
+trace. The algebraic step is checked as
+\lean{Frontier.LinearBoundary.sectionEncoding_injective}; the complete
+network-to-generator construction remains a paper proof with finite tests.
+Thus the note's restricted architecture bounds inherit average-case versions:
+an anchored connected cubic parity prefix gives coefficient $3+1/(2A)\approx4.78125$,
+and an anchored cycle prefix gives $2+1/A\approx5.56250$, with agreement
+$1/2+b+2^{-\Omega_\varepsilon(n)}$ below the respective coefficient by
+$\varepsilon n$. Here every interface signal must be reachable from the suffix
+output, $\log K=o(n)$, and $b=\beta/2$ is the extractor error.
+Chattopadhyay--Liao~\cite{ChattopadhyayLiao2022} supply polynomially small $b$.
+These are paper consequences for the stated architectures, not a new
+unrestricted coefficient or an end-to-end formal compiler theorem.
+
 % ===========================================================================
 \section{Graphs and constraint networks}
 \label{sec:networks}
@@ -2414,6 +2476,47 @@ There are at most $q^{\card L}$ classes. This also proves the more general inter
 of $q^{\card L}$.
 \end{proof}
 
+For a linear map $x\mapsto Mx$ over $\F_q$, let $H=[I;M]$ and let
+$r(X,Y)$ be the rank of the rows of $H$ corresponding to inputs $X$ and
+outputs $Y$. Every nonempty mixed fiber is a translate of the corresponding
+kernel, hence has cardinality $q^{N-r(X,Y)}$. Define
+\[
+  \lambda(X,Y)=r(X,Y)+r(\bar X,\bar Y)-N.
+\]
+Complementary observations together include every input, so $\lambda\ge0$.
+
+\begin{proposition}[Rank and terminal-pathwidth demand]
+\label{prop:rank-demand}
+Every exact splicing code at $(X,Y)$ uses at least $q^{\lambda(X,Y)}$
+messages. Thus a circuit computing $Mx$, even with nonlinear internal gates,
+has at least $\lambda(X,Y)$ distinct signals crossing this cut.
+Let $\pw(H)$ be the minimum, over all orders of the input and output terminals,
+of the largest $\lambda$ of a prefix. If every input is reachable, every
+layout of the compiled circuit has a cut with at least $\pw(H)$ distinct signals.
+\leanref{Frontier.Compiler.exists_cut_ge_pathwidth}
+\end{proposition}
+
+\begin{proof}
+Substitute the two exact kernel-fiber sizes into \cref{prop:mixed-fiber} and
+cancel the positive factor $q^{2N-r(X,Y)-r(\bar X,\bar Y)}$. A circuit layout
+induces an order of the distinct input and output sites; deleting nonterminal
+positions preserves all terminal cuts. Some such cut attains at least the
+minimum possible maximum connectivity.
+\end{proof}
+
+This is the row-matroid pathwidth of $H$, using the convention without an
+extra $1$, equivalently the code's minimum state trelliswidth
+\cite{Kashyap2007}. Combining the checked demand with the layout supply gives
+the following paper consequence for connected compiled graphs with $s=O(N)$
+binary gates, $O(N)$ outputs, and all inputs reachable:
+\[
+  s\ge N+\frac{\pw(H)}{A}-o(N).
+\]
+The new checked theorem is the per-layout demand; this asymptotic combination
+has not been packaged as a separate Lean theorem. Disconnected circuits
+require componentwise accounting: direct-sum matroid pathwidth is a maximum,
+not a sum. The MDS case below has $\pw(H)=N$.
+
 Call the graph code $\{(x,F(x)):x\in U^N\}$ \emph{MDS} when every $N$ of its $2N$
 coordinates determine the codeword. Equivalently, $\Lambda_F(X,Y)=1$ whenever
 $\card X+\card Y=N$.
@@ -3769,8 +3872,12 @@ Def.~\ref{def:capacity}, Lem.~\ref{lem:capacity} & \lean{LinearCapacity},
 Thm.~\ref{thm:linear} & \lean{lowerBound_linear} \\
 Lem.~\ref{lem:linearize} & \lean{exists_affine_circuit} \\
 Cor.~\ref{cor:cauchy} & \lean{linear_finite_gaussian}, \lean{linear_polynomial_gaussian} \\
+\multicolumn{2}{l}{\emph{Additive peeling} (\lean{AverageCase/Additive.lean})} \\*
+Prop.~\ref{prop:weighted-additive} & \lean{agreement_le_of_additive_sweeps} \\
 \multicolumn{2}{l}{\emph{Mixed recovery} (\lean{Boundary/Fiber.lean}, \lean{Boundary/MDS.lean})} \\*
 Prop.~\ref{prop:mixed-fiber} & \lean{OutputSplicing.card_le}, \lean{Compiler.pow_le_cutSignals_mul_fibers} \\
+Prop.~\ref{prop:rank-demand} & \lean{LinearObservation.pow_connectivity_le_messages} \\
+ & \lean{Compiler.exists_cut_ge_pathwidth} \\
 Thm.~\ref{thm:mds} & \lean{lowerBound_mds}, \lean{mds_gaussian} \\
  & \lean{TotallyRegular.isMDS}, \lean{IsMDS.permute} \\
 \midrule

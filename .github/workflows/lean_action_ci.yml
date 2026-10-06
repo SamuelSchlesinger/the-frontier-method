@@ -25,3 +25,7 @@ jobs:
         run: python research/communication/restrictions.py
       - name: Check additive syndrome generators
         run: python research/communication/syndrome_generator.py
+      - name: Check unambiguous additive peeling
+        run: python research/communication/unambiguous.py
+      - name: Check mixed-fiber ranks and terminal pathwidth
+        run: python research/communication/rank_profiles.py

@@ -71,8 +71,16 @@ can preserve the potential `5d-s` using just one branch. What remains is a
 restriction-or-terminal theorem covering every residual circuit, with terminal
 additive transition exponent at most `(s-d)/4+o(d)`. Separately small graph and
 code widths do not suffice: their common ordering must meet the budget.
-The note credits the Minkowski-circuit and code-trellis antecedents and does not
-claim a weighted additive-peeling theorem or historical priority.
+The coherent additive extension now proves a weighted demand theorem:
+`agreement_le_of_additive_sweeps` gives `(1+beta)/2+(K-1)^2 D/2^(n+1)` for the two
+output-class sweeps. Summand recovery and trace coherence ensure direct sumsets
+and disjoint deletion. `LinearBoundary.sectionEncoding_injective` checks the
+algebraic uniqueness of the affine encoding; the full compiler remains a paper
+proof. The note derives average-case versions of the anchored cubic and cycle
+architecture bounds, with the same `4.781248...` and `5.562497...` coefficients.
+It credits Sam McGuire's peeling argument and the Minkowski-circuit,
+code-trellis, and Chattopadhyay--Liao extractor antecedents. No weighted bound for
+arbitrary ambiguous generators, or historical priority, is claimed.
 
 ## Pruning
 
@@ -137,9 +145,26 @@ the Gaussian coefficient for every fixed fan-in, including `7/4` at fan-in three
 `IsMDS.permute` check the linear specialization and preservation under coordinatewise
 alphabet permutations. The alphabet may grow with the dimension.
 
-The next demand extension is the graded rank profile for ordinary matrices, with a
-precise terminal-ordering parameter and componentwise accounting. Neither that matroid
-pathwidth transfer nor the Jacobian extension is claimed by the present formalization.
+The graded rank extension is now checked in `Frontier/Boundary/Rank.lean`.
+For a linear map `L` over `F_q`, the mixed observation rank `r(X,Y)` gives exact
+fiber size `q^(n-r(X,Y))`. Consequently every cut needs at least
+`lambda=r(X,Y)+r(X^c,Y^c)-n` distinct signals, even with nonlinear internal gates.
+`Compiler.exists_cut_ge_pathwidth` transfers the systematic code's terminal
+pathwidth to every circuit layout, assuming all inputs are reachable. The
+parameter minimizes over injective terminal positions; allowing gaps preserves
+the same ordered cuts. It uses the convention without an extra `1`.
+
+For connected compiled graphs with `s` binary gates, `O(n)` outputs, and all
+`n` inputs reachable, combining this demand with the existing supply gives
+`s >= n + pw([I;L])/A - o(n)` in the regime `s=O(n)`. This final asymptotic
+combination is stated as a paper consequence; the checked new theorem is the
+per-layout frontier demand. For disconnected graphs, do not silently add
+component pathwidths: direct-sum pathwidth is their maximum. Componentwise
+circuit accounting and the Jacobian extension remain separate tasks.
+
+`research/communication/rank_profiles.py` independently enumerates mixed fibers
+and checks ranks, including zero, identity, direct-sum, and MDS controls.
+Source: Kashyap, [Matroid Pathwidth and Code Trellis Complexity](https://arxiv.org/abs/0705.1384).
 
 ## Nonlinear local updates
 

@@ -23,6 +23,7 @@ public import Frontier.Ledger.Main
 public import Frontier.Nondeterministic
 public import Frontier.Signals
 public import Frontier.AverageCase.Extractor
+public import Frontier.AverageCase.Additive
 public import Frontier.Boundary.Code
 public import Frontier.Boundary.Joint
 public import Frontier.AverageCase.Pruning
@@ -31,6 +32,7 @@ public import Frontier.Tree.Network
 public import Frontier.Layouts.Local
 public import Frontier.Decomposable
 public import Frontier.Boundary.Fiber
+public import Frontier.Boundary.Rank
 public import Frontier.Boundary.MDS
 
 /-!
@@ -67,8 +69,10 @@ A circuit lower bound from graph layouts, in independent pieces:
 * `Frontier.AverageCase`: coherent weighted peeling and average-case circuit hardness from
   rectangle bias or sumset bias, with an exponentially small remainder below `L n`.
   Polynomially small sumset bias gives polynomially small agreement advantage.
+  `Frontier.AverageCase.Additive`: coherent additive peeling with unique sum representations.
 * `Frontier.Boundary`: hypergraph signal boundaries, exact linear syndrome states, and
   transition codes; mixed input-output fiber demand and nonlinear MDS lower bounds.
+  `Frontier.Boundary.Rank`: graded linear observation ranks and terminal pathwidth demand.
   `Frontier.Boundary.Joint`: joint ranks of shared linear information and visible
   observations, avoiding independent charges for overlapping information.
   `Frontier.Decomposable`: threshold counting for smooth union/product DAGs with

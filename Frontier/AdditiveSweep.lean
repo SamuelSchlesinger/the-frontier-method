@@ -121,31 +121,34 @@ theorem ncard_pastSide_length [Finite G] {x : G} (hx : x ∈ S) :
 noncomputable def chargeTime (K : ℕ) (x : G) : ℕ :=
   sInf {t | K ≤ (P.pastSide t x).ncard}
 
-/-- **Additive frontier bound.** Dense sumset-free sets require almost as many
-transitions as elements, even when different paths can describe the same element. -/
-theorem ncard_le [Finite G] {K : ℕ} (hS : SumsetFree S K) (hK1 : 1 < K)
-    (hK : K ≤ S.ncard) : S.ncard ≤ (K - 1) ^ 2 * P.transitionCount := by
-  have hlength : ∀ x ∈ S, P.length ∈ {t | K ≤ (P.pastSide t x).ncard} := fun x hx =>
-    show K ≤ _ by rw [P.ncard_pastSide_length hx]; exact hK
-  have hcharged : ∀ x ∈ S, K ≤ (P.pastSide (P.chargeTime K x) x).ncard := fun x hx =>
+/-- Threshold charging needs only a thin side at every selected state. This form also
+applies after coherent state deletion, without assuming that the whole set is sumset-free. -/
+theorem ncard_le_of_small_sides [Finite G] {KL KR : ℕ} (hKL : 1 < KL)
+    (hK : KL ≤ S.ncard)
+    (hsmall : ∀ t, ∀ x ∈ S,
+      (P.pastSide t x).ncard < KL ∨ (P.futureSide t x).ncard < KR) :
+    S.ncard ≤ (KL - 1) * (KR - 1) * P.transitionCount := by
+  have hlength : ∀ x ∈ S, P.length ∈ {t | KL ≤ (P.pastSide t x).ncard} := fun x hx =>
+    show KL ≤ _ by rw [P.ncard_pastSide_length hx]; exact hK
+  have hcharged : ∀ x ∈ S, KL ≤ (P.pastSide (P.chargeTime KL x) x).ncard := fun x hx =>
     Nat.sInf_mem ⟨_, hlength x hx⟩
-  have hbefore : ∀ x, ∀ t < P.chargeTime K x, (P.pastSide t x).ncard < K := fun x t ht =>
-    not_le.mp (Nat.notMem_of_lt_sInf (s := {t | K ≤ (P.pastSide t x).ncard}) ht)
-  have hle_length : ∀ x ∈ S, P.chargeTime K x ≤ P.length := fun x hx =>
+  have hbefore : ∀ x, ∀ t < P.chargeTime KL x, (P.pastSide t x).ncard < KL := fun x t ht =>
+    not_le.mp (Nat.notMem_of_lt_sInf (s := {t | KL ≤ (P.pastSide t x).ncard}) ht)
+  have hle_length : ∀ x ∈ S, P.chargeTime KL x ≤ P.length := fun x hx =>
     Nat.sInf_le (hlength x hx)
-  have hpos : ∀ x ∈ S, 0 < P.chargeTime K x := by
+  have hpos : ∀ x ∈ S, 0 < P.chargeTime KL x := by
     intro x hx
     refine Nat.pos_of_ne_zero fun h0 => ?_
     have h := hcharged x hx
     rw [h0] at h
     have := h.trans (P.ncard_pastSide_zero_le x)
     lia
-  let step : G → ℕ := fun x => P.chargeTime K x - 1
+  let step : G → ℕ := fun x => P.chargeTime KL x - 1
   calc S.ncard
       ≤ ∑ t ∈ Finset.range P.length, (S ∩ step ⁻¹' {t}).ncard :=
         ncard_le_sum_ncard_fiber (toFinite S) step P.length fun x hx => by
           have := hle_length x hx; have := hpos x hx; simp only [step]; lia
-    _ ≤ ∑ t ∈ Finset.range P.length, (K - 1) ^ 2 * (P.transition t '' S).ncard := by
+    _ ≤ ∑ t ∈ Finset.range P.length, (KL - 1) * (KR - 1) * (P.transition t '' S).ncard := by
       refine Finset.sum_le_sum fun t _ => ?_
       refine (ncard_le_mul_ncard_image (toFinite _) (P.transition t) _ fun τ => ?_).trans
         (Nat.mul_le_mul_left _ (ncard_le_ncard (image_mono inter_subset_left)))
@@ -153,16 +156,16 @@ theorem ncard_le [Finite G] {K : ℕ} (hS : SumsetFree S K) (hK1 : 1 < K)
         h | ⟨x, hx⟩
       · simp [h]
       obtain ⟨⟨hxS, hxt⟩, hxτ⟩ := hx
-      have hxcharge : P.chargeTime K x = t + 1 := by
+      have hxcharge : P.chargeTime KL x = t + 1 := by
         have := hpos x hxS
         simp only [step, mem_preimage, mem_singleton_iff] at hxt
         lia
-      have hpast : (P.pastSide t x).ncard ≤ K - 1 := by
+      have hpast : (P.pastSide t x).ncard ≤ KL - 1 := by
         have := hbefore x t (by lia); lia
-      have hfuture : (P.futureSide (t + 1) x).ncard ≤ K - 1 := by
+      have hfuture : (P.futureSide (t + 1) x).ncard ≤ KR - 1 := by
         have := hcharged x hxS
         rw [hxcharge] at this
-        rcases P.pastSide_lt_or_futureSide_lt hS (t + 1) x with h | h <;> lia
+        rcases hsmall (t + 1) x hxS with h | h <;> lia
       calc (S ∩ step ⁻¹' {t} ∩ P.transition t ⁻¹' {τ}).ncard
           ≤ (P.pastSide t x ×ˢ P.futureSide (t + 1) x).ncard := by
             refine ncard_le_ncard_of_injOn
@@ -182,8 +185,15 @@ theorem ncard_le [Finite G] {K : ℕ} (hS : SumsetFree S K) (hK1 : 1 < K)
                       rw [hparts.1, hparts.2, hemit]
                    _ = z := by rw [← P.step t z hzS, P.reconstruct (t + 1) z hzS]
         _ = (P.pastSide t x).ncard * (P.futureSide (t + 1) x).ncard := ncard_prod
-        _ ≤ (K - 1) ^ 2 := by simpa only [sq] using Nat.mul_le_mul hpast hfuture
-    _ = (K - 1) ^ 2 * P.transitionCount := (Finset.mul_sum ..).symm
+        _ ≤ (KL - 1) * (KR - 1) := Nat.mul_le_mul hpast hfuture
+    _ = (KL - 1) * (KR - 1) * P.transitionCount := (Finset.mul_sum ..).symm
+
+/-- **Additive frontier bound.** Dense sumset-free sets require almost as many
+transitions as elements, even when different paths can describe the same element. -/
+theorem ncard_le [Finite G] {K : ℕ} (hS : SumsetFree S K) (hK1 : 1 < K)
+    (hK : K ≤ S.ncard) : S.ncard ≤ (K - 1) ^ 2 * P.transitionCount := by
+  simpa only [sq] using P.ncard_le_of_small_sides hK1 hK
+    (fun t x _ => P.pastSide_lt_or_futureSide_lt hS t x)
 
 end AdditiveSweep
 
