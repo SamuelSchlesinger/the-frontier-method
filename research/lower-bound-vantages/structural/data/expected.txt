@@ -1,0 +1,1 @@
+Gate propagation: all 74 truth-table/input pairs passed.

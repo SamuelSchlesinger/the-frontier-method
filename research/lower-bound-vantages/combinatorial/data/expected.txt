@@ -1,0 +1,13 @@
+Binary gate classification: {'constant': 2, 'unary': 4, 'parity': 2, 'and_type': 8}
+Parity: 21 exact expectations from 29511 restrictions passed
+Parity scaling: n=m^3, p=1/m gives B2 cost >= m^2-1
+INDEX: q=1, states=2, distinct cofactors=4
+INDEX: q=2, states=4, distinct cofactors=16
+INDEX: q=3, states=8, distinct cofactors=256
+INDEX: q=4, states=16, distinct cofactors=65536
+Block composition: 7200 nonempty product rectangles passed
+Conditional surplus: L=4.562497678925, threshold=0.562497678925
+Conditional surplus: rho=1/2, a=3/5 gives 0.018751160537n
+Weighted elimination: largest branching factor=0.999994571806<1
+Depth reduction: hypothetical input credit must exceed 0.662497678925n
+PASS: finite checks only; no universal terminal coverage is claimed

@@ -1,0 +1,4 @@
+Both prescribed cut partitions are optimal (2 rectangles each).
+Compatible transition relations: 0 of 256.
+Accepted words: 4 in the original, union, and representative graphs.
+Accepting paths: original 4; union quotient 8; representative quotient 4.

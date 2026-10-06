@@ -1,0 +1,6 @@
+Binary normalization: 16 truth tables, 64 evaluations passed.
+Normal form and monochromatic-flat certificates: 240 circuits, 5952 inputs passed.
+Affine pullback counterexample: projection degree 1 becomes real degree 6; F_2 degree remains 1.
+Index-function counterexample: 16 distinct Boolean residuals have rational span dimension 4.
+Partition-rank counterexample: a 7-gate arithmetic formula has coefficient rank 16.
+Cancellation counterexample: XOR is zero at (1,1), while union of arithmetic term supports accepts.

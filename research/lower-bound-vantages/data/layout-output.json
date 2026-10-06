@@ -1,0 +1,73 @@
+{
+  "all_simple_graphs_through_5_vertices": 1099,
+  "nonlinear_support_submodularity_counterexample": {
+    "left_product": 9,
+    "right_product": 10
+  },
+  "samples": {
+    "binary_tree_7": {
+      "cutwidth": 2,
+      "cycle_rank": 0,
+      "edges": 6,
+      "join": 3,
+      "line_graph_treewidth": 2,
+      "linear_transition": 3,
+      "vertices": 7
+    },
+    "cube": {
+      "cutwidth": 5,
+      "cycle_rank": 5,
+      "edges": 12,
+      "join": 6,
+      "line_graph_treewidth": 5,
+      "linear_transition": 6,
+      "vertices": 8
+    },
+    "k33": {
+      "cutwidth": 5,
+      "cycle_rank": 4,
+      "edges": 9,
+      "join": 6,
+      "line_graph_treewidth": 5,
+      "linear_transition": 6,
+      "vertices": 6
+    },
+    "k4": {
+      "cutwidth": 4,
+      "cycle_rank": 3,
+      "edges": 6,
+      "join": 5,
+      "line_graph_treewidth": 4,
+      "linear_transition": 5,
+      "vertices": 4
+    },
+    "petersen": {
+      "cutwidth": 6,
+      "cycle_rank": 6,
+      "edges": 15,
+      "join": 7,
+      "line_graph_treewidth": 6,
+      "linear_transition": 7,
+      "vertices": 10
+    },
+    "three_branches_10": {
+      "cutwidth": 3,
+      "cycle_rank": 0,
+      "edges": 9,
+      "join": 3,
+      "line_graph_treewidth": 2,
+      "linear_transition": 4,
+      "vertices": 10
+    },
+    "triangular_prism": {
+      "cutwidth": 4,
+      "cycle_rank": 4,
+      "edges": 9,
+      "join": 5,
+      "line_graph_treewidth": 4,
+      "linear_transition": 5,
+      "vertices": 6
+    }
+  },
+  "strict_join_savings_in_census": 0
+}
