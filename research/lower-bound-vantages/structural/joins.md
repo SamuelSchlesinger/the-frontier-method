@@ -38,13 +38,35 @@ Suppressing the root reverses this, so the rooted convention does not change (1)
 
 ## Consequence for the frontier method
 
-For a bounded-degree network, leaf processing adds at most a constant number of
-input symbols to the code. The existing exact tree/decomposable compiler has
-representation size at most
+Consider a Boolean network with bounded graph degree, a unique read site for
+each read input, and at most a constant number of inputs read at each vertex.
+Assume `log2(n+|V|)=o(n)`, as holds for polynomial-size networks. These conditions
+hold for the binary circuit compiler, which reads at most one input per vertex.
+Leaf processing then adds at most a constant number of input symbols to the code.
+There is a smooth decomposable support representation of size at most
 
 ```
 poly(n+|V|) * 2^(B(T)+O(1)).
 ```
+
+Here is the support construction, without a trace-uniqueness assumption. For each
+region `W` and assignment `sigma` to `delta(W)`, create a node representing its
+input assignments admitting an internal completion with boundary `sigma`. At a
+join, enumerate assignments to `J=delta(W1) union delta(W2)`. Each such assignment
+selects the two child boundary states and their parent boundary state. Connect
+the product of the child nodes to the union node for that parent state. The
+product scopes are disjoint because inputs have unique read sites. Local
+compatibility allows completions to glue, and every completion induces one of
+these choices. Across **all** parent states a join creates `O(2^|J|)` nodes and
+edges, not a further factor for each parent. Leaf truth tables cost
+`2^(deg(v)+O(1))`. This proves the displayed bound.
+
+This is a paper support argument. The repository's
+[checked weighted tree bound](../../../Frontier/Tree/Network.lean) requires
+a unique satisfying edge trace for each accepted input; the circuit compiler
+provides that hypothesis. Exact counting likewise needs trace uniqueness (or
+another multiplicity argument), whereas the support construction above permits
+overlapping union alternatives.
 
 Dense rectangle-free acceptance with `log K=o(n)` forces this representation to
 have size `2^(n-o(n))`, by the already established decomposable threshold bound.
@@ -55,6 +77,10 @@ leading demand on the network's read inputs. Hence every tree satisfies
 ```
 tw(L(G)) >= n-o(n).                                          (2)
 ```
+
+The local read bound is essential. A single isolated vertex allowed to read all
+inputs could apply the entire target predicate locally, with no graph boundary.
+Bounded graph degree alone would not imply (2).
 
 The cited identity is stated for simple graphs. The same path/bag argument extends
 to loopless multigraphs with parallel edges represented as separate line-graph

@@ -111,6 +111,11 @@ Eshan Chattopadhyay, Jesse Goodman, and Mohit Gurumukhani. *Extractors for Polyn
 
 Eshan Chattopadhyay and Jyun-Jie Liao. *Extractors for Sum of Two Sources*. 2022, STOC, 1584–1597. https://doi.org/10.1145/3519935.3519963
 
+<a id="chensrinivasan18"></a>
+### chensrinivasan18
+
+Ruiwen Chen, Rahul Santhanam, and Srikanth Srinivasan. *Average-Case Lower Bounds and Satisfiability Algorithms for Small Threshold Circuits*. 2018, Theory of Computing 14(9), 1–55. https://doi.org/10.4086/toc.2018.v014a009.
+
 <a id="darwiche-marquis02"></a>
 ### darwiche-marquis02
 
@@ -230,6 +235,11 @@ Stasys Jukna. *Lower Bounds for Tropical Circuits and Dynamic Programs*. 2015, T
 ### kabanetsimpagliazzo04
 
 Valentine Kabanets and Russell Impagliazzo. *Derandomizing Polynomial Identity Tests Means Proving Circuit Lower Bounds*. 2004, Computational Complexity 13, 1–46. https://doi.org/10.1007/s00037-004-0182-6
+
+<a id="kanewilliams16"></a>
+### kanewilliams16
+
+Daniel M. Kane and Ryan Williams. *Super-Linear Gate and Super-Quadratic Wire Lower Bounds for Depth-Two and Depth-Three Threshold Circuits*. 2016, STOC, 633–643. https://doi.org/10.1145/2897518.2897636. [Author manuscript](https://cseweb.ucsd.edu/~dakane/depth2LTF.pdf).
 
 <a id="kashyap08"></a>
 ### kashyap08
@@ -430,4 +440,3 @@ Avi Wigderson. *The Fusion Method for Lower Bounds in Circuit Complexity*. 1993,
 ### williams13
 
 Ryan Williams. *Improving Exhaustive Search Implies Superpolynomial Lower Bounds*. 2013, SIAM Journal on Computing 42(3), 1218–1244. https://doi.org/10.1137/10080703X
-

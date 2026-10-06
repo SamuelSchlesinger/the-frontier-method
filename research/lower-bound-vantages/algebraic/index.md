@@ -194,39 +194,13 @@ into support-preserving relations, charging sharing only once; replacing each ar
 union fails on the two-input XOR example above. Existing sumset and syndrome results must not be
 relabeled as a new application of monotone arithmetic.
 
-## A precise multiplicative-complexity interface and a proved corollary
+## Multiplicative complexity as an additional constraint
 
-Let `k` count non-affine binary truth tables in the given circuit and `u` its remaining
-positive-arity gates, so `s=k+u`. Every binary table has a unique form `c + alpha*a + beta*b +
-gamma*a*b` over `F_2`. If `gamma=1`, it equals `(a+beta)(b+alpha)+c+alpha*beta`. Thus it uses
-one multiplication and affine operations; negations are offsets. After constant and unary
-propagation, this gives AND/XOR gates with complemented wires at the same binary-gate count:
-absorb each output offset into its consumers, retaining a possible output NOT. It preserves
-total cost up to that one output gate while XOR gates stay paid; passing to multiplicative
-complexity subsequently makes them free.
-
-Introducing one variable `z_i` for each such product yields the exact triangular system
-`z_i=U_i(x,z_<i)*V_i(x,z_<i)`, with affine `U_i,V_i`, and an affine output in `(x,z)`. For each
-input there is exactly one full assignment to the `z_i`, by induction. This permits sharing and
-arbitrary binary truth tables without expanding them into a formula. Dropping any defining
-equation loses exactness.
-
-**Known lemma, with proof.** A circuit with `k` multiplications is affine on a nonempty affine
-subspace of dimension at least `n-k`. Process its multiplication gates in order. Their operands
-are affine on the current subspace. If the first operand is nonconstant, impose its zero
-hyperplane, losing one dimension; if it is constant, no restriction is needed. In either case
-the gate becomes affine. One further hyperplane makes the final affine output constant, so a
-monochromatic flat has dimension at least `n-k-1` whenever this bound is nonnegative. This
-weak-normality argument is established in the multiplicative-complexity and affine-disperser
-literature. [boyar16][boyar16] [demenkov11][demenkov11]
-
-**Deduction for the current target.** Put `q=ceil(log_2 K)`. Sumset bias strictly below one in
-sign-bias convention forbids monochromatic affine subspaces of dimension at least `q`: take
-independent uniform sources on `a+V` and `V`. If `k<=n-q-1`, the lemma produces such a subspace.
-Consequently `k>=n-q`, including the inclusive threshold and the extra output hyperplane. For
-`log K=o(n)` this requires `n-o(n)` nonlinear gates. This is a proved corollary newly recorded
-here, not a claim of a new normality theorem or priority. It cannot be added to `s>=Ln-o(n)`:
-both bounds charge the same circuit.
+The [nonlinear-gate and affine-partition analysis](nonlinearity.md) gives the
+triangular XOR/AND normal form, the credited affine-normality lemma, and its exact
+and average-case consequences for the extractor target. It proves that roughly
+`n` nonlinear gates are necessary even with free affine computation; it does not
+add this cost to the current total-gate lower bound.
 
 ## Concrete bridges, falsification tests, and stopping rules
 
@@ -254,7 +228,8 @@ theorem.
 ## Validation and limitations
 
 [The finite checker](data/check_bridges.py) verifies all 16 binary tables, triangular
-normalization and monochromatic-flat certificates for 240 generated circuits on 5,952 inputs,
+normalization, monochromatic-flat certificates, and full affine partitions for 240
+generated circuits on 5,952 inputs,
 and the degree, residual-state, partition-rank, and cancellation counterexamples. [Expected
 output](data/expected.txt) is reproducible with `python3
 research/lower-bound-vantages/algebraic/data/check_bridges.py`. These checks test
@@ -265,9 +240,7 @@ proved here.
 [alman17]: ../sources.md#alman17
 [amireddy23]: ../sources.md#amireddy23
 [bini79]: ../sources.md#bini79
-[boyar16]: ../sources.md#boyar16
 [burgisser19]: ../sources.md#burgisser19
-[demenkov11]: ../sources.md#demenkov11
 [forbesshpilka13]: ../sources.md#forbesshpilka13
 [jerrum82]: ../sources.md#jerrum82
 [jukna15]: ../sources.md#jukna15

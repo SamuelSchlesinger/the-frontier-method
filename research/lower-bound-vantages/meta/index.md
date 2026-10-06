@@ -112,8 +112,9 @@ entropy threshold is already `o(n)`.
 There is a precise obstacle to allowing arbitrary nonlinear coordinates on the
 strength of the same black-box assumption. Chattopadhyay--Goodman--Gurumukhani,
 Theorem 5.16, construct quadratic non-oblivious bit-fixing sources of entropy
-`n-O(n/log log n)` that are almost distance one from **every convex mixture** of
-sumset sources whose two summands have entropy `c log n`, for any fixed `c>0`
+`n-O(n/log log n)` at statistical distance at least `1-epsilon` from **every
+convex mixture** of sumset sources whose two summands have entropy `c log n`, for
+any fixed `c>0` and `0<epsilon<1`. The entropy-loss constant depends on both
 [chattopadhyaygoodmangurumukhani24][chattopadhyaygoodmangurumukhani24]. A
 non-oblivious bit-fixing source has uniform independent good bits and other bits
 that are functions of them; here those functions are quadratic.

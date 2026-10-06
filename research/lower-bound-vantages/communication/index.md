@@ -97,8 +97,9 @@ must therefore improve supply, or change how the circuit is charged.
 
 A concrete transfer to test is a **single** LP over all layers whose variables are
 transitions and whose constraints enforce flow, sound continuation, and the same
-input distribution. Its dual would need value `n-o(n)` on the hard target and an
-upper bound `B(s-n)+o(n)` on every `B2` circuit, with `B<A`.
+input distribution. The logarithm of its optimum would need to be at least
+`n-o(n)` on the hard target, certified by its dual, and at most `B(s-n)+o(n)`
+for every `B2` circuit, with `B<A`.
 Independent partition-bound optima omit those interlayer constraints. A fractional
 cover also needs a positive realization theorem before existing pruning applies.
 

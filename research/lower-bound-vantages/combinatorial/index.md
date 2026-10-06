@@ -19,6 +19,7 @@ transfer. These are paper deductions, not additional Lean theorems or priority c
 |---|---|---|
 | Gate elimination; exact `B2` or a specified subbasis, gate count | Substitute inputs; amortize deleted gates and auxiliary measures | Improve the circuit before compilation; substitutions must preserve target hardness and pay for newly built signals [gkst16][gkst16] |
 | Switching; bounded-depth AND/OR/NOT circuits, depth and size | A restricted narrow CNF/DNF has a shallow decision tree with high probability | Certify simple residual terminals; no bounded-depth hypothesis follows from linear `B2` size [hastad86][hastad86] |
+| Threshold anti-concentration; restricted depth, gate or wire complexity | Random restrictions make weighted threshold gates constant or highly biased | Candidate distribution-aware terminals; exact forcing, approximate bias, arbitrary weights, and majority gates are different hypotheses [kanewilliams16][kanewilliams16] [chensrinivasan18][chensrinivasan18] |
 | Shrinkage; De Morgan formulas, literal occurrences | A restriction deletes repeated occurrences and simplifies tree structure | Use only after a paid conversion to formula terminals; both parity gates and DAG sharing obstruct a direct transfer [subbotovskaya61][subbotovskaya61] [hastad98][hastad98] |
 | Andreev and structured projections; De Morgan formula size | Preserve a hard residual function while a competing formula shrinks | Search for target-preserving projections and measurable DAG savings; preservation alone gives no shrinkage theorem [andreev87][andreev87] [filmus23][filmus23] |
 | Nechiporuk; full-basis formula leaves or branching-program nodes | Count distinct cofactors on disjoint input blocks and sum local occurrence costs | Frontier states encode **sets** of cofactors; one-way interfaces and bounded reuse are extra hypotheses [nechiporuk66][nechiporuk66] [beame16][beame16] |
@@ -136,13 +137,27 @@ Subbotovskaya obtained shrinkage exponent `3/2`; Andreev combined shrinkage with
 a hard residual table to obtain a superquadratic explicit formula lower bound
 [subbotovskaya61][subbotovskaya61] [andreev87][andreev87]. Håstad proved, for De
 Morgan formula leaf size `ell`,
-`E[ell_restricted] = O(p^2 log(1/p)^(3/2) ell + p sqrt(ell))`, yielding
+`E[ell_restricted] = O(p^2 log(1/p)^(3/2) ell + p sqrt(ell))` for `0<p<=1/2`, yielding
 `n^(3-o(1))` lower bounds [hastad98][hastad98]. Filmus–Meir–Tal extend shrinkage
 to structured random projections and obtain cubic, up to logarithmic factors,
 De Morgan formula lower bounds for an explicit function in `AC0` [filmus23][filmus23].
 The common mechanism separates preservation of the target from simplification
 of the competing representation. Injective literal projections solve the first
 obligation for our target; the second remains a new DAG theorem.
+
+Threshold-circuit restrictions supply a distinct mechanism. Kane--Williams use
+Littlewood--Offord anti-concentration for gate and wire lower bounds at depth two
+and a specified majority-topped depth-three model. Chen--Santhanam--Srinivasan
+prove average-case lower bounds for arbitrary-weight threshold circuits of each
+fixed depth with slightly superlinear wire budgets, using adaptive restrictions
+and biased-gate analysis [kanewilliams16][kanewilliams16]
+[chensrinivasan18][chensrinivasan18]. A highly biased gate can be replaced only
+with an error budget; it is not an exactly forced gate. For our method this suggests
+a distribution-aware terminal certificate, after a paid conversion from the
+residual `B2` circuit and proof of the required independence/read-multiplicity
+conditions. Shared selectors and XOR front ends are controls against silently
+assuming those conditions. The terminal must enter the existing cumulative or
+weighted branch accounting; a threshold gate is not a unit-cost `B2` operation.
 
 **Sharp falsification of a direct shrinkage transfer.** Let `PARITY_n` have its
 optimal `n-1`-gate `B2` circuit. After a `p`-random restriction, the number `M` of
@@ -261,6 +276,7 @@ new average-case terminal theorem. Historical literature claims are attributed;
 the accounting synthesis and counterexamples carry no claim of novelty.
 
 [andreev87]: ../sources.md#andreev87
+[chensrinivasan18]: ../sources.md#chensrinivasan18
 [beame16]: ../sources.md#beame16
 [filmus23]: ../sources.md#filmus23
 [gkst16]: ../sources.md#gkst16
@@ -269,6 +285,7 @@ the accounting synthesis and counterexamples carry no claim of novelty.
 [hastad98]: ../sources.md#hastad98
 [huang19]: ../sources.md#huang19
 [khrapchenko71]: ../sources.md#khrapchenko71
+[kanewilliams16]: ../sources.md#kanewilliams16
 [klauck07]: ../sources.md#klauck07
 [laplante05]: ../sources.md#laplante05
 [nechiporuk66]: ../sources.md#nechiporuk66

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Validates: XOR-AND normal form, affine normality, and three failed transfers.
+"""Validates: XOR-AND normal form, affine partitions, and four failed transfers.
 
-The general normality theorem is proved in ../index.md and credited there to
+The general normality theorem is proved in ../nonlinearity.md and credited there to
 the existing multiplicative-complexity literature. These are finite checks,
 not a new asymptotic circuit lower bound. Run from any working directory.
 """
@@ -92,6 +92,28 @@ def normality_certificate(n, circuit):
     return len(points)
 
 
+def affine_partition(n, circuit):
+    # Independently retain both branches in the truth-table normality argument.
+    values = [direct_values(n, circuit, x) for x in range(1 << n)]
+    parts = [set(range(1 << n))]
+    for left, _, table in circuit:
+        if coefficients(table)[3]:
+            parts = [branch for points in parts for bit in (0, 1)
+                     if (branch := {x for x in points if values[x][left] == bit})]
+            assert all(is_affine_space(points) for points in parts)
+    parts = [branch for points in parts for bit in (0, 1)
+             if (branch := {x for x in points if values[x][-1] == bit})]
+    k = sum(coefficients(table)[3] for _, _, table in circuit)
+    assert len(parts) <= 1 << (k + 1)
+    assert sum(map(len, parts)) == 1 << n
+    assert set().union(*parts) == set(range(1 << n))
+    for points in parts:
+        assert points and is_affine_space(points)
+        assert len(points) >= 1 << max(0, n - k - 1)
+        assert len({values[x][-1] for x in points}) == 1
+    return parts
+
+
 def rank(matrix):
     work = [[Fraction(x) for x in row] for row in matrix]
     r = 0
@@ -133,7 +155,9 @@ def main():
             assert affine_value(output, assignment) == direct_values(n, circuit, x)[-1]
             checked_inputs += 1
         normality_certificate(n, circuit)
+        affine_partition(n, circuit)
     print(f"Normal form and monochromatic-flat certificates: 240 circuits, {checked_inputs} inputs passed.")
+    print("Full affine partitions: 240 circuits; disjoint coverage, dimensions, and constant outputs passed.")
 
     n = 6
     outputs = [x.bit_count() % 2 for x in range(1 << n)]

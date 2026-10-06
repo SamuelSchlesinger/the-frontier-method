@@ -121,9 +121,16 @@ lemma and one common decomposition for code and suffix.
 
 The known affine-normality lemma implies that our sumset target needs
 `n-ceil(log2 K)` nonlinear binary gates. The
-[algebraic comparison](algebraic/index.md) proves this with the output-hyperplane
+[nonlinearity analysis](algebraic/nonlinearity.md) proves this with the output-hyperplane
 loss included. With `log K=o(n)`, at least `n-o(n)` gates are nonlinear even if
 affine operations were free.
+
+Branching on both hyperplane values gives an average-case version: a circuit with
+`k<=n-ceil(log2 K)-1` nonlinear gates agrees with a target of sign bias at most
+`2b` on all large affine flats on at most `1/2+b` of inputs. The proof partitions
+the entire cube into sufficiently large monochromatic affine flats for that
+circuit, and averages the target's bias over them. This deduction tolerates
+arbitrarily many affine gates; it is not a new total-gate bound or Lean theorem.
 
 This is additional structural information about any candidate near `5n`. It
 does **not** add another `n` to the total-gate lower bound. Both bounds charge

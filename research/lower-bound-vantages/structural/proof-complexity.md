@@ -36,7 +36,8 @@ Resolution derives clauses by eliminating a complementary pair of literals.
 For an unsatisfiable CNF on `N` variables, let `w0` be its initial width, `W` its
 minimum refutation width, and `S` its minimum DAG refutation size. The
 Ben-Sasson–Wigderson tradeoff yields
-`S >= exp(Omega((W-w0)^2/N))`; tree-like and general DAG proofs have different
+`S >= exp(Omega(max{0,W-w0}^2/N))`; the positive part allows unused wide input
+clauses. Tree-like and general DAG proofs have different
 tradeoffs [bw01][bw01]. The hidden constant is not a numerical improvement to `A`.
 
 Atserias–Dalmau characterize width through an existential pebble game and show

@@ -19,7 +19,7 @@ candidate circuit.
 | Expansion, superconcentrators, disjoint paths | Connectivity and terminal routing | Excellent for multi-output demand. They can coexist with linear-size graphs, so maximal recovery alone does not imply superlinear gate complexity. [pippenger77][pippenger77] |
 | Signal hypergraphs and submodular cuts | Number of distinct signals crossing a vertex partition | Already checked in the paper. Jointly choosing equality routing and layout can beat a fixed routing; the challenge is proving a saving for all circuit incidence patterns. |
 | Matroid connectivity and code trellises | Dimension of feasible syndrome states | Already used by the affine interface. It is exact for a fixed linear split. Optimizing syndrome width separately from the nonlinear suffix is invalid. |
-| Tree realizations of codes | Maximum local constraint dimension, rather than merely state dimension | A stronger vocabulary for the branching affine compiler: charge a whole local merge relation. Minimal realizations can improve on trellises for some codes, but not automatically for MDS/Reed–Muller codes. [kashyap09][kashyap09] [kashyapthangaraj11][kashyapthangaraj11] |
+| Tree realizations of codes | Maximum local constraint dimension, rather than merely state dimension | A stronger vocabulary for the branching affine compiler: charge a whole local merge relation. Some codes benefit from trees, but MDS and binary Reed–Muller codes have equal optimal tree and trellis local constraint widths. [kashyap09][kashyap09] [kashyapthangaraj11][kashyapthangaraj11] |
 | Code realization bounds on arbitrary graphs | Trade-off between local linear constraint complexity and graph width | Suggest a demand that combines graph and code structure rather than treating them as two independent bills. Their linear local constraints do not directly model an arbitrary nonlinear suffix. [kashyap08][kashyap08] |
 | Tensor-network contraction | Number of simultaneously open indices in a contraction schedule | Supplies algorithms and explains the join union. General signed/complex contractions preserve a scalar sum, whereas our exact-demand argument needs sound positive support generation. [markovshi08][markovshi08] |
 | Factor-graph duality and holographic changes of basis | Partition functions invariant under local transformations | Worth testing for counting independently. Cancellation can hide invalid local combinations, so preservation of the partition function alone does not preserve rectangle splicing. [forneyvontobel11][forneyvontobel11] |
@@ -29,8 +29,9 @@ candidate circuit.
 
 ## A new structural conclusion from the existing branching demand
 
-For a bounded-degree exact network recognizing a dense rectangle-free set, the
-existing tree-demand lemma and the standard line-graph congestion identity imply
+For the Boolean networks compiled from near-linear circuits, recognizing a dense
+rectangle-free set, the existing tree-demand lemma and the standard line-graph
+congestion identity imply
 
 ```
 tw(L(G)) >= n-o(n).
@@ -41,7 +42,8 @@ graph theorem, not a newly verified Lean declaration. It strengthens the
 structural obstruction from linear layouts to tree decompositions. It does not
 change the numerical circuit coefficient without a stronger universal **upper**
 bound for this parameter. Full assumptions and a finite checker are in
-[joins.md](joins.md).
+[joins.md](joins.md). In particular, each input has a unique read site and each
+vertex reads at most one input; bounded graph degree alone is insufficient.
 
 ## Why nonlinear support is not automatically a matroid
 
@@ -95,6 +97,12 @@ The support counts are independently enumerated by the corpus checker.
    Small-graph ratios with constant-size overhead are not asymptotic evidence.
 
 ## What this cannot establish by itself
+
+For the MDS and binary Reed–Muller families, the cited equality is a useful
+stopping condition: changing a trellis into a tree cannot by itself reduce the
+optimal local constraint width of the code. A common decomposition with an
+additional nonlinear suffix is a different problem. State dimensions, local
+constraint dimensions, and edge-boundary counts must remain separate parameters.
 
 A totally regular matrix need not require superlinear arithmetic size. Give
 independent edge weights to a bounded-degree linear-size superconcentrator. Each
