@@ -130,6 +130,54 @@ Run after `lake build --wfail` with `lake env lean scripts/Audit.lean`.
 #guard_msgs in
 #print axioms Frontier.averageCase_sumset
 
+/-- info: 'Frontier.Randomized.average_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Randomized.average_le
+
+/-- info: 'Frontier.Randomized.exists_seed' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Randomized.exists_seed
+
+/-- info: 'Frontier.Randomized.success_le_of_class' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Randomized.success_le_of_class
+
+/-- info: 'Frontier.Randomized.exists_input_success_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Randomized.exists_input_success_le
+
+/-- info: 'Frontier.Randomized.exists_seed_success_ge' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Randomized.exists_seed_success_ge
+
+/-- info: 'Cslib.Circuits.Circuit.eval_fixInputs' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Cslib.Circuits.Circuit.eval_fixInputs
+
+/-- info: 'Cslib.Circuits.Circuit.innerSize_fixInputs' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Cslib.Circuits.Circuit.innerSize_fixInputs
+
+/-- info: 'Frontier.randomized_circuit_bound' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.randomized_circuit_bound
+
+/-- info: 'Frontier.size_lt_of_randomized_correct' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.size_lt_of_randomized_correct
+
+/-- info: 'Frontier.averageCase_randomized_gaussian' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.averageCase_randomized_gaussian
+
+/-- info: 'Frontier.lowerBound_randomized_gaussian' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.lowerBound_randomized_gaussian
+
+/-- info: 'Frontier.averageCase_randomized_sumset_polynomial' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.averageCase_randomized_sumset_polynomial
+
 /-- info: 'Frontier.FlatSumsetBias.affine_pullback' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Frontier.FlatSumsetBias.affine_pullback

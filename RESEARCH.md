@@ -34,6 +34,32 @@ polynomial-time evaluation are cited, not formalized.
 This is a separate instantiation from Li's logarithmic-entropy, constant-error family,
 whose polynomial rectangle threshold supplies the stronger DNNF remainder `O(log n)`.
 
+## Randomization preserves distributional hardness
+
+`Randomized.average_le` proves the transfer for nonnegative measurable payoffs on arbitrary
+independent s-finite input and seed measures. The seedwise upper bound may vary with the
+seed and need hold only almost everywhere. For probability measures, the correctness-relation
+version applies to any class of deterministic maps (`Randomized.success_le_of_class`),
+and gives an input with success at most the bound (`Randomized.exists_input_success_le`).
+`Randomized.exists_seed_success_ge` fixes a seed preserving average success and any
+almost-sure admissibility condition. This is the standard averaging direction of Yao's
+principle, not a minimax equality; see [Blum and Blum, Section 5.4](https://www.cs.cmu.edu/~avrim/451f06/lectures/lects1-10.pdf).
+
+`Circuit.fixInputs` fixes Boolean coin ports without changing the positive-arity gate
+count or fan-in. The basis is extended by free constants. Consequently
+`averageCase_randomized_gaussian` and `averageCase_randomized_sumset_polynomial` retain
+the deterministic bounds for arbitrarily many, possibly biased and mutually correlated
+coins, provided their joint law is independent of the input. The finite theorem
+`size_lt_of_randomized_correct` converts an agreement bound into a size lower bound for
+any larger worst-input success target. `lowerBound_randomized_gaussian` checks the
+asymptotic consequence: with vanishing bias, any fixed success probability above `1/2`
+on every input requires more than `(L-epsilon)n` gates for all sufficiently large `n`.
+
+This uses the bias hypothesis of the average-case theorem. Rectangle-freeness alone does
+not supply this conclusion. There is no additional gate charge per random bit and no
+claim that a fixed seed succeeds simultaneously on all inputs. The external extractor
+construction remains the only cited input to the explicit-family instantiation.
+
 ## Signals, hypergraphs, and codes
 
 `Compiler.signalCut_eq_hypergraph_cut` identifies crossing signal labels with the native

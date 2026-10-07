@@ -529,7 +529,7 @@ counting lemma itself then finds one component that reads almost all inputs
 
 The exact circuit lower bounds, including the nondeterministic extension, their arithmetic
 instantiations, the signal-capacity inequality, the layout theorem, and the uniform
-average-case bound from rectangle or sumset bias are
+average-case bound from rectangle or sumset bias, including its randomized extension, are
 formalized in Lean~4~\cite{Lean4} (toolchain \texttt{v4.35.0-rc3}),
 using Mathlib~\cite{Mathlib} (commit \texttt{9a6fbe0}) and CSLib~\cite{CSLib} (commit
 \texttt{89dc6fb}), in about 15,000 lines including documentation, available at
@@ -557,6 +557,9 @@ The mixed-Hessian frontier lemma and its scalar-polynomial lower-bound transfer 
 \cref{sec:hessian} are also checked, including their instantiation on compiled circuits,
 the all-input-order determinant demand, and the determinant bound of
 \cref{cor:determinant}.
+The independent-randomization transfer and the circuit specialization in
+\cref{sec:randomized} are also checked; the general transfer permits arbitrary measurable
+correctness relations and input and seed probability spaces.
 The repository also contains checked refinements of the boundary capacity that this paper does
 not use; its file \texttt{RESEARCH.md} records them. The explicit branching-program model and rectangle
 partition, the packing and arbitrary-distribution circuit statements
@@ -1779,6 +1782,93 @@ threshold used for the DNNF bound, and gives constant-error average-case hardnes
 for every fixed error~\cite{Li2023}. The vanishing-error corollary instead uses the
 polynomial-error guarantee above. Both circuit agreement statements require a fixed gap
 below $Ln$; no exponentially small remainder is asserted exactly at $s=Ln$.
+
+\subsection{Independent randomization}
+\label{sec:randomized}
+
+The average-case bounds transfer to randomized computation by averaging over fixed
+seeds. This is the standard averaging direction of Yao's principle; see, for example,
+Blum and Blum~\cite[Section~5.4]{BlumBlum2006}. The formal transfer uses Mathlib's
+Tonelli theorem and is independent of the circuit model.
+
+\begin{theorem}[Randomization transfer]
+\label{thm:randomization}
+Let $\mu$ and $\nu$ be probability measures on input and seed spaces $X$ and $R$, sampled
+independently, and let $b:R\to[0,\infty]$ be measurable.
+Let $h:X\times R\to[0,\infty]$ be measurable up to a
+$(\mu\times\nu)$-null set. If
+\[
+  \int_X h(x,r)\,d\mu(x)\le b(r)\qquad\text{for $\nu$-almost every $r$},
+\]
+then
+\[
+  \int_X\!\int_R h(x,r)\,d\nu(r)\,d\mu(x)
+  \le\int_R b(r)\,d\nu(r).
+\]
+The displayed implication also holds for arbitrary $s$-finite measures. For probability
+measures and a constant bound $b$, some input $x$ satisfies
+$\int_R h(x,r)\,d\nu(r)\le b$.
+If the double integral is finite, some seed preserves or improves that average payoff;
+the seed can be chosen to satisfy any prescribed almost-sure condition.
+\leanrefs{\lean{Frontier.Randomized.average_le},
+  \lean{Frontier.Randomized.exists_input_le}, \lean{Frontier.Randomized.exists_seed}}
+\end{theorem}
+
+\begin{proof}
+Tonelli swaps the integrals. Integrating the seedwise inequality proves the bound.
+A measurable function on a probability space takes a value at most its average, and
+a nonnegative function of finite average takes a value at least its average outside
+any prescribed null set. Apply these two facts to the input and seed averages,
+respectively.
+\end{proof}
+
+In particular, let $\mathcal C$ be any class of deterministic maps $X\to Y$, with
+an arbitrary correctness relation on $X\times Y$. If every $g\in\mathcal C$ succeeds
+with $\mu$-probability at most $b$, then any measurable random choice of such maps,
+independent of the input and lying in $\mathcal C$ almost surely, has average success
+at most $b$. Some input has success probability at most $b$. Apply the theorem to the
+correctness indicator. This covers decision, search, and approximation relations;
+neither finite support nor a uniform distribution is required.
+\leanrefs{\lean{Frontier.Randomized.success_le_of_class},
+  \lean{Frontier.Randomized.exists_input_success_le}}
+
+\begin{corollary}[Randomized circuit lower bound]
+\label{cor:randomized}
+Under the hypotheses of \cref{thm:average-case}, for all sufficiently large $n$,
+every circuit $C(x,y)$ of fan-in at most two and size at most $(L-\varepsilon)n$
+satisfies
+\[
+  \mathbb E_{x\sim U_n}\Pr_{y\sim\nu}[C(x,y)=f_n(x)]
+  \le\frac12+b_n+2^{-\gamma n}.
+\]
+Here $y$ has any finite number of Boolean ports and any joint distribution $\nu$
+independent of $x$; its coordinates may be biased and mutually dependent. Some input
+has success probability at most the same bound. Consequently, if $b_n\to0$,
+any fixed success probability above $1/2$ on every input requires more than $(L-\varepsilon)n$ gates
+for all sufficiently large $n$. The Gaussian coefficient is $L=4.562497\ldots$.
+\leanrefs{\lean{Frontier.averageCase_randomized},
+  \lean{Frontier.averageCase_randomized_gaussian},
+  \lean{Frontier.lowerBound_randomized_gaussian}}
+\end{corollary}
+
+\begin{proof}
+For each fixed $y$, adjoin the two free nullary Boolean constants to the gate basis
+and wire the last input ports to the selected constants. This preserves the number
+of positive-arity gates exactly and preserves fan-in, while computing $C(x,y)$ on
+the ordinary inputs. Apply \cref{thm:average-case} to each fixed circuit, then
+\cref{thm:randomization} to the correctness indicator.
+\leanrefs{\lean{Cslib.Circuits.Circuit.innerSize_fixInputs},
+  \lean{Cslib.Circuits.Circuit.eval_fixInputs}, \lean{Frontier.randomized_circuit_bound}}
+\end{proof}
+
+The polynomial-error instantiation retains the bound
+$1/2+(C_0+1)n^{-a}$, as checked by
+\lean{Frontier.averageCase_randomized_sumset_polynomial}. Thus the externally constructed
+family of \cref{cor:explicit-average} also has randomized success at most
+$1/2+n^{-c}$ on some input below the same gate threshold. This consequence uses the
+average-case bias hypothesis, which is stronger than rectangle-freeness alone. It
+does not charge an additional gate for each coin port, and fixing a seed preserves
+average success rather than success simultaneously on all inputs.
 
 % ===========================================================================
 \section{Layout bounds}
@@ -3697,6 +3787,14 @@ Thm.~\ref{thm:average-case} & \lean{Network.sweep_coherent}, \lean{agreement_le_
  & \lean{averageCase_gaussian} \\
 Cor.~\ref{cor:extractor-average} & \lean{FlatSumsetBias.rectangleBias}, \lean{averageCase_sumset} \\
 Cor.~\ref{cor:explicit-average} & \lean{averageCase_sumset_polynomial} \\
+\midrule
+\multicolumn{2}{l}{\emph{Randomization} (\lean{Randomized.lean}, \lean{Randomized/Basic.lean})} \\*
+Thm.~\ref{thm:randomization} & \lean{Randomized.average_le}, \lean{Randomized.exists_seed} \\
+ & \lean{Randomized.exists_input_success_le}, \lean{Randomized.success_le_of_class} \\
+Cor.~\ref{cor:randomized} & \lean{randomized_circuit_bound}, \lean{size_lt_of_randomized_correct} \\
+ & \lean{averageCase_randomized}, \lean{averageCase_randomized_gaussian} \\
+ & \lean{lowerBound_randomized_gaussian} \\
+ & \lean{averageCase_randomized_sumset_polynomial} \\
 \midrule
 \multicolumn{2}{l}{\emph{Layouts} (\lean{Layouts/*.lean}, \lean{Layouts.lean}, \lean{Main.lean})} \\*
 Thm.~\ref{thm:layout} & \lean{layoutBound_gaussian}, \lean{Gaussian.cubicLayoutBound_gaussian} \\

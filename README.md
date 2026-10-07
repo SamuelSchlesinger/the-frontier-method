@@ -2,6 +2,9 @@
 
 A self-contained, machine-checked account of circuit lower bounds from graph layouts.
 
+The [formalization guide](docs/FORMALIZATION.md) maps the computation models to their
+precise hypotheses, explains the proof route, and distinguishes the verification guarantees.
+
 **Theorem.** Assume that graphs of maximum degree `r + 1` have layouts whose frontiers carry at
 most `(A + o(1)) β₁ + o(|V|)` edges, where `β₁` is the cycle rank. Let `S_n ⊆ U^n` be dense,
 `K_n`-rectangle-free sets with `log K_n = o(n)`. Then every circuit with `s` inner gates of
@@ -34,6 +37,15 @@ The layout bound is proved for subcubic graphs with `A = (3/π) arccos((1 + 2√
   from such error bounds (`Frontier.averageCase_sumset_polynomial`); the construction is external.
   The explicit program partition and general distributional
   packing theorem remain paper proofs. The exponential remainder requires a fixed gap below `Ln`.
+* **Randomized circuits**: the same average-case bounds hold for any number of random input
+  ports with any joint distribution independent of the ordinary input
+  (`Frontier.averageCase_randomized_gaussian`, `Frontier.averageCase_randomized_sumset_polynomial`).
+  Some input has success probability at most the same bound; therefore any fixed success
+  probability above `1/2` on every input requires more than `(L - ε)n` gates when the
+  extractor error vanishes (`Frontier.lowerBound_randomized_gaussian`).
+  The general transfer handles arbitrary measurable correctness relations and independent
+  input and seed distributions, including infinite support (`Frontier.Randomized.success_le_of_class`).
+  It uses average-case bias, a stronger hypothesis than rectangle-freeness alone.
 * **Nondeterministic circuits**: the same coefficient holds for verifier circuits, uniformly
   in the number of existential witness inputs (`Frontier.lowerBound_nondeterministic_gaussian`).
   The gate count includes every positive-arity verifier gate; the input count includes only

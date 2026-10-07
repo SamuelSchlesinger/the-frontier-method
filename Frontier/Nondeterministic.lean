@@ -173,8 +173,8 @@ theorem lowerBound_nondeterministic_witnesses {p : ℝ} (hp : 0 < p)
         (1 + 1 / (2 * p) - ε) * n + (readWitnesses c).ncard < c.innerSize := by
   set q := Nat.card U
   have hq : (1 : ℝ) < q := by exact_mod_cast Finite.one_lt_card
-  have hL : 0 < Real.log q := Real.log_pos hq
-  have hL2 : 0 < Real.log 2 := Real.log_pos one_lt_two
+  have hlogq_pos : 0 < Real.log q := Real.log_pos hq
+  have hlog2_pos : 0 < Real.log 2 := Real.log_pos one_lt_two
   obtain ⟨η, hη, H⟩ := eventually_lt_of_linear_demand (mul_pos two_pos hp) hε
   obtain ⟨C, hC⟩ := hlayout.exists_layout_log hp.le hη
   -- The graph has polynomial size, so both logarithmic overheads are `o(n)`.
@@ -185,12 +185,15 @@ theorem lowerBound_nondeterministic_witnesses {p : ℝ} (hp : 0 < p)
   have hk : (fun n => Real.logb q (K n)) =o[atTop] fun n => (n : ℝ) := by
     simpa only [Real.logb, div_eq_mul_inv, one_mul, mul_comm] using
       hK.const_mul_left (1 / Real.log q)
+  have hlog_size : (fun n : ℕ => Real.log (4 * (n : ℝ) ^ D + 4)) =o[atTop]
+      fun n => (n : ℝ) := isLittleO_log_polynomial D (by positivity) (by norm_num)
+  have hconstant : (fun _ : ℕ => 2 * p + η + 4 + C) =o[atTop] fun n => (n : ℝ) :=
+    isLittleO_const_left.mpr (Or.inr
+      (tendsto_norm_atTop_atTop.comp tendsto_natCast_atTop_atTop))
+  -- Density loss, rectangle threshold, logarithmic graph overhead, and a constant.
   have he : e =o[atTop] fun n => (n : ℝ) :=
     (((isLittleO_sub_logb_ncard S hdense).add (hk.const_mul_left _)).add
-      ((isLittleO_log_polynomial D (α := 4) (β := 4) (by positivity) (by norm_num)).const_mul_left
-        (3 / Real.log 2 + 1 / Real.log q))).add
-      (isLittleO_const_left.mpr (Or.inr
-        (tendsto_norm_atTop_atTop.comp tendsto_natCast_atTop_atTop)))
+      (hlog_size.const_mul_left _)).add hconstant
   filter_upwards [H e he, hfree, eventually_card_mul_sq_le_ncard S K hfree hK hdense]
     with n hn hf hb
   intro k σ I Acc c hsize hfan hS
@@ -210,7 +213,7 @@ theorem lowerBound_nondeterministic_witnesses {p : ℝ} (hp : 0 < p)
     Real.log_le_log (by positivity) hVs
   have hlogq : Real.logb q ((Nat.card V : ℝ) + 1) ≤
       Real.log (4 * (n : ℝ) ^ D + 4) / Real.log q := by
-    exact div_le_div_of_nonneg_right hlogV hL.le
+    exact div_le_div_of_nonneg_right hlogV hlogq_pos.le
   have hlog2 : (Nat.log 2 (Nat.card V) : ℝ) ≤
       Real.log (4 * (n : ℝ) ^ D + 4) / Real.log 2 := by
     calc (Nat.log 2 (Nat.card V) : ℝ)
@@ -218,7 +221,7 @@ theorem lowerBound_nondeterministic_witnesses {p : ℝ} (hp : 0 < p)
           (Nat.cast_le.mpr (Nat.log_mono_right (Nat.le_succ _))).trans
             (Real.natLog_le_logb _ _)
       _ = Real.log ((Nat.card V : ℝ) + 1) / Real.log 2 := by simp [Real.logb]
-      _ ≤ _ := div_le_div_of_nonneg_right hlogV hL2.le
+      _ ≤ _ := div_le_div_of_nonneg_right hlogV hlog2_pos.le
   have hsupply := mul_le_mul_of_nonneg_left hrank (show 0 ≤ 2 * p + η by positivity)
   have hbudget := hn ((c.innerSize : ℝ) - (readWitnesses c).ncard) (by
     dsimp only [e, q]

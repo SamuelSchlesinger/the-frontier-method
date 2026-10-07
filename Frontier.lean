@@ -24,6 +24,7 @@ public import Frontier.Ledger.Main
 public import Frontier.Nondeterministic
 public import Frontier.Signals
 public import Frontier.AverageCase.Extractor
+public import Frontier.Randomized
 public import Frontier.AverageCase.Additive
 public import Frontier.Boundary.Code
 public import Frontier.Boundary.Joint
@@ -78,6 +79,9 @@ A circuit lower bound from graph layouts, in independent pieces:
   rectangle bias or sumset bias, with an exponentially small remainder below `L n`.
   Polynomially small sumset bias gives polynomially small agreement advantage.
   `Frontier.AverageCase.Additive`: coherent additive peeling with unique sum representations.
+* `Frontier.Randomized`: arbitrary independent random mixtures preserve distributional
+  success bounds. Fixing circuit coins preserves gate count and fan-in, so the average-case
+  bounds also hold for randomized circuits, with an input witnessing the same success bound.
 * `Frontier.Boundary`: hypergraph signal boundaries, exact linear syndrome states, and
   transition codes; mixed input-output fiber demand and nonlinear MDS lower bounds.
   `Frontier.Boundary.Rank`: graded linear observation ranks and terminal pathwidth demand.
