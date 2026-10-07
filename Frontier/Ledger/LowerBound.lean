@@ -145,6 +145,73 @@ theorem exists_ncard_le [Finite U] [Nonempty U] [Finite M] {Acc : Set U} {K : �
         simpa using Finset.sum_le_card_nsmul (Finset.range (Nat.card (Vtx c special) + 1)) _ _ hstep
     _ = _ := by rw [← hft]; ring
 
+/-- The finite counting inequality, in logarithmic form. This is independent of layouts
+and of the asymptotic error estimates in `lowerBound_ledger`. -/
+private theorem logb_le_of_count {q K V m t S : ℕ} (hq : 1 < q) (hK : 0 < K)
+    (hm : 0 < m) (hS : 0 < S)
+    (hcount : S ≤ (K - 1) ^ 2 * (V + 1) * m ^ 3 * q ^ t) :
+    Real.logb q S ≤ 2 * Real.logb q K + Real.logb q (V + 1) +
+      3 * Real.logb q m + t := by
+  have hq' : (1 : ℝ) < q := by exact_mod_cast hq
+  have hK' : (0 : ℝ) < K := by exact_mod_cast hK
+  have hm' : (0 : ℝ) < m := by exact_mod_cast hm
+  have hS' : (0 : ℝ) < S := by exact_mod_cast hS
+  have hcount' : (S : ℝ) ≤ (K : ℝ) ^ 2 * (V + 1) * (m : ℝ) ^ 3 * (q : ℝ) ^ t := by
+    have h := hcount.trans (by gcongr; exact Nat.sub_le _ _ :
+      (K - 1) ^ 2 * (V + 1) * m ^ 3 * q ^ t ≤ K ^ 2 * (V + 1) * m ^ 3 * q ^ t)
+    exact_mod_cast h
+  calc _ ≤ Real.logb q ((K : ℝ) ^ 2 * (V + 1) * (m : ℝ) ^ 3 * (q : ℝ) ^ t) :=
+        Real.logb_le_logb_of_le hq' hS' hcount'
+    _ = _ := by
+        rw [Real.logb_mul (by positivity) (by positivity), Real.logb_mul (by positivity)
+          (by positivity), Real.logb_mul (by positivity) (by positivity), Real.logb_pow,
+          Real.logb_pow, Real.logb_pow, Real.logb_self_eq_one hq']
+        push_cast
+        ring
+
+/-- A sweep step adds at most the incident edges and one input to its current frontier. -/
+private theorem step_width_le {r : ℕ} (hr : 2 ≤ r)
+    (hfan : (erase special c.program).FanInAtMost r) (π : Layout (Vtx c special))
+    {t : ℕ} (ht : t < Nat.card (Vtx c special)) {B : ℝ}
+    (hfrontier : (((L.fnet 1).frontier π t).ncard : ℝ) ≤ B) :
+    ((((L.fnet 1).frontier π t ∪ (L.fnet 1).frontier π (t + 1)).ncard +
+      ((L.fnet 1).readAt (π.symm ⟨t, ht⟩)).ncard : ℕ) : ℝ) ≤ B + (r + 2) := by
+  have hnext : (L.fnet 1).frontier π (t + 1) ⊆
+      (L.fnet 1).frontier π t ∪ (L.fnet 1).edgesAt (π.symm ⟨t, ht⟩) := by
+    rw [Network.frontier, π.initial_succ ht]
+    exact Multigraph.cut_insert_subset _ _ _
+  have hU : ((L.fnet 1).frontier π t ∪ (L.fnet 1).frontier π (t + 1)).ncard ≤
+      ((L.fnet 1).frontier π t).ncard + (r + 1) :=
+    (ncard_le_ncard (union_subset subset_union_left hnext) (toFinite _)).trans
+      ((ncard_union_le _ _).trans (Nat.add_le_add_left
+        (Compiler.maxDegreeLE _ _ hr hfan _) _))
+  have hR : ((L.fnet 1).readAt (π.symm ⟨t, ht⟩)).ncard ≤ 1 :=
+    Compiler.ncard_readAt_le _ _ _
+  have hstep : ((L.fnet 1).frontier π t ∪ (L.fnet 1).frontier π (t + 1)).ncard +
+      ((L.fnet 1).readAt (π.symm ⟨t, ht⟩)).ncard ≤
+      ((L.fnet 1).frontier π t).ncard + (r + 2) := by lia
+  have hstep' : ((((L.fnet 1).frontier π t ∪ (L.fnet 1).frontier π (t + 1)).ncard +
+      ((L.fnet 1).readAt (π.symm ⟨t, ht⟩)).ncard : ℕ) : ℝ) ≤
+      ((L.fnet 1).frontier π t).ncard + (r + 2) := by exact_mod_cast hstep
+  linarith
+
+omit [CommMonoid M] in
+/-- The erased network has linear size in the ordinary gates and original inputs. -/
+private theorem card_vtx_le {r : ℕ} (hr : 2 ≤ r)
+    (hfan : (erase special c.program).FanInAtMost r) :
+    Nat.card (Vtx c special) ≤ 7 * ((r - 1) * (erase special c.program).innerGates.card) +
+      3 * n + 3 := by
+  have h := Compiler.card_vertex_le (p := erase special c.program)
+    (out := Ledger.outs c special) hfan
+  have hO : Nat.card (Option {w : Wire n c.size // Ledger.Live c special w}) ≤
+      n + (erase special c.program).innerGates.card + 1 := by
+    rw [Finite.card_option]
+    have := Ledger.card_live_le (c := c) (special := special)
+    lia
+  have h7 : 2 * r + 3 ≤ 7 * (r - 1) := by lia
+  have := Nat.mul_le_mul_right (erase special c.program).innerGates.card h7
+  exact le_trans h (by nlinarith)
+
 end Ledger
 
 variable {U : Type u} [Finite U] [Nontrivial U]
@@ -223,24 +290,8 @@ theorem lowerBound_ledger {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)
   set nW := ((L.fnet 1).readIn (W t ht)).ncard
   set s : ℝ := (((r - 1) * se : ℕ) : ℝ)
   have hs : s = (r - 1) * (erase special c.program).innerGates.card := by
-    simp only [s]; rw [Nat.cast_mul, Nat.cast_sub (by omega), Nat.cast_one]
-  -- The width of the step is at most the frontier and the edges of the vertex processed.
-  have ha : (a : ℝ) ≤ B + (r + 2) := by
-    have hnext : (L.fnet 1).frontier π (t + 1) ⊆
-        (L.fnet 1).frontier π t ∪ (L.fnet 1).edgesAt (π.symm ⟨t, ht⟩) := by
-      rw [Network.frontier, π.initial_succ ht]
-      exact Multigraph.cut_insert_subset _ _ _
-    have hU : ((L.fnet 1).frontier π t ∪ (L.fnet 1).frontier π (t + 1)).ncard ≤
-        ((L.fnet 1).frontier π t).ncard + (r + 1) :=
-      (ncard_le_ncard (union_subset subset_union_left hnext) (toFinite _)).trans
-        ((ncard_union_le _ _).trans (Nat.add_le_add_left
-          (Compiler.maxDegreeLE _ _ hr hfan' _) _))
-    have hR : ((L.fnet 1).readAt (π.symm ⟨t, ht⟩)).ncard ≤ 1 :=
-      Compiler.ncard_readAt_le _ _ _
-    have : a ≤ ((L.fnet 1).frontier π t).ncard + (r + 2) := by simp only [a]; omega
-    have hF : (((L.fnet 1).frontier π t).ncard : ℝ) ≤ B := hb₀ t ht
-    have : (a : ℝ) ≤ ((L.fnet 1).frontier π t).ncard + (r + 2) := by exact_mod_cast this
-    linarith
+    simp only [s]; rw [Nat.cast_mul, Nat.cast_sub (by lia), Nat.cast_one]
+  have ha : (a : ℝ) ≤ B + (r + 2) := L.step_width_le hr hfan' π ht (hb₀ t ht)
   -- The cycle rank of the component and the inputs it reads.
   have hρ : ((L.fnet 1).cycleRankOn (W t ht) : ℝ) + nW ≤ s + 1 := by
     have h := Compiler.cycleRankOn_add_ncard_readIn_le _ _ hfan' (hWc t ht) (hWn t ht)
@@ -248,44 +299,14 @@ theorem lowerBound_ledger {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)
     exact_mod_cast h
   -- The size of the graph.
   have hV : (V : ℝ) ≤ κ * (n + s + 1) := by
-    have h := Compiler.card_vertex_le (p := erase special c.program) (out := Ledger.outs c special)
-      hfan'
-    have hO : Nat.card (Option {w : Wire n c.size // Ledger.Live c special w}) ≤ n + se + 1 := by
-      rw [Finite.card_option]
-      have := Ledger.card_live_le (c := c) (special := special)
-      omega
-    have : V ≤ 7 * ((r - 1) * se) + 3 * n + 3 := by
-      have h7 : 2 * r + 3 ≤ 7 * (r - 1) := by omega
-      have := Nat.mul_le_mul_right se h7
-      simp only [V]
-      nlinarith
-    have hV7 : (V : ℝ) ≤ 7 * s + 3 * n + 3 := by simp only [s]; exact_mod_cast this
+    have h := Ledger.card_vtx_le hr hfan'
+    have hV7 : (V : ℝ) ≤ 7 * s + 3 * n + 3 := by simp only [s]; exact_mod_cast h
     have hns : 0 ≤ (n : ℝ) + s + 1 := by positivity
     nlinarith
   -- Take logarithms in the counting bound.
   have hMpos : 0 < Nat.card M := Nat.card_pos
-  have hcount' : ({x | c.program.trace I x (c.outputs 0) ∈ Acc}.ncard : ℝ) ≤
-      (K n : ℝ) ^ 2 * (V + 1) * (Nat.card M : ℝ) ^ 3 * (q : ℝ) ^ (min a nW) := by
-    have : (K n - 1) ^ 2 ≤ K n ^ 2 := Nat.pow_le_pow_left (Nat.sub_le _ _) 2
-    have h := hcount.trans (by gcongr : (K n - 1) ^ 2 * (V + 1) * Nat.card M ^ 3 * q ^ min a nW ≤
-      K n ^ 2 * (V + 1) * Nat.card M ^ 3 * q ^ min a nW)
-    exact_mod_cast h
-  have hSpos : (0 : ℝ) < {x | c.program.trace I x (c.outputs 0) ∈ Acc}.ncard := by
-    have : 0 < {x | c.program.trace I x (c.outputs 0) ∈ Acc}.ncard := lt_of_lt_of_le hK1 hKS
-    exact_mod_cast this
-  have hlogS : Real.logb q {x | c.program.trace I x (c.outputs 0) ∈ Acc}.ncard ≤
-      2 * Real.logb q (K n) + Real.logb q (V + 1) + 3 * Real.logb q (Nat.card M) + min a nW := by
-    have hK0 : (0 : ℝ) < K n := by exact_mod_cast hK1
-    have hV0 : (0 : ℝ) < V + 1 := by positivity
-    have hM0 : (0 : ℝ) < Nat.card M := by exact_mod_cast hMpos
-    calc _ ≤ Real.logb q ((K n : ℝ) ^ 2 * (V + 1) * (Nat.card M : ℝ) ^ 3 * (q : ℝ) ^ (min a nW)) :=
-          Real.logb_le_logb_of_le hq hSpos hcount'
-      _ = _ := by
-          rw [Real.logb_mul (by positivity) (by positivity), Real.logb_mul (by positivity)
-            (by positivity), Real.logb_mul (by positivity) (by positivity), Real.logb_pow,
-            Real.logb_pow, Real.logb_pow, Real.logb_self_eq_one hq]
-          push_cast
-          ring
+  have hlogS := Ledger.logb_le_of_count Finite.one_lt_card hK1 hMpos
+    (lt_of_lt_of_le hK1 hKS) hcount
   rw [← hSeq] at hlogS
   -- Bound the logarithms of the graph and of the ledger.
   have hlog0 : 0 ≤ Real.log (V + 1) := Real.log_nonneg (by

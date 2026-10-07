@@ -6,6 +6,10 @@ different from the standard three below, including a dependency on `sorryAx`.
 Run after `lake build --wfail` with `lake env lean scripts/Audit.lean`.
 -/
 
+/-- info: 'Frontier.RectangleBias.rectangleFree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.RectangleBias.rectangleFree
+
 /-- info: 'Frontier.layoutBound_gaussian' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Frontier.layoutBound_gaussian

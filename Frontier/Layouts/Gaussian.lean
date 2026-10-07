@@ -512,31 +512,35 @@ noncomputable def cubicBound (ρ₀ T ε : ℝ) (M : ℕ) : ℝ :=
   max (9 / (2 * T ^ 2) + 3 * ε)
     (straddleBound ρ₀ + 9 / 2 * (2 * T / M) / Real.sqrt (2 * Real.pi) + 4 * ε)
 
+/-- The four concentration estimates needed by the deterministic median-layout step. -/
+private structure SampleConcentration (q : ℝ) (R : ℕ) (T ε : ℝ) (M : ℕ)
+    (ω : W → ℝ) : Prop where
+  straddle (i : ℕ) (hi : i < M) :
+    ω ∉ deviation univ (straddleEvent H q R (-T + i * (2 * T / M))) (ε * Fintype.card W)
+  window (i : ℕ) (hi : i < M) :
+    ω ∉ deviation H.edgeFinset
+      (edgeScoreEvent H q R (fun x => -T + i * (2 * T / M) ≤ x ∧
+        x < -T + i * (2 * T / M) + 2 * T / M)) (ε * Fintype.card W)
+  low : ω ∉ deviation H.edgeFinset (edgeScoreEvent H q R (· < -T)) (ε * Fintype.card W)
+  high : ω ∉ deviation H.edgeFinset (edgeScoreEvent H q R (T ≤ ·)) (ε * Fintype.card W)
+
 omit [DecidableEq W] in
-/-- **A good sample.** For a large cubic graph some Gaussian sample yields a median layout all
-of whose prefixes are crossed by at most `h · cubicBound ρ₀ T ε M` edges. -/
-theorem exists_good_sample (regular : H.IsRegularOfDegree 3) {q : ℝ} (hq0 : 0 ≤ q)
-    (R : ℕ) {ρ₀ : ℝ} (hρ₀ : 17 / 32 ≤ ρ₀)
-    (hρ : ρ₀ ≤ 2 * q / (1 + q ^ 2) - 3 * (2 * q ^ 2) ^ R) {T ε : ℝ} (hT : 0 < T)
-    (hε : 0 < ε) {M : ℕ} (hM : 0 < M)
+/-- Local dependence bounds the union of all bad events. No correlation or tail estimate
+is needed for this probabilistic step. -/
+private theorem exists_concentrated_sample (regular : H.IsRegularOfDegree 3)
+    (q : ℝ) (R : ℕ) (T : ℝ) {ε : ℝ} (hε : 0 < ε) (M : ℕ)
     (large : (3 * M + 3) * (vertexOverlap 3 (R + 1) : ℝ) / ε ^ 2 < Fintype.card W) :
-    ∃ key : W → ℕ, Function.Injective key ∧ ∀ t : ℕ,
-      (#(H.cutFinset {w | key w < t}) : ℝ) ≤ Fintype.card W * cubicBound ρ₀ T ε M := by
+    ∃ ω, SampleConcentration (H := H) q R T ε M ω := by
   classical
   have degree : ∀ v, H.degree v ≤ 3 := fun v => (regular.degree_eq v).le
-  set h : ℝ := (Fintype.card W : ℝ) with hh
+  set h : ℝ := (Fintype.card W : ℝ)
   set P := gaussPi W
   set Dn : ℝ := (vertexOverlap 3 (R + 1) : ℝ)
-  have hMpos : (0 : ℝ) < M := by exact_mod_cast hM
-  set δ : ℝ := 2 * T / M with hδ
-  have hδpos : 0 < δ := by positivity
+  set δ : ℝ := 2 * T / M
   have hhpos : 0 < h := lt_of_le_of_lt (by positivity) large
   set c : ℝ := ε * h with hc
-  have hcpos : 0 < c := by positivity
+  have hcpos : 0 < c := mul_pos hε hhpos
   have hE := card_edgeFinset_of_regular regular
-  have hρ₀' : -1 < ρ₀ := by linarith
-  have unit := fun {e : Sym2 W} (he : e ∈ H.edgeFinset) =>
-    sum_edgeVector_sq_of_mem degree hq0 hρ₀' hρ he
   -- The thresholds and the four families of events.
   let thr : ℕ → ℝ := fun i => -T + i * δ
   let straddle : ℕ → W → Set (W → ℝ) := fun i => straddleEvent H q R (thr i)
@@ -564,7 +568,7 @@ theorem exists_good_sample (regular : H.IsRegularOfDegree 3) {q : ℝ} (hq0 : 0 
       (fun e _ => hA e) (fun e _ => hdep e)
       (fun e he => edge_overlap_le H (by norm_num) degree R he) hcpos).trans ?_
     have : vertexOverlap 3 R ≤ vertexOverlap 3 (R + 1) := by
-      unfold vertexOverlap; exact Nat.pow_le_pow_right (by norm_num) (by omega)
+      unfold vertexOverlap; exact Nat.pow_le_pow_right (by norm_num) (by lia)
     gcongr
     simp only [Dn]
     exact_mod_cast this
@@ -602,6 +606,39 @@ theorem exists_good_sample (regular : H.IsRegularOfDegree 3) {q : ℝ} (hq0 : 0 
     exact lt_irrefl _ hbad
   simp only [bad, Set.mem_union, Set.mem_iUnion, not_or, not_exists] at hω
   obtain ⟨⟨hmid, hlow⟩, hhigh⟩ := hω
+  exact ⟨ω, fun i hi => (hmid i (mem_range.mpr hi)).1,
+    fun i hi => (hmid i (mem_range.mpr hi)).2, hlow, hhigh⟩
+
+omit [DecidableEq W] in
+/-- **A good sample.** For a large cubic graph some Gaussian sample yields a median layout all
+of whose prefixes are crossed by at most `h · cubicBound ρ₀ T ε M` edges. -/
+theorem exists_good_sample (regular : H.IsRegularOfDegree 3) {q : ℝ} (hq0 : 0 ≤ q)
+    (R : ℕ) {ρ₀ : ℝ} (hρ₀ : 17 / 32 ≤ ρ₀)
+    (hρ : ρ₀ ≤ 2 * q / (1 + q ^ 2) - 3 * (2 * q ^ 2) ^ R) {T ε : ℝ} (hT : 0 < T)
+    (hε : 0 < ε) {M : ℕ} (hM : 0 < M)
+    (large : (3 * M + 3) * (vertexOverlap 3 (R + 1) : ℝ) / ε ^ 2 < Fintype.card W) :
+    ∃ key : W → ℕ, Function.Injective key ∧ ∀ t : ℕ,
+      (#(H.cutFinset {w | key w < t}) : ℝ) ≤ Fintype.card W * cubicBound ρ₀ T ε M := by
+  classical
+  have degree : ∀ v, H.degree v ≤ 3 := fun v => (regular.degree_eq v).le
+  set h : ℝ := (Fintype.card W : ℝ)
+  set P := gaussPi W
+  have hMpos : (0 : ℝ) < M := by exact_mod_cast hM
+  set δ : ℝ := 2 * T / M with hδ
+  have hδpos : 0 < δ := by positivity
+  have hhpos : 0 < h := lt_of_le_of_lt (by positivity) large
+  set c : ℝ := ε * h with hc
+  have hE := card_edgeFinset_of_regular regular
+  have hρ₀' : -1 < ρ₀ := by linarith
+  have unit := fun {e : Sym2 W} (he : e ∈ H.edgeFinset) =>
+    sum_edgeVector_sq_of_mem degree hq0 hρ₀' hρ he
+  obtain ⟨ω, good⟩ := exists_concentrated_sample regular q R T hε M large
+  let thr : ℕ → ℝ := fun i => -T + i * δ
+  let straddle : ℕ → W → Set (W → ℝ) := fun i => straddleEvent H q R (thr i)
+  let window : ℕ → Sym2 W → Set (W → ℝ) := fun i =>
+    edgeScoreEvent H q R (fun x => thr i ≤ x ∧ x < thr i + δ)
+  let low : Sym2 W → Set (W → ℝ) := edgeScoreEvent H q R (fun x => x < -T)
+  let high : Sym2 W → Set (W → ℝ) := edgeScoreEvent H q R (fun x => T ≤ x)
   set X := edgeScore H q R ω
   -- The means of the counts.
   have edgeMean : ∀ {p : ℝ → Prop} {b : ℝ}, (∀ e ∈ H.edgeFinset,
@@ -635,16 +672,15 @@ theorem exists_good_sample (regular : H.IsRegularOfDegree 3) {q : ℝ} (hq0 : 0 
     mul_le_mul_of_nonneg_left (le_max_right _ _) hhpos.le
   obtain ⟨key, hinj, hcut⟩ := exists_key_of_edgeScore regular X hδpos M
     (a := -T) (B := h * cubicBound ρ₀ T ε M)
-    ((tail (· < -T) (fun e he => (tailMean e he).1) hlow).trans hB1)
+    ((tail (· < -T) (fun e he => (tailMean e he).1) good.low).trans hB1)
     (by
       have hT' : -T + M * δ = T := by rw [hδ]; field_simp; ring
       rw [hT']
-      exact (tail (T ≤ ·) (fun e he => (tailMean e he).2) hhigh).trans hB1)
+      exact (tail (T ≤ ·) (fun e he => (tailMean e he).2) good.high).trans hB1)
     (by
       intro i hi
-      have hiM : i ∈ range M := mem_range.mpr hi
-      have hS := lt_of_notMem_deviation (hmid i hiM).1
-      have hW := lt_of_notMem_deviation (hmid i hiM).2
+      have hS := lt_of_notMem_deviation (good.straddle i hi)
+      have hW := lt_of_notMem_deviation (good.window i hi)
       have hScount := card_filter_le_sum_indicator univ (straddle i) ω
         (fun v => EdgeStraddles H X (-T + i * δ) v) fun v _ hv => hv
       have hWcount := card_filter_le_sum_indicator H.edgeFinset (window i) ω

@@ -12,8 +12,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: leanprover/lean-action@v1
+        with:
+          build-args: "--wfail"
       - name: Audit theorem axioms
         run: lake env lean scripts/Audit.lean
+      - name: Check the worked circuit example
+        run: lake env lean -DwarningAsError=true examples/Compiler.lean
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

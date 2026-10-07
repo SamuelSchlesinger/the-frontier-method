@@ -42,6 +42,36 @@ noncomputable def agreement [Finite α] (f g : α → Bool) : ℝ :=
 def RectangleBias [Finite ι] [Finite U] (f : (ι → U) → Bool) (K : ℕ) (β : ℝ) : Prop :=
   RectangleBudget (fun x => boolSign (f x)) (fun _ => β) K K
 
+/-- Bias strictly below one rules out a monochromatic rectangle with two large sides.
+This supplies the rectangle-free hypothesis for exact lower bounds; fiber density is a
+separate assumption. We assume `0 < K` so this also holds when the input domain is empty. -/
+theorem RectangleBias.rectangleFree [Finite ι] [Finite U]
+    {f : (ι → U) → Bool} {K : ℕ} {β : ℝ}
+    (hf : RectangleBias f K β) (hK : 0 < K) (hβ : β < 1) (b : Bool) :
+    RectangleFree {x | f x = b} K := by
+  classical
+  intro X A B hsub
+  by_contra! hthick
+  obtain ⟨a, ha⟩ := (ncard_pos (toFinite _)).mp (lt_of_lt_of_le hK hthick.1)
+  obtain ⟨c, hc⟩ := (ncard_pos (toFinite _)).mp (lt_of_lt_of_le hK hthick.2)
+  have hR : (rectangle X A B).Nonempty := by
+    refine ⟨fun i => if hi : i ∈ X then a ⟨i, hi⟩ else c ⟨i, hi⟩, ?_⟩
+    constructor
+    · simpa [domRestrict] using ha
+    · simpa [domRestrict] using hc
+  have hs : sumOn (fun x => boolSign (f x)) (rectangle X A B) =
+      boolSign b * (rectangle X A B).ncard := by
+    calc
+      _ = sumOn (fun _ => boolSign b) (rectangle X A B) :=
+        sumOn_congr fun x hx => congrArg boolSign (hsub hx)
+      _ = _ := sumOn_const _ _
+  have H := hf X A B hthick.1 hthick.2
+  rw [hs, sumOn_const, abs_mul, abs_boolSign,
+    abs_of_nonneg (Nat.cast_nonneg _), one_mul] at H
+  have hpos : (0 : ℝ) < (rectangle X A B).ncard := by
+    exact_mod_cast (ncard_pos (toFinite _)).mpr hR
+  nlinarith
+
 /-- Signed correlation is twice agreement minus one, before normalization. -/
 theorem sign_sum_eq [Finite α] (f g : α → Bool) :
     sumOn (fun x => boolSign (f x) * boolSign (g x)) univ =

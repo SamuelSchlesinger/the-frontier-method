@@ -6,8 +6,10 @@ the signature and its interpretation describe the gate basis.
 
 ## Which theorem applies?
 
-Write `L = 1 + pi / (3 arccos((1 + 2 sqrt(2))/4))`, approximately `4.56249768`.
+Write `A = (3/pi) arccos((1 + 2 sqrt(2))/4)` and `L = 1 + 1/A`, approximately `4.56249768`.
 Each asymptotic statement fixes a positive gap `epsilon` before choosing the input threshold.
+The exact set bounds require a fixed finite alphabet with at least two symbols. Here
+"dense" means `n log |U| - log |S_n| = o(n)`.
 
 | Computation model | Assumption on the family | Checked conclusion | Entry point |
 | --- | --- | --- | --- |
@@ -17,6 +19,27 @@ Each asymptotic statement fixes a positive gap `epsilon` before choosing the inp
 | Approximate deterministic circuits | Bias at most `2 b(n)` on every sufficiently large coordinate rectangle | Agreement at most `1/2 + b(n) + 2^(-gamma n)` below the size threshold | [`averageCase_gaussian`](../Frontier/AverageCase/Main.lean) |
 | Randomized circuits | The same bias assumption; seed law independent of the input | The same average success bound and an input with success at most that bound | [`averageCase_randomized_gaussian`](../Frontier/Randomized.lean) |
 | Bounded-error randomized circuits | The same assumptions and `b(n) -> 0` | Any fixed success probability above `1/2` on every input requires `s > (L-epsilon)n` | [`lowerBound_randomized_gaussian`](../Frontier/Randomized.lean) |
+| Linear maps over finite fields | A totally regular `N × N` matrix; any binary gate basis | `s > (L-epsilon)N`, uniformly over finite fields | [`linear_finite_gaussian`](../Frontier/Linear/Main.lean) |
+| Linear maps over infinite fields | A totally regular matrix; binary gates interpreted by polynomials | `s > (L-epsilon)N` | [`linear_polynomial_gaussian`](../Frontier/Linear/Main.lean) |
+| Arithmetic circuits for Cauchy maps | The specified Cauchy matrix over a characteristic-zero field | More than `(L-epsilon)N` additions and multiplications | [`arith_cauchy_gaussian`](../Frontier/Linear/Main.lean) |
+| Scalar polynomial circuits | Every input occurs; mixed-Hessian demand at least `rho n`, with `rho >= 0`; binary polynomial gates over any field | `s > (1 + rho/A - epsilon)n` | [`Arithmetic.lowerBound_hessian_gaussian`](../Frontier/Arithmetic/LowerBound.lean) |
+| Determinant circuits | Formal computation of the `n × n` determinant; binary polynomial gates over any field | `s > (1 + 1/(4A) - epsilon)n²`, with leading coefficient about `1.89062442` | [`Arithmetic.lowerBound_determinant_gaussian`](../Frontier/Arithmetic/Determinant.lean) |
+| Nonlinear MDS maps | Any `N` of the `2N` input/output coordinates recover the input; finite nontrivial alphabet; any binary basis | `s > (L-epsilon)N` | [`mds_gaussian`](../Frontier/Boundary/MDS.lean) |
+| Circuits with aggregate gates | Dense rectangle-free sets; ordinary fan-in two; `k` special gates aggregate in a finite commutative monoid `T`, with `k log \|T\| = o(n)` | More than `(L-epsilon)n` ordinary positive-arity gates | [`lowerBound_aggregate_gaussian`](../Frontier/Ledger/Main.lean) |
+| Smooth decomposable union/product DAGs | Rectangle-free accepted set `S`; `1 < K <= \|S\|`; binary products, possibly overlapping union branches | `\|S\| <= (K-1)² E + (K-1)³ P`, where `E` counts union edges and `P` product nodes | [`Decomposable.ncard_le`](../Frontier/Decomposable.lean) |
+
+Linear-map computation is equality of functions. The scalar polynomial and determinant
+theorems instead concern the formal polynomial `wirePolynomial`; over a finite field,
+agreement on all field-valued inputs does not imply equality of polynomials. They allow
+every field characteristic, including two. The Cauchy arithmetic instance above needs
+characteristic zero; [`cauchyZMod_gaussian`](../Frontier/Linear/Main.lean) supplies a separate
+prime-field instance for primes `q >= 2N`.
+
+The general [`lowerBound_ledger`](../Frontier/Ledger/LowerBound.lean) allows any checked
+ledger in a finite commutative monoid `M` with `log |M| = o(n)`. It counts the positive-arity
+gates of the erased program; special gates are charged through the ledger instead.
+The decomposable bound is finite counting, not an asymptotic circuit coefficient, and does
+not require disjoint union branches.
 
 The randomized results allow arbitrary joint laws on any finite number of coin ports.
 The bits need not be unbiased or mutually independent. The witness-sensitive result counts
@@ -28,6 +51,24 @@ requires its stated family hypothesis. In particular, rectangle-freeness supplie
 hardness, whereas the randomized bounded-error argument uses the stronger bias hypothesis.
 The cited explicit extractor constructions and their polynomial-time evaluation remain
 external; the implications from their combinatorial guarantees are checked in Lean.
+For exact bounds, [`FlatSumsetBias.rectangleBias`](../Frontier/AverageCase/Extractor.lean)
+followed by [`RectangleBias.rectangleFree`](../Frontier/AverageCase/Bias.lean) gives
+rectangle-free Boolean fibers when `0 < K` and the bias is below one. Fiber density must
+still be supplied separately.
+
+## Work through a circuit
+
+[`examples/Compiler.lean`](../examples/Compiler.lean) formalizes the paper's three-gate
+circuit `a = x₁ xor x₂`, `b = a xor x₃`, `c = a or b`. It constructs the circuit, identifies
+its accepted inputs, counts the compiled graph, and checks a frontier before any inputs
+are read. Run it after the library build:
+
+```sh
+lake env lean -DwarningAsError=true examples/Compiler.lean
+```
+
+CI checks this file as a client of the library. Its small finite computations document the
+compiler's conventions; the general compiler exactness theorem supplies the semantic step.
 
 ## Follow the exact lower-bound proof
 
@@ -46,6 +87,14 @@ external; the implications from their combinatorial guarantees are checked in Le
    [`Demand.lean`](../Frontier/Demand.lean) isolates the final real inequality, and
    [`LowerBound.lean`](../Frontier/LowerBound.lean) combines the two sides.
    [`Main.lean`](../Frontier/Main.lean) substitutes the proved Gaussian coefficient.
+
+In [`Layouts/Gaussian.lean`](../Frontier/Layouts/Gaussian.lean), the private
+`SampleConcentration` interface records the grid, window, and tail estimates.
+`exists_concentrated_sample` proves their simultaneous existence; `exists_good_sample`
+then converts them to a median layout. In
+[`Ledger/LowerBound.lean`](../Frontier/Ledger/LowerBound.lean), the private
+`logb_le_of_count`, `step_width_le`, and `card_vtx_le` lemmas isolate the finite estimates
+used by the final asymptotic comparison.
 
 The graph coefficient `A` bounds width in terms of cycle rank. The cubic coefficient `p`
 bounds width in terms of the number of cubic vertices. Compression gives `A = 2 p`.

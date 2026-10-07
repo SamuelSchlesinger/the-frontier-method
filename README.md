@@ -7,11 +7,13 @@ precise hypotheses, explains the proof route, and distinguishes the verification
 The [Comparator harness](verification/comparator/README.md) checks public theorem statements
 against a pinned reference and replays their proof dependencies through Lean's kernel.
 
-**Theorem.** Assume that graphs of maximum degree `r + 1` have layouts whose frontiers carry at
-most `(A + o(1)) β₁ + o(|V|)` edges, where `β₁` is the cycle rank. Let `S_n ⊆ U^n` be dense,
-`K_n`-rectangle-free sets with `log K_n = o(n)`. Then every circuit with `s` inner gates of
-fan-in at most `r` (gates of positive arity; constants are free), over *any* basis on the finite
-alphabet `U`, deciding `S_n` satisfies
+**Theorem.** Fix `r ≥ 2` and `A > 0`. Assume that graphs of maximum degree `r + 1` have layouts
+whose frontiers carry at most `(A + o(1)) β₁ + o(|V|)` edges, where `β₁` is the cycle rank.
+Let `U` be a finite alphabet with `|U| ≥ 2`, and let `S_n ⊆ U^n` be `K_n`-rectangle-free sets
+with `log K_n = o(n)` and density defect `n log |U| - log |S_n| = o(n)`.
+Then, for every fixed `ε > 0`, every circuit with `s` inner gates of
+fan-in at most `r` (gates of positive arity; constants are free), over *any* basis on `U`,
+deciding `S_n` satisfies
 
 ```
 (r - 1) s > (1 + 1/A - ε) n        for all large n.
@@ -243,6 +245,7 @@ To bump, choose a CSLib commit first and copy its Mathlib `rev` and toolchain.
 lake exe cache get
 lake build --wfail
 lake env lean scripts/Audit.lean
+lake env lean -DwarningAsError=true examples/Compiler.lean
 python3 scripts/check_algorithms.py
 python3 scripts/check_communication.py
 python3 research/communication/restrictions.py
