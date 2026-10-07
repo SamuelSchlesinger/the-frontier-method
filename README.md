@@ -4,6 +4,8 @@ A self-contained, machine-checked account of circuit lower bounds from graph lay
 
 The [formalization guide](docs/FORMALIZATION.md) maps the computation models to their
 precise hypotheses, explains the proof route, and distinguishes the verification guarantees.
+The [Comparator harness](verification/comparator/README.md) checks public theorem statements
+against a pinned reference and replays their proof dependencies through Lean's kernel.
 
 **Theorem.** Assume that graphs of maximum degree `r + 1` have layouts whose frontiers carry at
 most `(A + o(1)) β₁ + o(|V|)` edges, where `β₁` is the cycle rank. Let `S_n ⊆ U^n` be dense,
@@ -252,6 +254,17 @@ python3 research/communication/rank_profiles.py
 The audit checks the exact axiom lists of the principal results and fails if any list changes.
 It also runs in CI. The paper's theorem-to-declaration index identifies the checked statements;
 the audit does not verify the external extractor construction or the algorithmic claims.
+For statement comparison and kernel replay, run the separate Docker-based gate:
+
+```
+python3 scripts/comparator.py self-test
+python3 scripts/comparator.py check
+```
+
+It compares every public library theorem against a pinned source reference and checks all
+theorem proofs, including unused private lemmas. See the [harness guide](verification/comparator/README.md)
+for prerequisites, reports, isolation, and the deliberate reference-update procedure.
+
 The Python script independently compares raw-edge, signal-state, and ledger counting with
 exhaustive circuit evaluation, checks exact conditional moments against full enumeration,
 and verifies rectangle peeling and threshold charges in an unambiguous program with guess

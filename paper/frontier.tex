@@ -23,6 +23,7 @@
 \newcommand{\leanrefs}[1]{{\unskip\nobreak\hfil\penalty50\hskip1em\null\nobreak\hfil
   {\normalfont\small #1}\parfillskip=0pt\finalhyphendemerits=0\par}}
 \newcommand{\leanref}[1]{\leanrefs{\lean{#1}}}
+\newcommand{\leanrefblock}[1]{{\par\normalfont\small\raggedleft#1\par}}
 
 % Each environment gets its own counter, aliased to the shared one, so that cleveref
 % names references by their environment.
@@ -41,6 +42,7 @@
 \sharedtheorem{remark}{Remark}
 \sharedtheorem{example}{Example}
 \crefname{hypothesis}{Hypothesis}{Hypotheses}
+\crefname{corollary}{Corollary}{Corollaries}
 
 \newcommand{\N}{\mathbb{N}}
 \newcommand{\R}{\mathbb{R}}
@@ -532,7 +534,7 @@ instantiations, the signal-capacity inequality, the layout theorem, and the unif
 average-case bound from rectangle or sumset bias, including its randomized extension, are
 formalized in Lean~4~\cite{Lean4} (toolchain \texttt{v4.35.0-rc3}),
 using Mathlib~\cite{Mathlib} (commit \texttt{9a6fbe0}) and CSLib~\cite{CSLib} (commit
-\texttt{89dc6fb}), in about 15,000 lines including documentation, available at
+\texttt{89dc6fb}), in about 16,400 lines including documentation, available at
 \begin{center}
 \url{https://github.com/SamuelSchlesinger/the-frontier-method}.
 \end{center}
@@ -544,8 +546,8 @@ The circuit model is CSLib's: signatures, interpretations, straight-line program
 Formalized results below are tagged with their Lean declarations. These declarations
 depend only on Lean's standard axioms (\texttt{propext},
 \texttt{Classical.choice}, \texttt{Quot.sound}); there is no \texttt{sorry}. The formal
-statements quantify over every signature, interpretation, acceptance set and circuit, and their
-hypotheses match the corresponding general statements here. The extractor constructions and their
+statements make their circuit basis, alphabet, and family hypotheses explicit.
+The extractor constructions and their
 polynomial-time evaluation behind \cref{cor:explicit,cor:explicit-average} are cited, not
 formalized: Lean proves the bounds for every family satisfying the respective disperser or
 flat-source bias hypothesis. The weighted inequality for coherent sweeps
@@ -573,12 +575,22 @@ verification commands are
 lake exe cache get
 lake build --wfail
 lake env lean scripts/Audit.lean
+python3 scripts/comparator.py self-test
+python3 scripts/comparator.py check
 python3 scripts/check_algorithms.py
 python3 scripts/check_communication.py
 ./scripts/build-paper.sh
 \end{verbatim}
 The audit checks the exact axiom lists of the principal results; a changed list fails the
-check. The README lists further finite checks that run in continuous integration.
+check. The Comparator harness~\cite{LeanComparator} additionally compares every public theorem
+statement, and the definitions it uses, against an immutable reference commit. It checks the
+axiom dependencies of all library theorem proofs, including private lemmas, and replays
+their exported terms through Lean's kernel. Candidate compilation is isolated from the
+reference sources. Its adversarial tests must reject weakened statements, altered definitions,
+forbidden axioms, and invalid proof terms. The checked-in policy identifies the reference and
+tool revisions; the generated report records coverage and source hashes. This verifies the
+formal propositions relative to the reference and permitted axioms; reviewing their mathematical
+meaning remains necessary. The README lists further finite checks that run in continuous integration.
 The Python script checks the reference edge, signal, and ledger counting
 procedures against exhaustive evaluation on small circuits, checks local conditional moments
 against full enumeration, and checks rectangle peeling and threshold charges in an unambiguous
@@ -1810,8 +1822,9 @@ measures and a constant bound $b$, some input $x$ satisfies
 $\int_R h(x,r)\,d\nu(r)\le b$.
 If the double integral is finite, some seed preserves or improves that average payoff;
 the seed can be chosen to satisfy any prescribed almost-sure condition.
-\leanrefs{\lean{Frontier.Randomized.average_le},
-  \lean{Frontier.Randomized.exists_input_le}, \lean{Frontier.Randomized.exists_seed}}
+\leanrefblock{\lean{Frontier.Randomized.average_le}\\
+  \lean{Frontier.Randomized.exists_input_le}\\
+  \lean{Frontier.Randomized.exists_seed}}
 \end{theorem}
 
 \begin{proof}
@@ -1846,8 +1859,8 @@ independent of $x$; its coordinates may be biased and mutually dependent. Some i
 has success probability at most the same bound. Consequently, if $b_n\to0$,
 any fixed success probability above $1/2$ on every input requires more than $(L-\varepsilon)n$ gates
 for all sufficiently large $n$. The Gaussian coefficient is $L=4.562497\ldots$.
-\leanrefs{\lean{Frontier.averageCase_randomized},
-  \lean{Frontier.averageCase_randomized_gaussian},
+\leanrefblock{\lean{Frontier.averageCase_randomized}\\
+  \lean{Frontier.averageCase_randomized_gaussian}\\
   \lean{Frontier.lowerBound_randomized_gaussian}}
 \end{corollary}
 
@@ -1857,8 +1870,9 @@ and wire the last input ports to the selected constants. This preserves the numb
 of positive-arity gates exactly and preserves fan-in, while computing $C(x,y)$ on
 the ordinary inputs. Apply \cref{thm:average-case} to each fixed circuit, then
 \cref{thm:randomization} to the correctness indicator.
-\leanrefs{\lean{Cslib.Circuits.Circuit.innerSize_fixInputs},
-  \lean{Cslib.Circuits.Circuit.eval_fixInputs}, \lean{Frontier.randomized_circuit_bound}}
+\leanrefblock{\lean{Cslib.Circuits.Circuit.innerSize_fixInputs}\\
+  \lean{Cslib.Circuits.Circuit.eval_fixInputs}\\
+  \lean{Frontier.randomized_circuit_bound}}
 \end{proof}
 
 The polynomial-error instantiation retains the bound
