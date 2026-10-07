@@ -18,6 +18,7 @@ public import Frontier.Main
 public import Frontier.Extractor
 public import Frontier.AdditiveSweep
 public import Frontier.Linear.Main
+public import Frontier.Arithmetic.Determinant
 public import Frontier.Components
 public import Frontier.Ledger.Main
 public import Frontier.Nondeterministic
@@ -30,6 +31,7 @@ public import Frontier.AverageCase.Pruning
 public import Frontier.Boundary.Communication
 public import Frontier.Tree.Network
 public import Frontier.Layouts.Local
+public import Frontier.Layouts.Incidence
 public import Frontier.Decomposable
 public import Frontier.Boundary.Fiber
 public import Frontier.Boundary.Rank
@@ -59,8 +61,13 @@ A circuit lower bound from graph layouts, in independent pieces:
   the sharper median-edge estimate for subcubic graphs.
   `Frontier.Layouts.Local`: independent median updates
   cannot increase any threshold cut.
+  `Frontier.Layouts.Incidence`: signing incidence vectors cannot improve a prescribed
+  family of cuts; exact accounting for the two sign classes.
 * `Frontier.Linear`: totally regular linear maps, over finite fields with any basis and over
   infinite fields with polynomial operations; Cauchy matrices and arithmetic circuits.
+* `Frontier.Arithmetic`: mixed-Hessian rank bounded by actual circuit frontiers over every
+  field; scalar-polynomial gate bounds from input-order Hessian demand, including
+  determinant demand `n²/4 - 3n` and the coefficient `1.8906244197…` for determinant circuits.
 * `Frontier.Ledger` and `Frontier.Components`: gates of unbounded fan-in that aggregate in a
   monoid, carried along the layout as a ledger.
 * `Frontier.Projection` and `Frontier.Nondeterministic`: existentially hiding inputs and the

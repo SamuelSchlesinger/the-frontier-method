@@ -10,3 +10,4 @@
 /paper/*.pdf
 /paper/build.log
 /paper/revision.tex
+/external/openai-math/

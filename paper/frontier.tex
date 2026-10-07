@@ -530,7 +530,7 @@ instantiations, the signal-capacity inequality, the layout theorem, and the unif
 average-case bound from rectangle or sumset bias are
 formalized in Lean~4~\cite{Lean4} (toolchain \texttt{v4.35.0-rc3}),
 using Mathlib~\cite{Mathlib} (commit \texttt{9a6fbe0}) and CSLib~\cite{CSLib} (commit
-\texttt{89dc6fb}), in about 14,000 lines including documentation, available at
+\texttt{89dc6fb}), in about 15,000 lines including documentation, available at
 \begin{center}
 \url{https://github.com/SamuelSchlesinger/the-frontier-method}.
 \end{center}
@@ -551,6 +551,10 @@ flat-source bias hypothesis. The weighted inequality for coherent sweeps
 (\cref{thm:average-case}) are checked, as are the general-degree layout and higher-fan-in
 bounds of \cref{sec:higher-fanin}, the decomposable threshold bound of \cref{thm:decomposable},
 and the mixed-fiber inequality and nonlinear MDS bound of \cref{prop:mixed-fiber,thm:mds}.
+The mixed-Hessian frontier lemma and its scalar-polynomial lower-bound transfer in
+\cref{sec:hessian} are also checked, including their instantiation on compiled circuits,
+the all-input-order determinant demand, and the determinant bound of
+\cref{cor:determinant}.
 The repository also contains checked refinements of the boundary capacity that this paper does
 not use; its file \texttt{RESEARCH.md} records them. The explicit branching-program model and rectangle
 partition, the packing and arbitrary-distribution circuit statements
@@ -588,7 +592,8 @@ counting lemma, with no graphs or circuits. \Cref{sec:networks} introduces const
 and sweeps along layouts, and \cref{sec:compiler} compiles circuits into networks.
 \Cref{sec:lowerbound} compares demand and supply and proves \cref{thm:main}, with its
 nondeterministic and average-case variants, and \cref{sec:layouts} proves the binary and
-higher-fan-in layout bounds. \Cref{sec:linear,sec:ledgers} treat linear and MDS maps and
+higher-fan-in layout bounds. \Cref{sec:linear,sec:ledgers} treat linear and MDS maps,
+scalar polynomials through mixed Hessians, and
 aggregate gates, \cref{sec:counting} the counting algorithms, and \cref{sec:decomposable}
 decomposable representations. \Cref{sec:design} discusses the formalization and
 \cref{sec:open} open problems; \cref{app:index} is an index from the paper to the code.
@@ -2427,6 +2432,279 @@ that determines $N$ inputs is a continuous injection from an open subset of $\R^
 $\R^k$, so $N \le k$ by invariance of domain. We have not formalized this variant.
 \end{remark}
 
+\subsection{Scalar polynomials and mixed Hessians}
+\label{sec:hessian}
+
+Mixed second derivatives give a demand for scalar polynomials, whose Jacobians have
+only one row. Derivative bounds on communication go back to Abelson~\cite{Abelson1978};
+the scalar-Hessian route was suggested in~\cite{FrontierThreeChains}. Our proof uses
+compiler splicing and uniqueness over every field.
+
+Throughout this subsection a circuit has polynomial operations and computes
+$f\in\F[x_1,\ldots,x_N]$ \emph{as a formal polynomial}. Over finite fields this
+is stronger than equality of the induced functions. There is one scalar output;
+fan-out and polynomial degrees are unrestricted, and constants are free.
+For $a\in\F^N$ and $S\subseteq[N]$, write
+\[
+ H_f(a)[S,S^c]
+   =\left(\frac{\partial^2 f}{\partial x_i\partial x_j}(a)\right)_{i\in S,\ j\notin S}.
+\]
+
+\begin{lemma}[A bilinear rank bound]
+\label{lem:bilinear-boundary}
+Let $B:X\times Y\to\F$ be bilinear, and let $L:X\to W$ and $R:Y\to W$
+be linear maps between finite-dimensional spaces. If
+$\operatorname{im}L\cap\operatorname{im}R=\{0\}$ and
+$B(\ker L,\ker R)=0$, then
+\[
+  \rank B\le\rank L+\rank R\le\dim W.
+\]
+\leanref{Frontier.Arithmetic.bilinear_rank_le_boundary}
+\end{lemma}
+
+\begin{proof}
+Viewed as a map $X\to Y^*$, $B$ sends $\ker L$ into the annihilator of $\ker R$,
+which has dimension $\rank R$. The remaining quotient $X/\ker L$ has dimension
+$\rank L$. The disjoint-image hypothesis gives the second inequality.
+\end{proof}
+
+\begin{theorem}[Mixed-Hessian frontier lemma]
+\label{thm:hessian-cut}
+Let $P$ be any set of vertices of the compiled network, let $S$ be the inputs
+read in $P$, and put $w=\card{\cut_G(P)}$. For every $a\in\F^N$,
+\[
+  \rank H_f(a)[S,S^c]\le w.
+\]
+The output vertex may lie on either side of the cut.
+\leanref{Frontier.Arithmetic.rank_mixedHessian_le_cut}
+\end{theorem}
+
+\begin{proof}
+Let $q=(q_e)_{e\in\cut_G(P)}$ be the vector of formal polynomials carried by the
+cut edges. At $a$, restrict its differential to directions on the two input sides:
+\[
+  L:\F^S\to\F^w,\qquad R:\F^{S^c}\to\F^w.
+\]
+We extend such directions by zero outside their indicated side.
+
+First, $Lu+Rv=0$ implies $Lu=Rv=0$. Evaluate the circuit over
+$\F[\epsilon]/(\epsilon^2)$ on $a+\epsilon(u+v)$ and on $a$.
+Their cut values agree. Splicing the first run on $P$ with the second off $P$
+gives a satisfying assignment on $a+\epsilon u$. By uniqueness
+(\cref{thm:exact}), this is the actual run, and it retains the common cut values.
+Taking the coefficient of $\epsilon$ gives $Lu=0$, and then $Rv=0$.
+Applying this to $Lu-Rv=0$ proves that the two images intersect trivially.
+This is the reason their dimensions can be added: disjoint sets of input
+coordinates alone would not imply disjoint images in the space of cut values.
+\leanrefs{\lean{Frontier.Compiler.trace_cut_of_cut},
+  \lean{Frontier.Arithmetic.Splices.split}}
+
+Next suppose $Lu=0$ and $Rv=0$. Work over
+\[
+  J=\F[\epsilon,\delta]/(\epsilon^2,\delta^2).
+\]
+The runs on $a+\epsilon u$ and $a+\delta v$ both carry $q(a)$ on the cut.
+Splice them to obtain the run on $a+\epsilon u+\delta v$. Its output is
+$f(a+\epsilon u)$ if the output vertex lies in $P$, and $f(a+\delta v)$ otherwise,
+by \cref{lem:outputs-cut}. In either case its $\epsilon\delta$ coefficient is zero.
+But polynomial expansion identifies this coefficient with
+\[
+  \sum_{i\in S}\sum_{j\notin S}
+    \frac{\partial^2 f}{\partial x_i\partial x_j}(a)u_i v_j.
+\]
+Thus the mixed-Hessian form vanishes on $\ker L\times\ker R$.
+\Cref{lem:bilinear-boundary} proves the result. No factorial is divided out:
+the two square-zero directions are independent. Lean uses the iterated dual-number
+algebra $\F[\epsilon][\delta]$ and checks the polynomial expansion in
+\lean{Frontier.Arithmetic.jet_mixed}.
+\leanref{Frontier.Arithmetic.Splices.mixed_zero}
+\end{proof}
+
+\begin{definition}[Mixed-Hessian demand]
+\label{def:hessian-demand}
+A polynomial $f$ has \emph{mixed-Hessian demand at least $h$} if, for every
+ordering $\pi$ of its $N$ input coordinates, some prefix $S$ and some point
+$a\in\F^N$ satisfy $\rank H_f(a)[S,S^c]\ge h$.
+The point may depend on the ordering and the prefix. A bound at one fixed point
+for all orderings is sufficient, but is not required.
+\leanref{Frontier.Arithmetic.HessianDemand}
+\end{definition}
+
+The Lean definition uses injective positions in $\N$, allowing gaps. This gives
+the same input orders and also applies directly to the positions of input
+vertices inside a circuit layout.
+
+\begin{theorem}[Scalar-polynomial lower-bound transfer]
+\label{thm:hessian-lower}
+Assume $\LB_3(A)$ with $A>0$. For every $\eta>0$ there is a constant $C_\eta$
+such that every fan-in-two polynomial circuit computing a polynomial $f$ in which
+all $N$ variables occur, with mixed-Hessian demand at least $h$ and $s$ inner gates,
+satisfies
+\begin{equation}
+  (A+\eta)N+h\le (A+5\eta)s+A+4\eta+C_\eta.
+  \label{eq:hessian-finite}
+\end{equation}
+Consequently, for each fixed $\rho\ge0$ and $\varepsilon>0$, for all sufficiently
+large $N$, demand at least $\rho N$ implies
+\[
+  s>\left(1+\frac{\rho}{A}-\varepsilon\right)N.
+\]
+The size threshold is uniform over fields and polynomial gate bases.
+\leanrefs{\lean{Frontier.Arithmetic.hessian_gate_bound},
+  \lean{Frontier.Arithmetic.lowerBound_hessian}}
+\end{theorem}
+
+\begin{proof}
+Every variable occurring formally in the output is upstream of that output, so
+all inputs are read. With one output the compiled graph is connected, and the
+compiler gives $\beta_1(G)+N\le s+1$ and $\card V\le4s+3$.
+Each graph layout induces an input ordering. Its demanded prefix is realized
+by a vertex cut, and \cref{thm:hessian-cut} makes that cut have at least $h$ edges.
+Apply $\LB_3(A)$ and obtain
+\[
+ h\le(A+\eta)\beta_1(G)+\eta\card V+C_\eta
+   \le(A+\eta)(s+1-N)+\eta(4s+3)+C_\eta.
+\]
+This is \eqref{eq:hessian-finite}. For $h\ge\rho N$, first choose $\eta$ small
+enough that $(A+\eta+\rho)/(A+5\eta)>1+\rho/A-\varepsilon$, then absorb
+the constant term by taking $N$ large.
+\leanrefs{\lean{Frontier.Arithmetic.upstream_of_mem_vars},
+  \lean{Frontier.Arithmetic.exists_cut_of_hessianDemand}}
+\end{proof}
+
+In particular, \cref{thm:layout} supplies the checked Gaussian value
+$A\approx0.280701937$ in this theorem
+(\lean{Frontier.Arithmetic.lowerBound_hessian_gaussian}). We next verify the
+input-order demand for the determinant, following the permutation-matching
+argument proposed in~\cite{FrontierThreeChains}.
+
+\begin{lemma}[Permutation matchings across a partition]
+\label{lem:det-matching}
+For $S\subseteq[n]\times[n]$ and a permutation $\pi\in\mathfrak S_n$, put
+\[
+ c_\pi(S)=\card{\{(i,j):i\ne j,\ (i,\pi(j))\in S,\ (j,\pi(i))\notin S\}}.
+\]
+There is a permutation $\pi$ such that
+\[
+  \card S\,\card{S^c}\le n^2 c_\pi(S)+2n^3.
+\]
+Each split pair is counted once, from its endpoint in $S$.
+\leanref{Frontier.Arithmetic.DeterminantMatching.exists_crossing}
+\end{lemma}
+
+\begin{proof}
+Let $G$ count pairs $(x,y)\in S\times S^c$ whose entries lie in distinct rows
+and distinct columns. For each $x$, at most $n$ choices of $y$ share its row
+and at most $n$ share its column. Hence
+\[
+ G\ge\card S\,\card{S^c}-2n\card S
+   \ge\card S\,\card{S^c}-2n^3.
+\]
+For $n\ge2$, each such pair occurs in the matching of a uniform permutation
+with probability $1/(n(n-1))$: two distinct rows must be sent to two
+prescribed distinct columns. Therefore
+\[
+ \mathbb E_\pi c_\pi(S)=\frac{G}{n(n-1)}\ge\frac{G}{n^2},
+\]
+and some permutation attains at least the average. The cases $n\le1$ are
+immediate. The formal proof uses finite double counting: permutations act
+transitively on ordered pairs of distinct indices, and all arithmetic is in
+$\N$ before the final rank estimate.
+\leanref{Frontier.Arithmetic.DeterminantMatching.sum_pair_action}
+\end{proof}
+
+\begin{theorem}[Determinant demand]
+\label{thm:det-demand}
+Over every field, the formal determinant polynomial in $N=n^2$ variables has
+mixed-Hessian demand at least
+\[
+  \frac{n^2}{4}-3n.
+\]
+More precisely, for every partition $S\subseteq[n]\times[n]$ with
+$\card S=\lfloor n^2/2\rfloor$, there is a permutation matrix $P_\pi$ such that
+\[
+  \rank H_{\det}(P_\pi)[S,S^c]\ge\frac{n^2}{4}-3n.
+\]
+\leanref{Frontier.Arithmetic.hessianDemand_determinant}
+\end{theorem}
+
+\begin{proof}
+Take $(P_\pi)_{r,c}=1$ when $c=\pi(r)$ and $0$ otherwise. Off its permutation
+diagonal, the Hessian is a signed matching: for $i\ne j$,
+\[
+ H_{\det}(P_\pi)_{(i,\pi(j)),(k,\pi(l))}
+ =\begin{cases}
+   -\operatorname{sgn}(\pi),&i=l\text{ and }j=k,\\
+   0,&\text{otherwise}.
+  \end{cases}
+\]
+One algebraic verification takes the $\epsilon\delta$ coefficient of
+$\det(I+\epsilon E_{ij}+\delta E_{kl})$, then permutes the columns. The
+identity $\det(I+UV)=\det(I+VU)$ reduces this to a $2\times2$ determinant.
+Evaluation in two independent square-zero directions identifies the coefficient
+with the formal mixed derivative, without any characteristic restriction.
+\leanrefs{\lean{Frontier.Arithmetic.det_two_entries},
+  \lean{Frontier.Arithmetic.hessian_determinant_permutation}}
+
+For each pair counted by $c_\pi(S)$, select its $S$ endpoint as a row and its
+$S^c$ endpoint as a column of the mixed Hessian. These endpoints are distinct,
+and the displayed identity makes the selected submatrix diagonal with entries
+$-\operatorname{sgn}(\pi)\ne0$. Thus
+\[
+ \rank H_{\det}(P_\pi)[S,S^c]\ge c_\pi(S).
+\]
+Apply \cref{lem:det-matching} to a balanced $S$. Since
+$4\card S\,\card{S^c}\ge n^4-1$, for $n\ge1$ the resulting permutation satisfies
+\[
+ c_\pi(S)\ge\frac{n^2}{4}-2n-\frac{1}{4n^2}
+   \ge\frac{n^2}{4}-3n.
+\]
+The empty case is immediate. Every input ordering has a prefix containing
+exactly $\lfloor n^2/2\rfloor$ entries, proving the demand statement.
+\leanrefs{\lean{Frontier.Arithmetic.crossing_le_mixedRank},
+  \lean{Frontier.Arithmetic.exists_prefix_card}}
+\end{proof}
+
+The permutation may depend on the input partition. The proof establishes the
+lower demand needed by the circuit theorem; it does not require an upper bound
+on determinant Hessian width or a point that works for all input orderings.
+
+\begin{corollary}[Determinant circuits]
+\label{cor:determinant}
+Assume $\LB_3(A)$ with $A>0$. For every $\varepsilon>0$, all sufficiently
+large $n$, every field $\F$, and every fan-in-two polynomial circuit computing
+$\det_n$ formally with $s$ inner gates,
+\[
+ s>\left(1+\frac{1}{4A}-\varepsilon\right)n^2.
+\]
+The threshold is uniform over fields and polynomial gate bases; constants are
+free and sharing is unrestricted. With the Gaussian layout coefficient,
+\[
+ s>(1.8906244197\ldots-\varepsilon)n^2.
+\]
+\leanref{Frontier.Arithmetic.lowerBound_determinant_gaussian}
+\end{corollary}
+
+\begin{proof}
+For $n\ge2$, every determinant variable occurs formally. For example, for a
+given coordinate, choose a permutation making it an endpoint of one of the
+nonzero Hessian pairs above. Its first formal derivative therefore cannot
+vanish. Substituting $N=n^2$ and $h=n^2/4-3n$ in
+\cref{thm:hessian-lower} gives, for every $\eta>0$,
+\[
+ (A+\eta)n^2+\frac{n^2}{4}-3n
+   \le(A+5\eta)s+A+4\eta+C_\eta.
+\]
+First choose $\eta$ so that $(A+\eta+1/4)/(A+5\eta)$ exceeds
+$1+1/(4A)-\varepsilon$, then absorb the linear and constant terms by taking
+$n$ large. Finally apply \cref{thm:layout}.
+\leanrefs{\lean{Frontier.Arithmetic.mem_vars_determinant},
+  \lean{Frontier.Arithmetic.determinant_gate_bound}}
+\end{proof}
+
+The polynomial-multiplication application proposed in~\cite{FrontierThreeChains}
+remains outside this development.
+
 \subsection{Mixed input--output recovery}
 \label{sec:mixed-fibers}
 
@@ -3411,6 +3689,21 @@ Def.~\ref{def:capacity}, Lem.~\ref{lem:capacity} & \lean{LinearCapacity},
 Thm.~\ref{thm:linear} & \lean{lowerBound_linear} \\
 Lem.~\ref{lem:linearize} & \lean{exists_affine_circuit} \\
 Cor.~\ref{cor:cauchy} & \lean{linear_finite_gaussian}, \lean{linear_polynomial_gaussian} \\
+\multicolumn{2}{l}{\emph{Scalar polynomials} (\lean{Arithmetic/*.lean})} \\*
+Lem.~\ref{lem:bilinear-boundary} & \lean{Arithmetic.bilinear_rank_le_boundary} \\
+Thm.~\ref{thm:hessian-cut} & \lean{Arithmetic.rank_mixedHessian_le_cut} \\
+ & \lean{Arithmetic.jet_mixed}, \lean{Arithmetic.cut_splices} \\
+Def.~\ref{def:hessian-demand} & \lean{Arithmetic.HessianDemand} \\
+Thm.~\ref{thm:hessian-lower} & \lean{Arithmetic.hessian_gate_bound}, \lean{Arithmetic.lowerBound_hessian} \\
+ & \lean{Arithmetic.lowerBound_hessian_gaussian} \\
+Lem.~\ref{lem:det-matching} & \lean{Arithmetic.DeterminantMatching.exists_crossing} \\
+Thm.~\ref{thm:det-demand} & \lean{Arithmetic.determinant_balanced_rank} \\
+ & \lean{Arithmetic.hessianDemand_determinant} \\
+ & \lean{Arithmetic.hessian_determinant_permutation} \\
+ & \lean{Arithmetic.crossing_le_mixedRank} \\
+Cor.~\ref{cor:determinant} & \lean{Arithmetic.determinant_gate_bound} \\
+ & \lean{Arithmetic.lowerBound_determinant} \\
+ & \lean{Arithmetic.lowerBound_determinant_gaussian} \\
 \multicolumn{2}{l}{\emph{Mixed recovery} (\lean{Boundary/Fiber.lean}, \lean{Boundary/MDS.lean})} \\*
 Prop.~\ref{prop:mixed-fiber} & \lean{OutputSplicing.card_le}, \lean{Compiler.pow_le_cutSignals_mul_fibers} \\
 Thm.~\ref{thm:mds} & \lean{lowerBound_mds}, \lean{mds_gaussian} \\

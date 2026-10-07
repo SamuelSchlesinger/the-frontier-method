@@ -38,6 +38,42 @@ Run after `lake build --wfail` with `lake env lean scripts/Audit.lean`.
 #guard_msgs in
 #print axioms Frontier.arith_cauchy_gaussian
 
+/-- info: 'Frontier.Arithmetic.hessian_determinant_permutation' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Arithmetic.hessian_determinant_permutation
+
+/-- info: 'Frontier.Arithmetic.mem_vars_determinant' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Arithmetic.mem_vars_determinant
+
+/-- info: 'Frontier.Arithmetic.DeterminantMatching.exists_crossing' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Arithmetic.DeterminantMatching.exists_crossing
+
+/-- info: 'Frontier.Arithmetic.crossing_le_mixedRank' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Arithmetic.crossing_le_mixedRank
+
+/-- info: 'Frontier.Arithmetic.hessianDemand_determinant' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Arithmetic.hessianDemand_determinant
+
+/-- info: 'Frontier.Arithmetic.lowerBound_determinant_gaussian' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Arithmetic.lowerBound_determinant_gaussian
+
+/-- info: 'Frontier.Arithmetic.rank_mixedHessian_le_cut' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Arithmetic.rank_mixedHessian_le_cut
+
+/-- info: 'Frontier.Arithmetic.hessian_gate_bound' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Arithmetic.hessian_gate_bound
+
+/-- info: 'Frontier.Arithmetic.lowerBound_hessian_gaussian' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Arithmetic.lowerBound_hessian_gaussian
+
 /-- info: 'Frontier.cauchyZMod_gaussian' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Frontier.cauchyZMod_gaussian
@@ -145,6 +181,10 @@ Run after `lake build --wfail` with `lake env lean scripts/Audit.lean`.
 /-- info: 'Frontier.Communication.rootPotential_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Frontier.Communication.rootPotential_le
+
+/-- info: 'Frontier.Communication.rootPotential_min_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.Communication.rootPotential_min_le
 
 /-- info: 'Frontier.Network.abs_sumOn_accepted_le_tree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in

@@ -82,6 +82,21 @@ It credits Sam McGuire's peeling argument and the Minkowski-circuit,
 code-trellis, and Chattopadhyay--Liao extractor antecedents. No weighted bound for
 arbitrary ambiguous generators, or historical priority, is claimed.
 
+## Combining compatible conditional potentials
+
+`Communication.rootPotential_min_step` and `rootPotential_min_le` prove that two
+upper certificates on the same prefix states, masses, and parent map can be
+combined pointwise by minimum. Leaf lower bounds of one are preserved, so the
+combined certificate controls the same complete-transition square-root moment.
+The root initially has only the smaller of the two original budgets; a further
+saving requires retightening or a stronger structural estimate.
+
+The [OpenAI mathematics synthesis](research/openai-math/index.md) develops the
+connection with common-output information accounting and context-stable boundary
+descriptions. The Lean proof uses no upstream theorem. Its finite probe measures
+complete-transition capacity and paid restriction savings on the same circuits,
+without claiming universal coverage or an improved coefficient.
+
 ## Pruning
 
 `Sweep.abs_sumOn_le_pruned` and `agreement_le_pruned_sweeps` keep inputs whose complete
@@ -222,9 +237,25 @@ The remaining question is whether a joint degree/correlation analysis improves `
 Joint signal routing and subcubic port-tree projection are other possible routes,
 but their universal congestion bounds remain to be proved.
 
+## Determinant demand
+
+The scalar-Hessian and permutation-matching route suggested in the user-supplied
+*The Frontier Method: Three Lower-Bound Chains* is now proved for the actual formal
+`n × n` determinant over every field. `Arithmetic.hessianDemand_determinant` gives
+mixed-Hessian demand `n²/4 - 3n` for every injective input ordering. The evaluation
+point is a permutation matrix chosen for the partition; a fixed point is not assumed.
+
+`Arithmetic.lowerBound_determinant_gaussian` gives more than
+`(1.8906244197… - epsilon) n²` positive-arity gates for sufficiently large `n`, with
+arbitrary fan-in-two polynomial operations, shared intermediates, and free constants.
+The threshold is uniform over fields and gate bases. Equality of formal polynomials
+is required, also over finite fields. This result is included in the paper.
+The note's determinant-width upper bound and polynomial-multiplication application
+remain outside the formalization. See `research/arithmetic/README.md` for provenance.
+
 ## Verification
 
 Run `lake build --wfail` and `lake env lean scripts/Audit.lean`. The audit contains exact
 standard-axiom guards for the principal endpoints. The paper presents the core method
-and indexes its formal statements; the refinements recorded here are checked in Lean but
-are not expounded in the paper, so that it stays focused.
+and indexes its formal statements; the boundary refinements recorded here are checked in Lean; only the results
+identified above as paper results are expounded there.

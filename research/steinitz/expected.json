@@ -1,0 +1,33 @@
+{
+  "simple_graphs_through_5_vertices": 1100,
+  "energy_cases": 254254,
+  "fold_cases": 24979,
+  "loop_parallel_energy_cases": 27,
+  "loop_parallel_fold_cases": 48,
+  "cubic_layout_p": 0.1403509686358236,
+  "signing_C_needed_for_improvement": 0.21629529863577987,
+  "incidence_signing_C_asymptotic_obstruction": 0.7071067811865475,
+  "cyclic_ladders": [
+    {
+      "vertices": 8,
+      "bipartition_first_width": 12,
+      "minimum_signed_peak_squared": 12,
+      "minimum_width_after_one_fold": 6,
+      "paired_order_width": 5
+    },
+    {
+      "vertices": 12,
+      "bipartition_first_width": 18,
+      "minimum_signed_peak_squared": 18,
+      "minimum_width_after_one_fold": 9,
+      "paired_order_width": 5
+    },
+    {
+      "vertices": 16,
+      "bipartition_first_width": 24,
+      "minimum_signed_peak_squared": 24,
+      "minimum_width_after_one_fold": 12,
+      "paired_order_width": 5
+    }
+  ]
+}

@@ -74,6 +74,18 @@ The layout bound is proved for subcubic graphs with `A = (3/π) arccos((1 + 2√
   `Frontier.arith_cauchy_gaussian`). The displayed Cauchy matrices also work over prime fields
   of order `q ≥ 2N` (`Frontier.cauchyZMod_gaussian`). The general-degree coefficients also
   apply (`Frontier.linear_finite_degree`, `Frontier.linear_polynomial_degree`).
+* **Scalar polynomials**: every compiled circuit cut bounds the mixed-Hessian rank across
+  its input partition, over any field (`Frontier.Arithmetic.rank_mixedHessian_le_cut`).
+  If all `N` variables occur formally and every input order has a prefix with rank at
+  least `ρ N` at some evaluation point, a fan-in-two polynomial circuit needs more than
+  `(1 + ρ/A - ε) N` inner gates for large `N`
+  (`Frontier.Arithmetic.lowerBound_hessian_gaussian`). The point can depend on the order.
+  Formal polynomial equality is required, including over finite fields. For the determinant,
+  every input order has a prefix and permutation-matrix evaluation with mixed rank at least
+  `n²/4 - 3n` (`Frontier.Arithmetic.hessianDemand_determinant`). This gives more than
+  `(1.8906244197… - ε) n²` gates for all sufficiently large `n`, over every field
+  (`Frontier.Arithmetic.lowerBound_determinant_gaussian`). Polynomial-multiplication
+  demand remains open in this development.
 * **Gates of unbounded fan-in**: the bound survives special gates with a *ledger* in a monoid `M`
   with `log |M| = o(n)`, for instance `o(n)` unbounded AND, OR, parity, or fixed-modulus count gates
   (`Frontier.lowerBound_ledger`, `Frontier.lowerBound_aggregate_gaussian`). The proof charges
@@ -82,7 +94,7 @@ The layout bound is proved for subcubic graphs with `A = (3/π) arccos((1 + 2√
 The exact and uniform average-case lower bounds, arithmetic instantiations, and layout theorem
 are proved
 with no `sorry`, using only the standard axioms (`propext`, `Classical.choice`, `Quot.sound`),
-in about 14,000 lines of Lean. The accompanying paper also gives a deterministic #SAT algorithm
+in about 15,000 lines of Lean. The accompanying paper also gives a deterministic #SAT algorithm
 for circuits of fan-in two with `s` positive-arity gates, running for every fixed `η > 0` in
 time and space `O*(2^((1/L + η) s))`, where `1/L = 0.2191781936...`. Here `O*` suppresses
 polynomial factors in the full circuit encoding and the number of inputs. With `m` inputs
@@ -151,6 +163,12 @@ The paper presents the core method and the decomposable bound; the other refinem
 checked in Lean but not expounded there. [RESEARCH.md](RESEARCH.md) records them and the
 remaining proof obligations.
 
+The [OpenAI mathematics synthesis](research/openai-math/index.md) compares a pinned
+download of `openai/math` with these techniques. It adds checked compatibility of
+conditional upper potentials, source-specific transfer obligations, and finite
+comparisons of transition capacity with restriction savings. It establishes no
+new universal circuit coefficient.
+
 ## How the proof is factored
 
 | Module | Content |
@@ -180,6 +198,7 @@ remaining proof obligations.
 | `Frontier/Layouts/Support.lean`, `Frontier/Layouts/Multi*.lean`, `Frontier/Layouts/BoundedDegree.lean` | Multigraph compression, Gaussian concentration with multiplicities, and cycle-rank coefficients in every fixed degree, `2/5` at degree four |
 | `Frontier/Main.lean` | Binary, ternary, and every fixed fan-in bounds for dense rectangle-free families |
 | `Frontier/Linear/*.lean` | Totally regular maps, Cauchy matrices, linear capacity, linearization, arithmetic circuits |
+| `Frontier/Arithmetic/*.lean` | Infinitesimal splicing, mixed-Hessian frontier rank, determinant demand and circuit lower bounds |
 | `Frontier/Components.lean`, `Frontier/Ledger/*.lean` | Layouts of disconnected graphs; ledgers for gates of unbounded fan-in |
 | `Frontier/ForMathlib`, `Frontier/ForCslib` | Upstreaming candidates |
 
