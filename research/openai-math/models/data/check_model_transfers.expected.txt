@@ -1,0 +1,5 @@
+two-way: equal through relations; contextual forward-relation sizes 0 and 1
+two-way: all 4096 triples of one-label diagrams satisfy associativity
+dirty replay: XOR correct on all 64 assignments; scratch always restored
+dirty replay: AND wrong on 16 of 64 assignments, exactly when z0*x2=1
+AND witness: x=(0,0,1), y=0, dirty=(1,0); obtained 1, required 0

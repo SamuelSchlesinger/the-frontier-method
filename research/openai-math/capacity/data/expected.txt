@@ -1,0 +1,8 @@
+Rejected linear moment-thinning inequalities: 12
+k=12: H1(Y)=6.99835902; H1/2(Y)=11.04404736
+k=12: sum marginal H1/2=10.79962352; H1/2(Y | parity=1)=11.00000000
+k=12: Pr[parity=1]=0.25000000; odd-support size=2048
+Enumerated selector/moment/output comparisons: 16
+Conditioning test: P[01 | XOR=0]=0, product of conditional marginals=1/4
+A=0.280701937272; current 1+1/A=4.562497678925; hypothetical B=1/4 gives 5
+PASS (finite checks only; no upstream proof or universal root budget verified)

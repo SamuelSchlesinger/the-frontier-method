@@ -1,0 +1,63 @@
+{
+  "circuits": [
+    {
+      "best_of_three_peak_half_bits": 3.0,
+      "best_of_three_peak_support_bits": 3.0,
+      "best_restriction": {
+        "dimension_lost": 1,
+        "gates_saved": 1,
+        "input": 5,
+        "surplus_over_L": -3.562498,
+        "value": 1
+      },
+      "inputs": 6,
+      "name": "parity",
+      "normalized_gates": 5
+    },
+    {
+      "best_of_three_peak_half_bits": 3.876879,
+      "best_of_three_peak_support_bits": 4.0,
+      "best_restriction": {
+        "dimension_lost": 1,
+        "gates_saved": 2,
+        "input": 7,
+        "surplus_over_L": -2.562498,
+        "value": 0
+      },
+      "inputs": 8,
+      "name": "independent_masks",
+      "normalized_gates": 7
+    },
+    {
+      "best_of_three_peak_half_bits": 3.873504,
+      "best_of_three_peak_support_bits": 4.169925,
+      "best_restriction": {
+        "dimension_lost": 1,
+        "gates_saved": 11,
+        "input": 0,
+        "surplus_over_L": 6.437502,
+        "value": 0
+      },
+      "inputs": 7,
+      "name": "shared_selector",
+      "normalized_gates": 11
+    },
+    {
+      "best_of_three_peak_half_bits": 6.0,
+      "best_of_three_peak_support_bits": 6.0,
+      "best_restriction": {
+        "dimension_lost": 1,
+        "gates_saved": 4,
+        "input": 4,
+        "surplus_over_L": -0.562498,
+        "value": 1
+      },
+      "inputs": 6,
+      "name": "cycle_parities",
+      "normalized_gates": 11
+    }
+  ],
+  "layouts_per_circuit": 3,
+  "scope": "diagnostic only; no target-hardness or structural coverage claim",
+  "truth_table_restriction_checks": 54
+}

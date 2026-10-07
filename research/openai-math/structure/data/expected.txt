@@ -1,0 +1,18 @@
+gaussian_cycle_rank_A=0.280701937272
+frontier_gate_L=4.562497678925
+critical_ising_p=0.146446609407
+critical_ising_one_cut_proxy=0.439339828220
+required_ising_theta_to_beat_A=0.812865375152
+star_expected_median_gain=0.064339828220
+quarter_density_independent_pass_proxy=0.407169914110
+any_one_independent_pass_mean_proxy_lower=0.310660171780
+ramanujan_spectral_bisection_proxy=0.085786437627
+prism_m=3: connectivity=3, layer_cut_tree=1, layer_cut_graph=3
+prism_m=4: connectivity=3, layer_cut_tree=1, layer_cut_graph=4
+prism_m=5: connectivity=3, layer_cut_tree=1, layer_cut_graph=5
+prism_m=6: connectivity=3, layer_cut_tree=1, layer_cut_graph=6
+prism_m=7: connectivity=3, layer_cut_tree=1, layer_cut_graph=7
+prism_nontrivial_cuts_checked=21814
+C4_isometric_L1_cut_family=crossing (not laminar)
+triangle_individual_boundary_max=2, joint_merge=3
+OK: finite checks passed; no universal layout theorem inferred

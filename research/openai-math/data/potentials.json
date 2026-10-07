@@ -1,0 +1,13 @@
+{
+  "joint_message_counts": {
+    "independent": 4,
+    "shared": 2
+  },
+  "max_counterexample": {
+    "children": "28/5",
+    "parent": "19/5"
+  },
+  "minimum_certificate_checks": 625,
+  "scope": "finite checks; no universal root budget",
+  "strict_local_retightenings": 200
+}
