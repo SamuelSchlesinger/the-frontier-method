@@ -252,6 +252,7 @@ python3 research/communication/restrictions.py
 python3 research/communication/syndrome_generator.py
 python3 research/communication/unambiguous.py
 python3 research/communication/rank_profiles.py
+python3 scripts/plot_gaussian_layout.py --check
 ```
 
 The audit checks the exact axiom lists of the principal results and fails if any list changes.
@@ -285,6 +286,20 @@ The syndrome-generator script compares generated supports with direct evaluation
 global, pruned, and joint-code models, checks affine and graphic rank profiles, and detects
 the false acceptances created by dropping the affine constraints. Joint-rank savings are
 measured against an independent signal/syndrome bound, after removing repeated wire copies.
+
+The paper's Gaussian-layout figures follow one fixed-seed sample on the hexagonal prism.
+Their [numerical data](paper/figures/gaussian-layout.json) records the Gaussian coordinates,
+edge scores, median order, and every prefix cut. The standard-library-only `--check` command
+above verifies the data, normalization, median conditions, and an independent degree-update
+calculation of the cut sizes. To regenerate the vector figures, install Matplotlib and run:
+
+```sh
+python3 scripts/plot_gaussian_layout.py
+./scripts/build-paper.sh
+```
+
+The sampled order illustrates the construction; it does not estimate the asymptotic
+coefficient or assert that this order is optimal.
 
 ## License
 

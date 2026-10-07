@@ -8,6 +8,8 @@
 \usepackage{enumitem}
 \usepackage{booktabs}
 \usepackage{longtable}
+\usepackage{graphicx}
+\usepackage{float}
 \usepackage{tikz}
 \usetikzlibrary{positioning,decorations.pathreplacing}
 \usepackage{xcolor}
@@ -2014,6 +2016,22 @@ its normalization (\lean{Frontier.Gaussian.unitKernel}). For an edge $uv$ let $y
 unit vector in the direction of $x_u + x_v$. Draw a standard Gaussian vector $\omega \in \R^V$
 and score each edge by $s(e) = \langle y_e, \omega\rangle$.
 
+\Cref{fig:gaussian-scores,fig:gaussian-example} follow one realization through the construction
+on the hexagonal prism. The local medians give an order of the vertices; counting the edges crossing each
+prefix then gives the width of that order. Equal medians can occur because two endpoints
+may select the same edge score, even when the edge scores themselves are distinct.
+
+\input{figures/gaussian-layout-stats.tex}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/gaussian-scores.pdf}
+\caption{One Gaussian realization on the hexagonal prism: $\lambda=0.65$, $R=2$,
+seed zero. \textbf{(a)} Correlated edge scores. \textbf{(b)} Vertices sorted by their incident
+medians, using full precision and breaking ties by vertex label. Displayed scores are
+rounded. Each median is an edge score, so adjacent vertices can have equal medians.}
+\label{fig:gaussian-scores}
+\end{figure}
+
 \begin{lemma}[Kernel correlation]
 \label{lem:kernel}
 In a graph of maximum degree three, adjacent unit kernel rows satisfy
@@ -2041,6 +2059,18 @@ $z$,
 \]
 and dividing by $\lVert k_u\rVert\,\lVert k_v\rVert \ge 1$ gives the claim.
 \end{proof}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/gaussian-layout.pdf}
+\caption{The layout from \cref{fig:gaussian-scores}.
+\textbf{(a)} The median order from left to right, with the first $\gaussianExampleCut$
+vertices filled and the $\gaussianExampleCutwidth$ crossing edges highlighted.
+\textbf{(b)} All prefix cuts; this order has width $\gaussianExampleCutwidth$.
+The finite sample illustrates the construction; the asymptotic coefficient is proved below.
+The generator and numerical data are included in the repository.}
+\label{fig:gaussian-example}
+\end{figure}
 
 \begin{lemma}[Sheppard's bound at every threshold]
 \label{lem:sheppard}

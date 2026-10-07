@@ -33,6 +33,8 @@ jobs:
         run: python research/communication/unambiguous.py
       - name: Check mixed-fiber ranks and terminal pathwidth
         run: python research/communication/rank_profiles.py
+      - name: Check Gaussian figure data
+        run: python scripts/plot_gaussian_layout.py --check
 
   comparator:
     name: Comparator statements and proofs
