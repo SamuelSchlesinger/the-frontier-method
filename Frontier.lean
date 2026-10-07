@@ -72,6 +72,7 @@ A circuit lower bound from graph layouts, in independent pieces:
   monoid, carried along the layout as a ledger.
 * `Frontier.Projection` and `Frontier.Nondeterministic`: existentially hiding inputs and the
   same lower bound for nondeterministic circuits, uniformly in the number of witness inputs.
+  Polynomial-size binary verifiers pay one additional gate per distinct reachable witness.
 * `Frontier.Signals`: frontier capacity measured by distinct circuit signals.
 * `Frontier.AverageCase`: coherent weighted peeling and average-case circuit hardness from
   rectangle bias or sumset bias, with an exponentially small remainder below `L n`.

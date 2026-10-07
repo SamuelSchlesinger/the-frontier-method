@@ -231,7 +231,9 @@ $(r-1)s>(2-\varepsilon)n$ (\cref{thm:general-layout,cor:all-fanin}).
 The same lower bound holds for verifiers $C(x,y)$ with $n$ ordinary inputs and any number of
 existential witness inputs, counting all positive-arity verifier gates. The threshold for $n$
 is independent of the witness count (\cref{thm:nondeterministic}). In particular the explicit
-language below has the same nondeterministic lower bound.
+language below has the same nondeterministic lower bound. More precisely, a binary verifier
+of size $s\le n^D$, for fixed $D$, satisfies $s>(L-\varepsilon)n+r$, where $r$ counts distinct
+witness inputs reachable from its output (\cref{cor:witness-charge}).
 
 \paragraph{Explicit sets.}
 Over an alphabet with an addition, a rectangle is a sumset, so the fibers of a function that is
@@ -1570,6 +1572,47 @@ family gives the explicit Boolean language of \cref{cor:explicit} the same nonde
 lower bound. This does not give projected model counting: counting pairs $(x,y)$ would
 count witnesses with multiplicity.
 \end{proof}
+
+\begin{corollary}[Read witnesses cost gates]
+\label{cor:witness-charge}
+Let $S_n$ be the dense rectangle-free family of \cref{thm:main}. For every fixed
+$D\in\N$ and $\varepsilon>0$, for all sufficiently large $n$, every binary verifier
+for $S_n$ with $s\le n^D$ positive-arity gates satisfies
+\[
+  s>(L-\varepsilon)n+r,\qquad
+  L=1+\frac{\pi}{3\arccos((1+2\sqrt2)/4)}.
+\]
+Here $r$ counts distinct witness inputs reachable from the output. Unused declared witnesses
+do not count, and the threshold is uniform in the declared witness length and gate basis.
+\leanref{Frontier.lowerBound_nondeterministic_witnesses_gaussian}
+\end{corollary}
+
+\begin{proof}
+Retain the witness term in the preceding proof. The resulting graph has at most $4s+3$
+vertices and
+\[
+  \beta_1\le s-r-n+\log_q K_n+1.
+\]
+The finite statement is \lean{Frontier.exists_graph_of_nondeterministic_decides_witnesses}.
+If $p>0$ is a cubic layout coefficient, the compression proof in \cref{prop:compression}
+gives, for every fixed $\eta>0$, a layout of width at most
+$(2p+\eta)\beta_1+3\log_2\card V+C_\eta$.
+This logarithmic form is \lean{Frontier.CubicLayoutBound.exists_layout_log}.
+Since $s\le n^D$, both this overhead and the logarithmic graph-size term in the
+frontier demand are $o(n)$. Together with density and $\log K_n=o(n)$, this yields
+\[
+  n\le(2p+\eta)(s-r-n)+o(n).
+\]
+Choosing $\eta$ sufficiently small in terms of $\varepsilon$ gives the coefficient
+$1+1/(2p)$, as formalized by \lean{Frontier.lowerBound_nondeterministic_witnesses}.
+The Gaussian cubic coefficient gives $L$. Keeping the logarithmic overhead is essential
+here: an error $\eta\card V$ need not be sublinear in $n$ for polynomial-size verifiers.
+\end{proof}
+
+Consequently a verifier family of size $Ln+o(n)$ can read only $o(n)$ distinct witnesses.
+This constrains verifiers for these hard families; it gives no procedure for eliminating
+witnesses from arbitrary circuits. The same corollary applies to the explicit family
+in \cref{cor:explicit}, using the cited extractor construction.
 
 \subsection{Average-case hardness from extractors}
 \label{sec:average-case}
@@ -3644,6 +3687,8 @@ Thm.~\ref{thm:reduction} & \lean{exists_graph_of_decides} \\
 \multicolumn{2}{l}{\emph{Existential inputs} (\lean{Projection.lean}, \lean{Nondeterministic.lean})} \\*
 Lem.~\ref{lem:hide-inputs} & \lean{Network.accepted_hide} \\
 Thm.~\ref{thm:nondeterministic} & \lean{lowerBound_nondeterministic}, \lean{lowerBound_nondeterministic_gaussian} \\
+Cor.~\ref{cor:witness-charge} & \lean{lowerBound_nondeterministic_witnesses} \\
+ & \lean{lowerBound_nondeterministic_witnesses_gaussian} \\
 \midrule
 \multicolumn{2}{l}{\emph{Average-case bounds} (\lean{AverageCase/*.lean})} \\*
 Prop.~\ref{prop:weighted-sweep} & \lean{Sweep.Coherent}, \lean{Sweep.abs_sumOn_le_of_budget} \\
@@ -3655,7 +3700,7 @@ Cor.~\ref{cor:explicit-average} & \lean{averageCase_sumset_polynomial} \\
 \midrule
 \multicolumn{2}{l}{\emph{Layouts} (\lean{Layouts/*.lean}, \lean{Layouts.lean}, \lean{Main.lean})} \\*
 Thm.~\ref{thm:layout} & \lean{layoutBound_gaussian}, \lean{Gaussian.cubicLayoutBound_gaussian} \\
-Prop.~\ref{prop:compression} & \lean{LayoutBound.of_cubic} \\
+Prop.~\ref{prop:compression} & \lean{CubicLayoutBound.exists_layout_log}, \lean{LayoutBound.of_cubic} \\
 Lem.~\ref{lem:median} & \lean{exists_key_of_edgeScore} \\
 Lem.~\ref{lem:kernel} & \lean{Gaussian.sum_unitKernel_mul_ge} \\
 Lem.~\ref{lem:sheppard} & \lean{Gaussian.gaussPi_between_le_arccos} \\

@@ -54,8 +54,9 @@ at most `d log₂ N + d` edges leave the prefix (`exists_layout`).
 **The cubic bound.** Given `η > 0`, take the cubic bound with slack `ξ = η/2`. A quotient on
 `h > N₀` vertices has a layout whose frontiers have at most `(c + ξ) h + 2 ≤ (2c + η) β₁ + 2`
 edges, and a quotient on at most `N₀ + 1` vertices has at most `(N₀ + 1) N₀ / 2` edges. So every
-frontier of `G` has at most `(2c + η) β₁ + 3 log₂ N + C` edges for a constant `C`, and
-`3 log₂ N ≤ η N + C'` (`exists_log_le_mul_add`): this is `LayoutBound.of_cubic`.
+frontier of `G` has at most `(2c + η) β₁ + 3 log₂ N + C` edges for a constant `C`
+(`CubicLayoutBound.exists_layout_log`). Absorbing `3 log₂ N ≤ η N + C'`
+(`exists_log_le_mul_add`) gives `LayoutBound.of_cubic`.
 
 ## Main definitions
 
@@ -73,6 +74,7 @@ frontier of `G` has at most `(2c + η) β₁ + 3 log₂ N + C` edges for a const
 * `Frontier.Multigraph.Compression.Terminal.multi_edge_bound`: the core density in every
   degree.
 * `Frontier.Multigraph.Compression.exists_layout`: expanding a layout of the core.
+* `Frontier.CubicLayoutBound.exists_layout_log`: the bound with logarithmic overhead.
 * `Frontier.LayoutBound.of_cubic`: the layout bound.
 -/
 
@@ -740,14 +742,17 @@ end Multigraph
 
 /-! ### The layout bound -/
 
-/-- **From cubic graphs to subcubic multigraphs.** A cubic layout bound with coefficient `c`
-gives the layout bound for maximum degree three with coefficient `2c`. -/
-theorem LayoutBound.of_cubic {c : ℝ} (hc : 0 ≤ c) (h : CubicLayoutBound c) :
-    LayoutBound 3 (2 * c) := by
-  intro η hη
+/-- **Compression with logarithmic overhead.** A cubic coefficient `c` gives subcubic
+multigraph layouts of width `(2c + η) β₁ + 3 log₂ |V| + C`. Keeping the logarithm matters
+when the graph can be much larger than its cycle rank. -/
+theorem CubicLayoutBound.exists_layout_log {c : ℝ} (h : CubicLayoutBound c) (hc : 0 ≤ c)
+    {η : ℝ} (hη : 0 < η) :
+    ∃ C : ℝ, ∀ (V E : Type) [Finite V] [Finite E] (G : Multigraph V E),
+      G.Connected → G.MaxDegreeLE 3 → ∃ π : Layout V, ∀ t,
+        ((G.cut (π.initial t)).ncard : ℝ) ≤
+          (2 * c + η) * G.cycleRank + 3 * Nat.log 2 (Nat.card V) + C := by
   obtain ⟨N₀, hN₀⟩ := h (η / 2) (by positivity)
-  obtain ⟨K, hK⟩ := exists_log_le_mul_add (ε := η / 3) (by positivity)
-  refine ⟨(N₀ + 1).choose 2 + 5 + 3 * K, fun V E _ _ G hG _ hdeg => ?_⟩
+  refine ⟨(N₀ + 1).choose 2 + 5, fun V E _ _ G hG hdeg => ?_⟩
   classical
   have := Fintype.ofFinite V
   obtain ⟨Q, hQ⟩ := Multigraph.Compression.exists_final hdeg
@@ -764,7 +769,7 @@ theorem LayoutBound.of_cubic {c : ℝ} (hc : 0 ≤ c) (h : CubicLayoutBound c) :
       have hsize := Q.card_add_two_mul_le hQ hG hbig.1
       have : Fintype.card Q.blocks ≤ 2 * G.cycleRank := by
         rw [Fintype.card_coe, Multigraph.cycleRank]
-        omega
+        lia
       have : (Fintype.card Q.blocks : ℝ) ≤ 2 * G.cycleRank := by exact_mod_cast this
       nlinarith [mul_le_mul_of_nonneg_left this (by linarith : (0 : ℝ) ≤ c + η / 2)]
     · -- A small quotient has few edges.
@@ -773,10 +778,21 @@ theorem LayoutBound.of_cubic {c : ℝ} (hc : 0 ≤ c) (h : CubicLayoutBound c) :
       exact (Finset.card_le_card fun s hs => SimpleGraph.mem_edgeFinset.2
         (SimpleGraph.mem_cutFinset.1 hs).1).trans
           (SimpleGraph.card_edgeFinset_le_card_choose_two.trans
-            (Nat.choose_le_choose 2 (by rw [Fintype.card_coe]; omega)))
+            (Nat.choose_le_choose 2 (by rw [Fintype.card_coe]; lia)))
   obtain ⟨π, hπ⟩ := Q.exists_layout hkey fun q =>
     (Nat.cast_le.mpr (Q.ncard_cut_multiQuotient_le hQ fun B => key B < q)).trans (hX q)
   norm_num only [Nat.cast_ofNat] at hπ
+  exact ⟨π, fun t => by linarith [hπ t]⟩
+
+/-- **From cubic graphs to subcubic multigraphs.** A cubic layout bound with coefficient `c`
+gives the layout bound for maximum degree three with coefficient `2c`. -/
+theorem LayoutBound.of_cubic {c : ℝ} (hc : 0 ≤ c) (h : CubicLayoutBound c) :
+    LayoutBound 3 (2 * c) := by
+  intro η hη
+  obtain ⟨C, hC⟩ := h.exists_layout_log hc hη
+  obtain ⟨K, hK⟩ := exists_log_le_mul_add (ε := η / 3) (by positivity)
+  refine ⟨C + 3 * K, fun V E _ _ G hG _ hdeg => ?_⟩
+  obtain ⟨π, hπ⟩ := hC V E G hG hdeg
   exact ⟨π, fun t => by linarith [hπ t, hK (Nat.card V)]⟩
 
 end Frontier

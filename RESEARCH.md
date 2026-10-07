@@ -6,6 +6,21 @@ The results below are kernel-checked refinements of the method. None asserts a s
 universal cubic layout coefficient. The explicit extractor construction and all runtime
 claims remain outside the formalization.
 
+## Read witnesses cost gates
+
+`lowerBound_nondeterministic_witnesses_gaussian` proves that for each fixed `D` and
+`epsilon > 0`, every sufficiently large binary verifier for a dense rectangle-free family
+with `log K = o(n)` and `s ≤ n^D` satisfies `s > (L-epsilon)n + r`. Here `r` is the number
+of distinct witness inputs reachable from the output (`readWitnesses`); the declared
+witness length is unrestricted. Thus size `Ln + o(n)` permits only `o(n)` read witnesses.
+
+The finite reduction retains the witness credit in `beta1 ≤ s - r - n + log_q K + 1`.
+`CubicLayoutBound.exists_layout_log` exposes the existing compression proof's
+`3 log_2 |V| + C` overhead, which is sublinear for polynomial-size verifiers. Replacing it
+by `eta |V|` would lose the required control. The general theorem accepts any positive
+cubic layout coefficient. This is a necessary gate budget for these families, not a
+procedure for removing witnesses from arbitrary circuits.
+
 ## Polynomially small average-case advantage
 
 `averageCase_sumset_polynomial` checks that a flat-source extractor error at most

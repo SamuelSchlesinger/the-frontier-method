@@ -37,7 +37,9 @@ The layout bound is proved for subcubic graphs with `A = (3/π) arccos((1 + 2√
 * **Nondeterministic circuits**: the same coefficient holds for verifier circuits, uniformly
   in the number of existential witness inputs (`Frontier.lowerBound_nondeterministic_gaussian`).
   The gate count includes every positive-arity verifier gate; the input count includes only
-  ordinary inputs.
+  ordinary inputs. For every fixed `D`, a binary verifier with `s ≤ n^D` satisfies
+  `s > (L - ε)n + r`, where `r` counts distinct witness inputs reachable from its output
+  (`Frontier.lowerBound_nondeterministic_witnesses_gaussian`). Unused witnesses do not count.
 * **Signal capacity**: the proved frontier inequality can charge distinct circuit signals
   instead of their repeated edge copies (`Frontier.Compiler.ncard_accepted_le_signals`).
   This supplies a finer capacity theorem; improving the numerical coefficient still requires

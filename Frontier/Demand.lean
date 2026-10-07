@@ -29,7 +29,10 @@ slack `η` of the layout hypothesis is chosen first, depending only on `A`, `ε`
 
 * `Frontier.eventually_lt_of_demand`: demand `n - o(n)` and supply `A (s - n + o(n)) + o(n)`
   force `s > (1 + 1/A - ε) n`.
+* `Frontier.eventually_lt_of_linear_demand`: the same comparison with one sublinear error
+  and a real effective gate budget, allowing subtraction of read witnesses.
 * `Frontier.isLittleO_log_affine`: `log (α n + β) = o(n)`.
+* `Frontier.isLittleO_log_polynomial`: `log (α n^D + β) = o(n)` for fixed `D`.
 -/
 
 @[expose] public section
@@ -38,27 +41,57 @@ namespace Frontier
 
 open Filter Asymptotics
 
+/-- A polynomial size bound has sublinear logarithm. -/
+theorem isLittleO_log_polynomial (D : ℕ) {α β : ℝ} (hα : 0 ≤ α) (hβ : 1 ≤ β) :
+    (fun n : ℕ => Real.log (α * (n : ℝ) ^ D + β)) =o[atTop] fun n => (n : ℝ) := by
+  have hlog : (fun n : ℕ => Real.log n) =o[atTop] fun n => (n : ℝ) :=
+    Real.isLittleO_log_id_atTop.comp_tendsto tendsto_natCast_atTop_atTop
+  have hbound : (fun n : ℕ => Real.log (α + β) + D * Real.log n) =o[atTop]
+      fun n => (n : ℝ) :=
+    (isLittleO_const_left.mpr (Or.inr
+      (tendsto_norm_atTop_atTop.comp tendsto_natCast_atTop_atTop))).add
+        (hlog.const_mul_left (D : ℝ))
+  refine IsLittleO.of_bound fun δ hδ => ?_
+  filter_upwards [hbound.bound hδ, eventually_ge_atTop 1] with n hn hn1
+  have hn1' : (1 : ℝ) ≤ n := by exact_mod_cast hn1
+  have hp : (1 : ℝ) ≤ (n : ℝ) ^ D := one_le_pow₀ hn1'
+  have hle : Real.log (α * (n : ℝ) ^ D + β) ≤ Real.log (α + β) + D * Real.log n := by
+    rw [← Real.log_pow, ← Real.log_mul (by positivity) (by positivity)]
+    exact Real.log_le_log (by positivity) (by nlinarith)
+  have hnonneg : 0 ≤ Real.log (α * (n : ℝ) ^ D + β) :=
+    Real.log_nonneg (by nlinarith [mul_nonneg hα (pow_nonneg (by positivity) D)])
+  simpa only [Real.norm_eq_abs, abs_of_nonneg hnonneg] using
+    hle.trans ((le_abs_self _).trans hn)
+
 /-- `log (α n + β) = o(n)` for constants `α ≥ 0` and `β ≥ 1`. -/
 theorem isLittleO_log_affine {α β : ℝ} (hα : 0 ≤ α) (hβ : 1 ≤ β) :
     (fun n : ℕ => Real.log (α * n + β)) =o[atTop] fun n => (n : ℝ) := by
-  have hlog : (fun n : ℕ => Real.log n) =o[atTop] fun n => (n : ℝ) :=
-    Real.isLittleO_log_id_atTop.comp_tendsto tendsto_natCast_atTop_atTop
-  refine IsLittleO.of_bound fun δ hδ => ?_
-  filter_upwards [hlog.bound (show 0 < δ / 2 by positivity), eventually_ge_atTop 1,
-    eventually_ge_atTop ⌈2 * Real.log (α + β) / δ⌉₊] with n hn hn1 hnC
-  have hn1' : (1 : ℝ) ≤ n := by exact_mod_cast hn1
-  have hnC' : 2 * Real.log (α + β) / δ ≤ n := (Nat.le_ceil _).trans (by exact_mod_cast hnC)
-  simp only [Real.norm_eq_abs, abs_of_nonneg (by linarith : (0 : ℝ) ≤ n)] at hn ⊢
-  rw [abs_of_nonneg (Real.log_nonneg (by nlinarith))]
-  -- `log (α n + β) ≤ log ((α + β) n) = log (α + β) + log n`.
-  have hle : Real.log (α * n + β) ≤ Real.log (α + β) + Real.log n := by
-    rw [← Real.log_mul (by positivity) (by positivity)]
-    exact Real.log_le_log (by positivity) (by nlinarith)
-  have hlogn : Real.log n ≤ δ / 2 * n := (le_abs_self _).trans hn
-  have hC : Real.log (α + β) ≤ δ / 2 * n := by
-    have := (div_le_iff₀ hδ).mp hnC'
-    linarith
-  linarith
+  simpa only [pow_one] using isLittleO_log_polynomial 1 hα hβ
+
+/-- **Linear demand with a sublinear error.** The slack is chosen before the error function.
+The effective gate budget `s` may be a difference, such as gates minus read witnesses. -/
+theorem eventually_lt_of_linear_demand {A : ℝ} (hA : 0 < A) {ε : ℝ} (hε : 0 < ε) :
+    ∃ η > 0, ∀ e : ℕ → ℝ, e =o[atTop] (fun n => (n : ℝ)) →
+      ∀ᶠ n : ℕ in atTop, ∀ s : ℝ,
+        (n : ℝ) ≤ (A + η) * (s - n) + e n → (1 + 1 / A - ε) * n < s := by
+  refine ⟨A ^ 2 * ε / 2, by positivity, fun e he => ?_⟩
+  filter_upwards [he.bound (show 0 < A * ε / 4 by positivity), eventually_ge_atTop 1]
+    with n hen hn
+  intro s hdemand
+  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+  have he' : e n ≤ A * ε / 4 * n := by
+    simpa only [Real.norm_eq_abs, abs_of_pos hn'] using (le_abs_self _).trans hen
+  by_contra! hs
+  have hmul := mul_le_mul_of_nonneg_left
+    (show s - n ≤ (1 / A - ε) * n by linarith)
+    (show 0 ≤ A + A ^ 2 * ε / 2 by positivity)
+  have hid : (A + A ^ 2 * ε / 2) * (1 / A - ε) =
+      1 - A * ε / 2 - A ^ 2 * ε ^ 2 / 2 := by
+    field_simp
+    ring
+  rw [← mul_assoc, hid] at hmul
+  nlinarith [mul_pos (mul_pos hA hε) hn',
+    mul_nonneg (sq_nonneg (A * ε)) hn'.le]
 
 /-- **Demand and supply at the frontier.** Fix `A > 0`, `ε > 0`, and a constant `κ ≥ 0`. For every
 small enough slack `η > 0`, every constant `C`, and every error `e(n) = o(n)`, for all large `n`

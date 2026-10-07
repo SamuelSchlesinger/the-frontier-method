@@ -90,6 +90,22 @@ Run after `lake build --wfail` with `lake env lean scripts/Audit.lean`.
 #guard_msgs in
 #print axioms Frontier.lowerBound_nondeterministic_gaussian
 
+/-- info: 'Frontier.CubicLayoutBound.exists_layout_log' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.CubicLayoutBound.exists_layout_log
+
+/-- info: 'Frontier.exists_graph_of_nondeterministic_decides_witnesses' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.exists_graph_of_nondeterministic_decides_witnesses
+
+/-- info: 'Frontier.lowerBound_nondeterministic_witnesses' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.lowerBound_nondeterministic_witnesses
+
+/-- info: 'Frontier.lowerBound_nondeterministic_witnesses_gaussian' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Frontier.lowerBound_nondeterministic_witnesses_gaussian
+
 /-- info: 'Frontier.Compiler.ncard_accepted_le_signals' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms Frontier.Compiler.ncard_accepted_le_signals

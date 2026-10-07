@@ -73,4 +73,14 @@ theorem ncard_read_hide_le : N.hide.read.ncard ≤ N.read.ncard := by
     (Fin.castAdd_injective n k).injOn (toFinite _)
   exact hi
 
+/-- Every read input is either visible or hidden. Unread hidden inputs contribute nothing. -/
+theorem ncard_read_eq_hide_add :
+    N.read.ncard = N.hide.read.ncard + {j : Fin k | Fin.natAdd n j ∈ N.read}.ncard := by
+  have h := Nat.card_congr
+    (((finSumFinEquiv : Fin n ⊕ Fin k ≃ Fin (n + k)).subtypeEquivOfSubtype
+      (p := fun i => i ∈ N.read)).symm.trans
+      Equiv.subtypeSum)
+  rw [Nat.card_sum] at h
+  convert h using 1 <;> rfl
+
 end Frontier.Network
