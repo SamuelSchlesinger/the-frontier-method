@@ -89,8 +89,12 @@ the report's coverage and results. Never generate the reference from the candida
 of the verification command. Reference updates and a new theorem proof should remain
 distinguishable in review.
 
-The frozen reference includes the first randomized extension. Earlier published commits
-remain available in Git; they are not silently used as specifications for the new results.
+The frozen reference includes the randomized extension and the bridge
+`RectangleBias.rectangleFree`, which requires `0 < K` and bias strictly below one.
+Before adding that public theorem, Comparator checked the Gaussian and ledger proof
+refactors against all 915 public statements of the preceding reference, `24fdc18`.
+Earlier published commits remain available in Git; they are not silently used as
+specifications for new results.
 
 ## Related checks
 
