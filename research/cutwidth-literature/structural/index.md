@@ -25,6 +25,12 @@ compiled circuits.
 
 ## Which separator information is sufficient?
 
+The balance convention matters: the classical planar/minor-free results and the
+Dvořák–Norin/Houdrouge–Miraftab–Morin statements use `2/3` balance. The profile
+formula below uses **half-balanced** components. A bounded number of recursive
+`2/3` splits supplies half balance for sublinear power-law separator profiles,
+preserving their exponent but changing constants.
+
 For a graph of maximum degree `d`, let `s(m)` bound a half-balanced vertex separator
 in **every subgraph** on at most `m` vertices. A recursive ordering yields
 
@@ -56,7 +62,8 @@ unpromising black-box replacement for the cubic Gaussian argument.
 
 Suppose an induced subgraph on `m` vertices admits a balanced **edge** cut of size
 `b m`, uniformly throughout a recursion. Concatenating the two child orders gives
-the valid but crude recurrence `W(m) <= b m + W(m/2)`, hence `W(n)<=2bn+O(1)`.
+the valid but crude recurrence `W(m) <= b m + W(ceil(m/2))`, hence
+`W(n)<=2bn+O(log n)`, allowing for integer rounding.
 The boundary from ancestors stays active. Improving a single bisection from `n/6`
 to, say, `0.139822n` therefore cannot be inserted into this recurrence to beat `p n`.
 

@@ -23,5 +23,29 @@ The source audit uses author/publisher texts and records whether each result was
 read in a full relevant section, screened in an abstract, or identified through a
 later primary paper. A source's existence is not a proof of its applicability.
 
-Review findings and their resolution will be recorded here after the independent
-accuracy, completeness, and source checks finish.
+## Review and revisions
+
+Three whole-corpus passes covered accuracy, completeness/coherence with a graph-layout
+researcher's lens, and source quality/staleness. Each read the data artifacts and
+reran the audit. Fresh source checks concentrated on the statements carrying the
+application; they did not independently re-prove every publication.
+
+The first iteration found and addressed:
+
+- An integer-rounding error in the recursive-bisection discussion: the safe
+  recurrence uses `ceil(m/2)` and yields `2bn+O(log n)`. The leading coefficient
+  and the applicability conclusion are unchanged.
+- Missing coverage of Cheeger-type spectral sweeps, metric SDP, reweighted vertex
+  expansion, and the direct cutwidth SDP in Bansal–Katzelnick–Schwartz Section 6.3.
+  The [focused note](../spectral/separators.md) now states the exact missing transfers.
+- A complementary Gaussian-wave percolation trail, with the distinction between
+  vertex superlevels, median-key bands, and arbitrary-graph component control.
+- Separator-balance and Laplacian-normalization conventions, cross-links between
+  conversion arguments, final HHKL journal coordinates, and a stale bibliography
+  pointer to the Gaussian derivation.
+
+The nested-patch proof, Gaussian threshold profile, simultaneous triangle-lifting
+proof, and width/code conversions received mathematical scrutiny separately from
+the finite tests. No universal positive gain was established by these checks.
+
+The post-revision review and final independent identifier audit are pending.

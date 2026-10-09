@@ -244,7 +244,8 @@ must therefore construct a common order or directly bound their joint objective.
 This is a targeted parameter review, not an exhaustive bibliography. Full texts were
 inspected at the relevant theorem/definition sections, not independently re-proved in
 their entirety. Golovach's original text and Forney 2001 were not fully accessible;
-their roles and access depth are recorded below. No universal improvement or new Lean
+their roles and access depth are recorded in the [bibliography](../sources.md).
+No universal improvement or new Lean
 theorem is claimed. The finite checks validate examples and conventions only.
 
 [amarilli20]: ../sources.md#amarilli20

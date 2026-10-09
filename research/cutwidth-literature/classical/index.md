@@ -95,8 +95,10 @@ respective originals. [makedonsudborough89][makedonsudborough89]
 [ellis94][ellis94] [kinnersley92][kinnersley92] [bodlaender25][bodlaender25]
 
 This is an external existence/conversion result, not a checked Lean replacement
-for the repository's explicit median construction. Recovering the originals
-or supplying a direct checked proof is required before changing that lemma.
+for the repository's explicit median construction. The assembled
+[parameter review](../parameters/index.md) also gives a full-text Fomin 2003
+proof trail through line-graph pathwidth. Any replacement in Lean still needs
+a checked proof of the conversion.
 Parallel edges and weighted edges should not be silently included: the existing
 simple-cubic compression route already supplies a safe interface.
 
@@ -107,6 +109,10 @@ Their graph `H` has `3n` vertices, so a universal coefficient measured against
 `|V(H)|` incurs a factor of three when transferred back. This transformation
 is useful for testing related parameters, not automatically for reducing `p`.
 [bodlaender25][bodlaender25]
+
+In the reverse direction, a triangle packing does give a restricted-class
+saving: [contract first and lift the smaller quotient's order](../structural/reductions.md).
+That note proves an upper lifting cost of one and keeps the vertex-count gain.
 
 ## Edwards–McDermid: a real template with a real range restriction
 

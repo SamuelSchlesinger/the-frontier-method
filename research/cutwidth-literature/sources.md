@@ -2,11 +2,15 @@
 
 [Review home](index.md) · [Search coverage](data/search-log.md)
 
-The 62 records below are a targeted bibliography checked on 2026-10-09.
+The 68 records below are a targeted bibliography checked on 2026-10-09.
 Each entry records access depth. Abstract-only and later-paper attribution
 checks are identified explicitly; they are not represented as full-text reviews.
 Published versions are preferred when available. Numerical or conceptual
 deductions made in this review are labeled in the relevant document.
+
+<a id="alonmilman85"></a>
+
+**alonmilman85** — Noga Alon, V. D. Milman. *λ1, Isoperimetric inequalities for graphs, and superconcentrators*. Journal of Combinatorial Theory, Series B 38(1), 73–88, 1985. DOI: https://doi.org/10.1016/0095-8956(85)90092-9. Author-hosted published PDF: https://www.tau.ac.il/~nogaa/PDFS/Publications2/lambda%20%20isoperimetric%20inequalities%20for%20graphs%20and%20superconcentrators.pdf. Access: full relevant Section 2, especially Lemma 2.1, Remark 2.2, and the Laplacian/Rayleigh setup; publisher metadata verified.
 
 <a id="amarilli20"></a>
 
@@ -15,6 +19,10 @@ deductions made in this review are labeled in the relevant document.
 <a id="aronow-lopatto2026"></a>
 
 **aronow-lopatto2026** — P. M. Aronow and Patrick Lopatto, *Maximum cut and maximum bisection in random regular graphs*, arXiv:2609.19057v1 (2026), preprint. [Primary record](https://arxiv.org/abs/2609.19057); [full text](https://arxiv.org/html/2609.19057v1). Access: Theorem 1.1, interpolation overview, conclusion and references in full HTML. The primary record displays a July submission date despite its September-form identifier; no exact submission day is used here.
+
+<a id="arv09"></a>
+
+**arv09** — Sanjeev Arora, Satish Rao, Umesh Vazirani. *Expander flows, geometric embeddings and graph partitioning*. Journal of the ACM 56(2), 1–37, April 2009. DOI: https://doi.org/10.1145/1502793.1502794. Author manuscript: https://people.eecs.berkeley.edu/~vazirani/pubs/arvfull.pdf. Access: full relevant Sections 2–2.1.1, Theorem 1 and Corollary 2 of the author manuscript dated 2004-04-12; final publication metadata checked against publisher-deposited Crossref record. This text's `W` scaling is identified in [the separator note](spectral/separators.md); final journal full text not recovered from the publisher.
 
 <a id="ast90"></a>
 
@@ -38,7 +46,7 @@ deductions made in this review are labeled in the relevant document.
 
 <a id="bansal24"></a>
 
-**bansal24** — Nikhil Bansal, Dor Katzelnick, Roy Schwartz. *On Approximating Cutwidth and Pathwidth*. 2024 IEEE 65th Annual Symposium on Foundations of Computer Science (FOCS), 713–729, 2024. DOI: https://doi.org/10.1109/FOCS61266.2024.00051. Full preprint: https://arxiv.org/abs/2311.15639v2. Access: full preprint, Theorems 1–2 and Section 3; publication DOI verified in the primary ITCS 2025 paper's bibliography.
+**bansal24** — Nikhil Bansal, Dor Katzelnick, Roy Schwartz. *On Approximating Cutwidth and Pathwidth*. 2024 IEEE 65th Annual Symposium on Foundations of Computer Science (FOCS), 713–729, 2024. DOI: https://doi.org/10.1109/FOCS61266.2024.00051. Full preprint: https://arxiv.org/abs/2311.15639v2. Access: full preprint, Theorems 1–2, Section 3, and Section 6.3 (equations 31–38, Lemmas 17–18, Open Question 5); publication DOI verified in the primary ITCS 2025 paper's bibliography.
 
 <a id="barak-marwaha2022"></a>
 
@@ -116,6 +124,14 @@ deductions made in this review are labeled in the relevant document.
 
 **ellis94** — John A. Ellis, Ivan Hal Sudborough, Jonathan S. Turner. *The Vertex Separation and Search Number of a Graph*. Information and Computation 113(1), 50–79, 1994. DOI: https://doi.org/10.1006/inco.1994.1064. Access: publisher abstract; Theorem 2.1 additionally traced in the full proof of Lemma 16 of bodlaender25.
 
+<a id="elon09"></a>
+
+**elon09** — Yehonatan Elon. *Gaussian Waves on the Regular Tree*. arXiv:0907.5065v2 (2009), preprint. DOI: https://doi.org/10.48550/arXiv.0907.5065 . Full text: https://arxiv.org/pdf/0907.5065v2 . Access: full relevant statements and arguments around Theorems 1.1–1.3, 2.3 and Section 4; no journal version located. Verified 2026-10-09.
+
+<a id="elonsmilansky10"></a>
+
+**elonsmilansky10** — Yehonatan Elon and Uzy Smilansky. *Percolating level sets of the adjacency eigenvectors of d-regular graphs*. Journal of Physics A: Mathematical and Theoretical 43(45), 455209 (2010). DOI: https://doi.org/10.1088/1751-8113/43/45/455209 . Full preprint: https://arxiv.org/pdf/1005.4322v2 . Access: preprint introduction and model scope; published title/venue/identifier verified in the authors' Weizmann repository https://weizmann.esploro.exlibrisgroup.com/esploro/outputs/journalArticle/Percolating-level-sets-of-the-adjacency/993268048903596 . The arXiv abstract page retains the earlier title *Level sets percolation on chaotic graphs*. Verified 2026-10-09.
+
 <a id="fomin03"></a>
 
 **fomin03** — Fedor V. Fomin, “Pathwidth of Planar and Line Graphs,” *Graphs and Combinatorics* 19, 91–99, 2003. DOI: https://doi.org/10.1007/s00373-002-0490-z. Author PDF: https://fedorvf.github.io/articles/2003/2003a.pdf. Access: full text, especially Sections 4–5 and Lemma 6.
@@ -158,7 +174,7 @@ deductions made in this review are labeled in the relevant document.
 
 <a id="hhkl26"></a>
 
-**hhkl26** — Wanying Huang, David Hume, Samuel J. Kelly, and Ryan Lam. *A Coarse Geometric Approach to Graph Layout Problems*. Journal of Graph Theory (2026). https://doi.org/10.1002/jgt.70058 . Access: full corrected author text https://arxiv.org/html/2312.07105v3 , especially Corollary 3.3, Corollary 1.11, and the correction to Proposition 1.22.
+**hhkl26** — Wanying Huang, David Hume, Samuel J. Kelly, and Ryan Lam. *A Coarse Geometric Approach to Graph Layout Problems*. Journal of Graph Theory 113(2), 169–194 (2026). https://doi.org/10.1002/jgt.70058 . Access: full corrected author text https://arxiv.org/html/2312.07105v3 , especially Corollary 3.3, Corollary 1.11, and the correction to Proposition 1.22.
 
 <a id="hmm25"></a>
 
@@ -195,6 +211,14 @@ deductions made in this review are labeled in the relevant document.
 <a id="korhonenoum26"></a>
 
 **korhonenoum26** — Tuukka Korhonen and Sang-il Oum, “Branch-width of connectivity functions is fixed-parameter tractable,” arXiv:2601.04756v2, 2026. DOI: https://doi.org/10.48550/arXiv.2601.04756; version: https://arxiv.org/abs/2601.04756v2. Access: full preprint, Theorem 1.1 and algorithm outline; v2 posted 2026-02-09; no journal publication claimed.
+
+<a id="kwoketal13"></a>
+
+**kwoketal13** — Tsz Chiu Kwok, Lap Chi Lau, Yin Tat Lee, Shayan Oveis Gharan, Luca Trevisan. *Improved Cheeger's Inequality: Analysis of Spectral Partitioning Algorithms through Higher Order Spectral Gap*. Proceedings of the 45th Annual ACM Symposium on Theory of Computing (STOC), 11–20, 2013. DOI: https://doi.org/10.1145/2488608.2488611. Full preprint: https://arxiv.org/abs/1301.5584v1. Access: full Sections 1–1.1 and Theorems 1.1, 1.2, 1.4 of v1; metadata checked on author Yin Tat Lee's publication page and publisher-deposited Crossref record.
+
+<a id="kwoklautung25"></a>
+
+**kwoklautung25** — Tsz Chiu Kwok, Lap Chi Lau, Kam Chuen Tung. *Cheeger's Inequalities for Vertex Expansion and Reweighted Eigenvalues*. SIAM Journal on Computing 54(6), 1568–1625, 2025. DOI: https://doi.org/10.1137/22M1534407. Final author PDF: https://cs.uwaterloo.ca/~lapchi/papers/Cheeger-reweighted.pdf. Access: full relevant Definitions 1.1–1.2, Theorem 1.4, and Section 2's positive-measure convention; final publisher metadata verified. Preliminary version appeared at FOCS 2022.
 
 <a id="le26"></a>
 
@@ -234,7 +258,7 @@ deductions made in this review are labeled in the relevant document.
 
 <a id="plackett1954"></a>
 
-**plackett1954** — R. L. Plackett, *A Reduction Formula for Normal Multivariate Integrals*, Biometrika 41(3–4) (1954), 351–360. DOI: [10.1093/biomet/41.3-4.351](https://doi.org/10.1093/biomet/41.3-4.351); [JSTOR publisher archive](https://www.jstor.org/stable/2332716), DOI 10.2307/2332716. Access: publisher/archive metadata only; full text not accessed. Attribution of the differentiation method, with the required special-case derivation supplied above. Verified 2026-10-09.
+**plackett1954** — R. L. Plackett, *A Reduction Formula for Normal Multivariate Integrals*, Biometrika 41(3–4) (1954), 351–360. DOI: [10.1093/biomet/41.3-4.351](https://doi.org/10.1093/biomet/41.3-4.351); [JSTOR publisher archive](https://www.jstor.org/stable/2332716), DOI 10.2307/2332716. Access: publisher/archive metadata only; full text not accessed. Attribution of the differentiation method, with the required special-case derivation supplied in [the patch note](spectral/patches.md). Verified 2026-10-09.
 
 <a id="seymourthomas94"></a>
 

@@ -10,7 +10,7 @@ claim to have read every paper containing the word cutwidth.
 | Lane | Vocabulary / trail | Detailed record |
 | --- | --- | --- |
 | Classical | cutwidth, cut linear arrangement, cubic/subcubic, pathwidth, vertex separation, bisection, density lower bounds, exact/approximation algorithms; Díaz–Petit–Serna and Petit survey trails | [Classical log](../classical/data/search-log.md) |
-| Spectral/probabilistic | Gaussian wave, factors of IID, local improvement, min bisection, max cut, spectral rounding, SDP, entropy, parametric cuts, coarea | [Spectral log](../spectral/data/search-log.md) |
+| Spectral/probabilistic | Gaussian wave, factors of IID, local improvement, min bisection, max cut, Cheeger sweeps, metric SDP, reweighted expansion, entropy, parametric cuts, coarea, percolation | [Spectral log](../spectral/data/search-log.md) |
 | Structural | separator profiles, excluded minors, pair crossing number, short cycles, triangle contraction, degree-sensitive reduction | [Structural log](../structural/data/search-log.md) |
 | Parameters/capacity | searching, linear-width, carving/branchwidth, line graphs, rankwidth, matroid pathwidth, trellis complexity, hypergraphs, symmetric submodularity | [Parameter log](../parameters/data/search-log.md) |
 

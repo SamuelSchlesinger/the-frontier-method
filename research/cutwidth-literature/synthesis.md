@@ -134,6 +134,20 @@ the local Gaussian construction on the remaining difficult pieces, retaining the
 cost of all exposed ports. A tree separator bound must be upgraded to the union
 of boundaries required by the repository's tree-merge theorem.
 
+The [spectral separator and SDP review](spectral/separators.md) makes this global
+route more concrete. Cheeger-type sweeps and reweighted vertex expansion can
+identify useful separators, but their best-cut guarantees do not control the
+largest frontier. Bansal–Katzelnick–Schwartz's direct `SDPCW` formulation is closer
+to the target: it constrains the edge cost at every possible ordering pivot.
+Their Section 6.3 leaves improved rounding open. A useful theorem here needs
+both a favorable absolute relaxation value on cubic graphs and a sufficiently
+small loss when converting it to one complete order. [bansal24][bansal24]
+
+A complementary probabilistic route is to reorder small connected components of
+a central score band. The [percolation discussion](spectral/index.md) identifies
+the relevant Gaussian-wave literature and the missing median-band and arbitrary-
+graph tail estimates. Existing tree percolation theorems do not supply that transfer.
+
 ## Fourth priority: semantic signal and code capacity
 
 If wire cutwidth stalls, the existing signal hypergraph and joint-code theorems
@@ -192,4 +206,5 @@ graphs, sampled thresholds, or successful optimization starts.
 - No new universal cubic coefficient, unrestricted circuit coefficient, complete
   literature census, or historical priority claim is asserted.
 
+[bansal24]: sources.md#bansal24
 [lichev-mitsche2023]: sources.md#lichev-mitsche2023

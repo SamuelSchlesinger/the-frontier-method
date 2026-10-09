@@ -1,6 +1,7 @@
 # Spectral, Gaussian, and probabilistic routes
 
 [Research overview](../index.md) · [Threshold-coherent patch optimization](patches.md)
+· [Spectral separators and global SDP](separators.md)
 · [Search and access log](data/search-log.md).
 Reviewed against the current Gaussian and local-layout Lean introductions and
 the Gaussian-layout section of `paper/frontier.tex`, on 2026-10-09.
@@ -208,6 +209,32 @@ The 2026 Aronow–Lopatto preprint proves that random-regular maximum cut and
 Theorem 1.1 does not establish the minimum-bisection complement conjecture,
 and gives no new all-graph ordering guarantee. [aronow-lopatto2026][aronow-lopatto2026]
 
+## Percolation and reordering threshold bands
+
+Elon constructs invariant Gaussian waves on regular trees, proves an edge-conditioned
+Markov property (Theorem 2.3), and proves a superlevel-set percolation transition
+(Theorem 1.3). His Section 4 relates connectivity to path-persistence probabilities.
+This is relevant to analyzing whether troublesome score bands break into small
+components. [elon09][elon09] Elon–Smilansky compare this tree process with numerical
+level sets of random-regular adjacency eigenvectors; their introduction explicitly
+leaves that transfer unproved. [elonsmilansky10][elonsmilansky10]
+
+**Alternative research route.** Choose a central band of the actual median keys,
+control its connected components, and process each small component as a block.
+This could skip the worst thresholds while keeping the width close to the two band
+boundaries. It requires a deterministic ordering argument for all exposed ports,
+a bound on the mass of oversized components, and concentration after the reordering.
+The percolation papers do not supply those layout statements.
+
+There are two further missing transfers. A one-sided superlevel event for a vertex
+Gaussian wave is a different event from a bounded interval of incident-edge medians.
+And the tree's conditional independence is not available on arbitrary cubic graphs
+with short cycles. Uniform path-persistence or component-tail bounds for the actual
+finite-radius process would address a specific gap in this route. Gaussian free-field
+percolation uses another covariance law and cannot be substituted merely because
+both fields are Gaussian. The older project band calculation is discussed, with its
+archive limitation, in the [structural review](../structural/index.md).
+
 ## Entropy and expansion barriers
 
 Backhausz–Gerencsér–Harangi develop entropy constraints for factors of IID,
@@ -221,9 +248,11 @@ entropy inequalities could screen candidate local distributions; they are
 not a proof that the current Gaussian constant is optimal.
 [backhausz-gerencser-harangi2019][backhausz-gerencser-harangi2019]
 
-For a finite graph with even `n`, the elementary Laplacian Rayleigh argument
-gives `cw(G)≥λ2(L)n/4`: apply the spectral gap to the centred indicator of the
-middle cut. This is a lower-bound certificate. Spectral separators and
+For a finite graph with even `n`, the elementary Rayleigh argument for the
+combinatorial Laplacian `L_comb=D-A` gives `cw(G)≥λ2(L_comb)n/4`: apply the
+spectral gap to the centred indicator of the middle cut. For a cubic graph and
+normalized Laplacian eigenvalue `μ2`, this is `3μ2 n/4`. This is a lower-bound
+certificate. Spectral separators and
 recursive layouts have a different role, discussed in the
 [structural review](../structural/index.md). An expander's spectral gap should
 not be mistaken for a small-boundary supply theorem.
@@ -250,6 +279,8 @@ own archive audit and are not external theorems in this review.
 [coja-oghlan-etal2022]: ../sources.md#coja-oghlan-etal2022
 [dembo-montanari-sen2017]: ../sources.md#dembo-montanari-sen2017
 [el-alaoui-montanari-sellke2023]: ../sources.md#el-alaoui-montanari-sellke2023
+[elon09]: ../sources.md#elon09
+[elonsmilansky10]: ../sources.md#elonsmilansky10
 [gallo-grigoriadis-tarjan1989]: ../sources.md#gallo-grigoriadis-tarjan1989
 [harangi2025]: ../sources.md#harangi2025
 [janson2004]: ../sources.md#janson2004

@@ -2,7 +2,7 @@
 
 Research review begun 2026-10-09. Baseline checkout: `5c764e808af996822575911f28df7f4c519fc963`.
 
-Start with [the application and priorities](synthesis.md). This review covers 62
+Start with [the application and priorities](synthesis.md). This review covers 68
 distinct references, with source-by-source access depth. It finds no verified
 ready-to-use theorem that improves the project's universal cubic coefficient.
 The strongest next direction is **bounded-patch optimization with nested minimum
@@ -31,8 +31,9 @@ cutwidth, but needs a universal capacity supply theorem of its own.
    bounds, cubic/subcubic graphs, bisection, pathwidth, exact/approximation algorithms,
    and whether any known all-graph coefficient beats the baseline.
 2. [Spectral and probabilistic methods](spectral/index.md): Gaussian waves, factors
-   of IID, spectral/SDP embeddings, nonlinear local improvement, concentration, and
-   barriers from expanders and local algorithms.
+   of IID, nonlinear local improvement, percolation, concentration, and barriers
+   from expanders and local algorithms; [spectral separators and global SDP](spectral/separators.md)
+   covers Cheeger-type sweeps, metric rounding, and reweighted vertex expansion.
 3. [Structural and separator methods](structural/index.md): short cycles versus
    high girth, separators, recursive layouts, degree-sensitive reductions, and
    cycle-rank accounting.

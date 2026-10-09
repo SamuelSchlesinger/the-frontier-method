@@ -87,3 +87,17 @@ The script [check_proposals.py](check_proposals.py) uses the standard library
 and writes [check_proposals-output.json](check_proposals-output.json).
 It contains no Monte Carlo sampling. Finite enumeration and floating-point
 arithmetic check the stated examples; they do not certify an asymptotic gain.
+
+## Percolation trail added during review
+
+The root reviewer searched Gaussian-wave level sets and percolation on regular
+trees, then read Elon arXiv:0907.5065v2 (Theorems 1.1–1.3, 2.3 and Section 4) and
+Elon–Smilansky arXiv:1005.4322v2 (introduction and model scope). The latter's
+published title and DOI were checked in the authors' Weizmann repository.
+The same search returned Gaussian free-field papers; these were screened as a
+different covariance model and were not imported as wave/band theorems.
+No source supplied a uniform component-tail bound for the actual median-key
+process on arbitrary cubic graphs.
+
+The added [separator and SDP note](../separators.md) records its own primary
+source trail and access depth for the complementary global methods.

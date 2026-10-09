@@ -50,6 +50,10 @@ is linear gives no coefficient improvement over the repository bound.
 A useful adaptation would need to exploit subcubic structure to replace
 the accumulated metric-decomposition loss by a controlled constant.
 
+Their Section 6.3 also proposes a direct SDP carrying a cut metric for every
+pivot. The [global spectral/SDP note](../spectral/separators.md) explains this
+more specific rounding research target and the missing all-prefix guarantee.
+
 Bentert–Fomin–Inamdar–Saurabh Proposition 4 gives a factor-two approximation
 for directed cutwidth in `O*(2^{omega n/3})` time, where `omega` is the
 matrix-multiplication exponent. Their directed objective counts backward
