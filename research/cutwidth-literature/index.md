@@ -1,6 +1,6 @@
 # Cutwidth literature and routes to stronger frontier bounds
 
-Research review begun 2026-10-09. Baseline checkout: `5c764e808af996822575911f28df7f4c519fc963`.
+Research review completed 2026-10-09. Baseline checkout: `5c764e808af996822575911f28df7f4c519fc963`.
 
 Start with [the application and priorities](synthesis.md). This review covers 68
 distinct references, with source-by-source access depth. It finds no verified
@@ -87,7 +87,7 @@ paper deductions and from the missing universal gain theorem.
 
 This is a broad, targeted literature review, not a certification that every historical
 paper has been found or read. Search-index coverage, inaccessible full texts, and
-unpublished work limit completeness. Mathematical proposals will be labeled separately
+unpublished work limit completeness. Mathematical proposals are labeled separately
 from published theorems and checked repository results.
 
 No production Lean or manuscript theorem was changed. The paper deductions in this

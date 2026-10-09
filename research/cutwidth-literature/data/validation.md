@@ -48,4 +48,22 @@ The nested-patch proof, Gaussian threshold profile, simultaneous triangle-liftin
 proof, and width/code conversions received mathematical scrutiny separately from
 the finite tests. No universal positive gain was established by these checks.
 
-The post-revision review and final independent identifier audit are pending.
+The post-revision accuracy review found no remaining Error, Gap, or Polish finding
+within its scope. It checked the six added references, the direct cutwidth SDP,
+and the exact exterior-port recurrence, and reran the full corpus audit. Unchanged
+material retained the earlier detailed review; this was not a second independent
+proof reconstruction of all 68 papers.
+
+The final adversarial audit used a separate model and fresh primary-source fetches.
+It found no Error, Gap, or Polish finding within its checked scope. It verified the
+six added references, Bansal's direct SDP, selected recent results, principal
+conversion constants and numerical directions, and all data artifacts. The port
+recurrence and the written patch/triangle arguments were checked separately from
+the saved computations.
+
+This final pass did not freshly verify every identifier or every proof across all
+68 references. Some metadata endpoints were rate-limited; failed requests were
+not treated as evidence. No external numerical optimization was independently
+interval-certified, and no Lean rebuild was performed. The literature review
+converged with no unresolved findings from these passes, subject to these limits
+and the [coverage limitations](../index.md#known-limitations).
