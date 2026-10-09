@@ -8,6 +8,5 @@ __pycache__/
 /paper/*.log
 /paper/*.out
 /paper/*.toc
-/paper/*.pdf
 /paper/build.log
 /paper/revision.tex
