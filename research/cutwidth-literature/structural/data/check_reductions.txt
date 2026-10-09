@@ -1,0 +1,7 @@
+Triangle local patterns: 16 checks passed
+K4: 384 global lifts passed
+K3,3: 46080 global lifts passed
+three parallel edges: 8 global lifts passed
+L=4.6: triangle vertex fraction >= 0.015625967115
+L=5.0: triangle vertex fraction >= 0.164063370403
+Illustrative deletion fraction < 0.000548706211

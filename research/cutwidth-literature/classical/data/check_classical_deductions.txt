@@ -1,0 +1,9 @@
+baseline p=0.1403509686; A=0.2807019373; L=4.5624976789
+historical: alpha=1/6, g4=1/3, increment jump=0
+target: alpha=1/8, g4=5/16, increment jump=1/16
+baseline: increment jump=0.0394735470 > 0
+original Fomin-Hoie bridge at b=p: leading max(b,1/6)=0.1666666667
+analytic potential constraint: 4g4-2alpha>=1 and g4<=2alpha imply alpha>=1/6
+grooming specialization: C*(3n/2,n)=3; checked even n=6..10000
+all-even-n proof: floor((3n-3)/2)=3n/2-2; 2n-3-3n/2=n/2-3>=0
+minimum-degree specialization at delta=3: lower bound=4

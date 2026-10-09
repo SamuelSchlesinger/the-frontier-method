@@ -1,0 +1,12 @@
+graph: cutwidth, pathwidth, line-graph pathwidth
+K2 (exception): 1, 1, 0
+P3: 1, 1, 1
+triangle: 2, 2, 2
+claw: 2, 1, 2
+K4: 4, 3, 4
+K3,3: 5, 3, 5
+joint boundary: 729 tripartitions with parallel edges passed
+common-order gap: separate optima 1, 1; joint optimum 2
+full binary length 3: max state dimension 0, max complete-transition dimension 1
+even parity length 3: max state dimension 1, max complete-transition dimension 2
+All finite checks passed; no universal improvement asserted.

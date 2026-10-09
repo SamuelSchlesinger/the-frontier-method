@@ -1,0 +1,21 @@
+{
+  "arithmetic": {
+    "Harangi_maxcut_complement_density_for_degree_three": 0.11420999999999998,
+    "baseline_circuit_coefficient": 4.562497678925021,
+    "baseline_p": 0.1403509686358236,
+    "correlation_needed_for_p_one_eighth_in_same_star_formula": 0.9545677683854245,
+    "entropy_crossing_probability_lower_bound": 0.06149047007872416,
+    "entropy_cut_coefficient_lower_bound": 0.09223570511808624,
+    "gain_per_vertex_needed_for_p_one_eighth": 0.015350968635823609,
+    "mean_local_gain_needed_if_selected_with_probability_one_quarter": 0.061403874543294434,
+    "threshold_band_for_p_one_eighth": 0.48131583613081474,
+    "tree_neighbor_correlation": 0.9428090415820635,
+    "vertex_gaussian_p": 0.16226017195408896
+  },
+  "median_charge_boolean_assignments": 1088,
+  "patch_minimizers": {
+    "graphs": 640,
+    "threshold_instances": 15360
+  },
+  "status": "finite checks and floating-point arithmetic only"
+}
