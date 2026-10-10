@@ -24,6 +24,34 @@ open Set
 
 variable {ι U M : Type*} [Finite ι] [Finite U] {S : Set (ι → U)} (P : Sweep S M)
 
+/-- A code only has to determine transitions on the inputs charged at its step.
+It may collide arbitrarily on the other accepted inputs. -/
+theorem chargedTransitionCount_le_codes (K : ℕ) {D : ℕ → Type*}
+    (code : ∀ t, (ι → U) → D t) (C : ∀ t, Set (D t))
+    (hC : ∀ t < P.length, (C t).Finite)
+    (hmem : ∀ t < P.length, ∀ x ∈ P.chargedInputs K t, code t x ∈ C t)
+    (hdet : ∀ t < P.length, ∀ x ∈ P.chargedInputs K t,
+      ∀ y ∈ P.chargedInputs K t, code t x = code t y →
+        P.transition t x = P.transition t y) :
+    P.chargedTransitionCount K ≤ ∑ t ∈ Finset.range P.length, (C t).ncard := by
+  refine Finset.sum_le_sum fun t ht => ?_
+  have ht := Finset.mem_range.mp ht
+  exact (ncard_image_le_ncard_image_of_determines (toFinite _) _ _ (hdet t ht)).trans
+    (ncard_le_ncard (by rintro _ ⟨x, hx, rfl⟩; exact hmem t ht x hx) (hC t ht))
+
+/-- Threshold demand with a finite code for each step's charged inputs. This is
+the charge-only supply interface; no code condition is imposed on other inputs. -/
+theorem ncard_le_charged_codes {K : ℕ} (hS : RectangleFree S K) (hK : K ≤ S.ncard)
+    {D : ℕ → Type*} (code : ∀ t, (ι → U) → D t) (C : ∀ t, Set (D t))
+    (hC : ∀ t < P.length, (C t).Finite)
+    (hmem : ∀ t < P.length, ∀ x ∈ P.chargedInputs K t, code t x ∈ C t)
+    (hdet : ∀ t < P.length, ∀ x ∈ P.chargedInputs K t,
+      ∀ y ∈ P.chargedInputs K t, code t x = code t y →
+        P.transition t x = P.transition t y) :
+    S.ncard ≤ (K - 1) ^ 2 * ∑ t ∈ Finset.range P.length, (C t).ncard :=
+  (P.ncard_le_charged hS hK).trans
+    (Nat.mul_le_mul_left _ (P.chargedTransitionCount_le_codes K code C hC hmem hdet))
+
 /-- Count used transitions by any finite code that determines them on accepted inputs. -/
 theorem transitionCount_le_codes {D : ℕ → Type*}
     (code : ∀ t, (ι → U) → D t) (C : ∀ t, Set (D t))

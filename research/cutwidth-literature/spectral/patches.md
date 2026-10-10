@@ -156,6 +156,40 @@ It also computes the spectral target, threshold band, and entropy arithmetic.
 finite sanity checks accompanying the proofs above, not an asymptotic gain
 certificate. No production Lean statement or claimed cutwidth bound was changed.
 
+## Optional CPU and GPU screening benchmark
+
+[benchmark_patch_gain.py](data/benchmark_patch_gain.py) samples one limiting
+cubic-tree law on the 13 edges needed for a two-vertex patch. It evaluates an
+exact 8,192-entry gain table at five thresholds. NumPy is required; the CUDA
+backend additionally requires an existing CUDA-enabled PyTorch installation.
+From the repository root:
+
+```sh
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 python3 research/cutwidth-literature/spectral/data/benchmark_patch_gain.py
+python3 research/cutwidth-literature/spectral/data/benchmark_patch_gain.py --backend cuda --dtype float64
+python3 research/cutwidth-literature/spectral/data/benchmark_patch_gain.py --backend cuda --dtype float32
+```
+
+The default is three trials of one million samples, in batches of 100,000.
+The benchmark checks the gain table by independent boundary counting and, on
+CUDA, compares lookup and matrix multiplication against NumPy. Timing includes
+random generation, matrix multiplication, threshold lookup, reduction, and
+transfer of the final totals; setup and warmup are excluded. CUDA work is
+synchronized as required by the [PyTorch timing documentation](https://docs.pytorch.org/docs/stable/notes/cuda.html#asynchronous-execution).
+Float32 uses the highest float32 matrix multiplication precision setting.
+
+Both precisions are exploratory floating-point calculations. The sample means
+are gains **per isolated patch**; they are not gains per graph vertex and do not
+include a packing density or uniform covariance coverage. The projected cost
+of 10,000 evaluations covers this same workload only, excluding optimization,
+covariance construction, and certification. The CUDA path has not yet been
+executed: `samuel@desktop` was unreachable and reported offline by Tailscale
+on 2026-10-09. No GPU speedup or memory measurement is currently established.
+The [saved CPU run](data/benchmark_patch_gain-cpu.json) measured a median
+0.0957 seconds per million samples at all five thresholds on the local Mac,
+using float64 and one BLAS thread. This is throughput evidence for this small
+fixed-law workload, not a runtime estimate for the complete certificate.
+
 [chambolle-darbon2009]: ../sources.md#chambolle-darbon2009
 [gallo-grigoriadis-tarjan1989]: ../sources.md#gallo-grigoriadis-tarjan1989
 [plackett1954]: ../sources.md#plackett1954

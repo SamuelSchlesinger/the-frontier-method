@@ -1,0 +1,92 @@
+{
+  "compiled_traces": {
+    "critical_cut_equalities": 60,
+    "largest_combined_saving_bits": 4.0,
+    "largest_local_saving_bits": 3.333333333333333,
+    "largest_quotient_saving_bits": 5.0,
+    "layouts_checked": 60,
+    "scope": "sampled layouts; exhaustive inputs; circuits not minimized; no coefficient evidence",
+    "steps_with_strict_block_improvement": 241,
+    "steps_with_strict_quotient_improvement": 531,
+    "transition_product_equalities": 2618
+  },
+  "examples": {
+    "bounded_block_obstructions": [
+      {
+        "affine_bound_bits": 3,
+        "block_budget": 1,
+        "module_gates": 2,
+        "raw_and_local_bits": 4
+      },
+      {
+        "affine_bound_bits": 4,
+        "block_budget": 2,
+        "module_gates": 3,
+        "raw_and_local_bits": 5
+      },
+      {
+        "affine_bound_bits": 5,
+        "block_budget": 3,
+        "module_gates": 4,
+        "raw_and_local_bits": 6
+      },
+      {
+        "affine_bound_bits": 6,
+        "block_budget": 4,
+        "module_gates": 5,
+        "raw_and_local_bits": 7
+      },
+      {
+        "affine_bound_bits": 7,
+        "block_budget": 5,
+        "module_gates": 6,
+        "raw_and_local_bits": 8
+      },
+      {
+        "affine_bound_bits": 8,
+        "block_budget": 6,
+        "module_gates": 7,
+        "raw_and_local_bits": 9
+      }
+    ],
+    "disjoint_implications": {
+      "bound_bits": 9.509775004326936,
+      "pairs": 6,
+      "patterns": 729
+    },
+    "hidden_xor_module": {
+      "all_proper_projections_full": true,
+      "patterns": 8,
+      "single_gate_bound_bits": 4,
+      "two_gate_bound_bits": 3,
+      "visible_bits": 4
+    },
+    "shared_selector": {
+      "certified_bound_bits": 6.584962500721156,
+      "invalid_unweighted_bound": "729/32",
+      "packing_weight": "1",
+      "patterns": 65
+    }
+  },
+  "fractional_projection_checks": 2805,
+  "quarter_target": {
+    "baseline": 0.2807019372716472,
+    "needed_implication_weight_per_surplus_gate": 0.0739738874800324,
+    "needed_saving_per_surplus_gate": 0.030701937271647217
+  },
+  "reflection_obstruction": {
+    "exact_score_checks": 648,
+    "maximum_possible_cut_degree": 1,
+    "scope": "counterexample to star-correlation/wave-identity relaxation; not a finite circuit counterexample",
+    "unary_saving_at_zero": 0
+  },
+  "status": "finite verification of paper deductions; universal structural supply theorem open",
+  "typed_cores": {
+    "cores_checked": 36,
+    "cuts_checked": 864,
+    "largest_core_vertices": 36,
+    "largest_unary_constraint_rank": 20,
+    "nonconstant_forest_rank_equalities": 640,
+    "scope": "exact truth tables and sampled cuts; no layout or Gaussian gain theorem"
+  }
+}

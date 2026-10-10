@@ -74,44 +74,6 @@ theorem sweep_coherent
     rw [frontier, π.initial_of_card_le hu', Multigraph.cut_univ]
     exact eqOn_empty _ _
 
-/-- The transition bound is independent of any rectangle or weight hypothesis. -/
-theorem transitionCount_sweep_le [Finite ι] [Finite U] [Finite E]
-    {w d m : ℕ} (hw : ∀ t, (N.frontier π t).ncard ≤ w) (hd : N.MaxDegreeLE d)
-    (hm : ∀ v, (N.readAt v).ncard ≤ m) :
-    (N.sweep π).transitionCount ≤
-      Nat.card V * Nat.card U ^ (w + d + m) + Nat.card U ^ N.readᶜ.ncard := by
-  have hq : 1 ≤ Nat.card U := Nat.card_pos
-  -- The extra messages carry no information.
-  have hunit : ∀ t, ((fun x => (((fun _ _ => ()) : ℕ → (ι → U) → Unit) t x,
-      ((fun _ _ => ()) : ℕ → (ι → U) → Unit) (t + 1) x)) '' N.accepted).ncard ≤ 1 :=
-    fun t => (ncard_le_one (toFinite _)).mpr fun a _ b _ => Subsingleton.elim a b
-  unfold Sweep.transitionCount
-  rw [show (N.sweep π).length = Nat.card V + 1 from rfl, Finset.sum_range_succ]
-  refine add_le_add ?_ ((N.ncard_transition_last_le).trans ?_)
-  · calc ∑ t ∈ Finset.range (Nat.card V), ((N.sweep π).transition t '' N.accepted).ncard
-        ≤ ∑ _t ∈ Finset.range (Nat.card V), Nat.card U ^ (w + d + m) := by
-          refine Finset.sum_le_sum fun t ht => ?_
-          have ht : t < Nat.card V := Finset.mem_range.mp ht
-          refine (N.ncard_transition_le ht).trans ?_
-          refine (Nat.mul_le_mul_right _ (hunit t)).trans ?_
-          rw [one_mul]
-          refine Nat.pow_le_pow_right hq ?_
-          -- The next frontier differs from this one only at the edges of the vertex processed.
-          have hnext : N.frontier π (t + 1) ⊆ N.frontier π t ∪ N.edgesAt (π.symm ⟨t, ht⟩) := by
-            rw [frontier, π.initial_succ ht]
-            exact N.cut_insert_subset _ _
-          have hC : (N.frontier π t ∪ N.frontier π (t + 1)).ncard ≤ w + d :=
-            calc (N.frontier π t ∪ N.frontier π (t + 1)).ncard
-                ≤ (N.frontier π t ∪ N.edgesAt (π.symm ⟨t, ht⟩)).ncard :=
-                  ncard_le_ncard (union_subset subset_union_left hnext) (toFinite _)
-              _ ≤ (N.frontier π t).ncard + (N.edgesAt (π.symm ⟨t, ht⟩)).ncard :=
-                  ncard_union_le _ _
-              _ ≤ w + d := add_le_add (hw t) (hd _)
-          have := hm (π.symm ⟨t, ht⟩)
-          lia
-      _ = Nat.card V * Nat.card U ^ (w + d + m) := by simp
-  · exact (Nat.mul_le_mul_right _ (hunit (Nat.card V))).trans (by rw [one_mul])
-
 /-- Weighted peeling applied to the uniquely determined runs of a network. -/
 theorem abs_sumOn_accepted_le [Finite ι] [Finite U] [Finite E]
     (hunique : ∀ x α β, N.Satisfies x α → N.Satisfies x β → α = β)

@@ -1,8 +1,11 @@
 # Communication and distribution-sensitive frontier capacity
 
 This investigation starts from the paper at commit `dea9d2ed9450`. It proves a
-distribution-sensitive charging bound and conditional potential interface. It does
-**not** prove a better universal circuit coefficient or an exact counting speedup.
+distribution-sensitive charging bound and conditional potential interface. The
+matching continuation now also proves an explicit improvement of at least
+`10^-47` in the universal Gaussian circuit coefficient and certifies a free-parity
+rate of `10^-48`. The quarter supply coefficient, full redundant-parity preservation,
+and an exact counting speedup remain open.
 The new mathematical statements are deductions from the existing pruning lemma;
 the disjoint weighted peeling argument underlying that lemma is credited to Sam McGuire.
 
@@ -81,6 +84,57 @@ checked by one syndrome, with a layout-dependent rank cost. Its remaining target
 common ordering that makes the suffix boundary and syndrome cheap simultaneously.
 The [joint-code refinement](joint.md) also removes overlap between visible interface
 signals and the syndrome itself; it gives a smaller target for that common ordering.
+The [critical-supply investigation](critical_supply.md) gives fractional local
+constraint certificates, a forced forest of one-bit blocks in the cubic core,
+and checked parity-invariance statements. Lean now constructs the forest from the
+compiler, counts its blocks, and derives the capacity bound for actual circuit
+traces with nonconstant signals. A promise-enforcing sweep for supplied parities
+is also checked, with visible parity values and the syndrome counted jointly by
+the exact rank of their observation map. Threshold demand now also has a checked
+interface requiring codes only on the inputs charged at each step. The universal
+quarter layout bound and full preservation under linearly many redundant free parity
+inputs remain open.
+
+The free-linear-input reduction is now checked through an asymptotic circuit
+theorem. It gives `(L-epsilon)n < s+(L-2)c`, where `c` is redundancy among the
+supplied forms actually read. Sublinear read redundancy, or sublinear total code
+codimension, preserves the entire coefficient. This result requires correctness
+only on consistent supplied inputs and does not build parity-computation gates;
+the loss for linear redundancy remains explicit. Combining this bound with the
+explicit matching supply improvement also proves that up to `10^-48 n` free
+extra parities preserve the old Gaussian coefficient. Arbitrary linear redundancy
+remains open.
+
+The same investigation now checks patch optimization for every threshold of one
+ordering, with an explicit tie cost for intermediate prefixes. It also proves
+submodularity of the actual parity-syndrome rank, so patches can optimize signal
+boundaries and consistency together. The quarter supply estimate remains
+open; the finite patch experiment is recorded separately from the Lean theorems.
+The local Gaussian pair estimate is now connected to exact critical-ratio stars
+in Lean. A quantitative rigidity theorem bounds covariance errors by squared
+star residuals, independently of dimension. Finite-kernel normalization,
+equal-distance coordinates, truncation, and ratio perturbation are now accounted
+for by explicit correlation-slack bounds. Star-inequality gaps now control the
+correlations and residuals together, giving a covariance bound from two local
+gaps. Explicit pair keys attain every threshold minimum, and subdivision
+accounting transfers a uniform port-cost bound to actual prefix cuts with a tie
+overhead. A large star gap now gives a uniform probability saving that survives
+concentration and all prefix cuts. If the total gap is small, a checked packing
+argument instead supplies at least one disjoint eligible pair per five vertices.
+Covariance-square-root coupling now retains the local pair saving uniformly
+over thresholds and ambient dimensions. Normalization continuity and the
+finite-kernel covariance estimate connect this saving to two small star gaps.
+The actual patches now assemble into one explicit key with a proved source
+load and tie bound. Common finite-kernel parameters give every cubic graph a
+matching whose expected cost at each threshold is at most `(p-eta)h` for a
+fixed `eta>0`. The cost is a sum of bounded local events, giving a checked
+second-moment deviation estimate. Grid thresholds, windows, tails, and ties now
+combine into one ordering with a universal coefficient strictly below `p`.
+`Frontier.exists_lowerBound_gt_gaussian` transfers this to a circuit constant
+strictly above `4.562497...`. `GaussianQuantitative` replaces the qualitative
+covariance tolerance with an explicit coupling. `lowerBound_matching_explicit`
+certifies `L_*=1+1/(2p-10^-48)` and a gain of at least `10^-47`. The quarter
+supply coefficient and full redundant-parity preservation remain unproved.
 
 ## Where amortization enters
 
@@ -208,5 +262,6 @@ Run `python3 scripts/check_communication.py`:
 
 The capped and fractional-moment bounds and finite conditional telescoping are checked
 in Lean. The entropy restatements, shared-selector calculation, and special
-conditional-probability examples are paper proofs with finite checks. A stronger
-unrestricted circuit lower bound remains open in this investigation.
+conditional-probability examples are paper proofs with finite checks. The
+matching continuation separately proves an explicit strict improvement to
+the unrestricted circuit bound. The `5n-o(n)` target remains open.

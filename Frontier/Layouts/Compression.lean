@@ -691,14 +691,14 @@ theorem ncard_cut_take_le [Finite V] [DecidableEq V] [Finite E] (B : c.blocks) (
     have := c.cut_le _ B.2
     exact this.trans (Nat.le_add_left _ _)
 
-/-- **Expansion.** Lay out the vertices block by block, ordering the blocks by an injective
-key and each block by its list. If at most `X` edges of the multigraph quotient cross each
-prefix of the key, at most `X + d log₂ N + d` edges cross each frontier of the layout. -/
-theorem exists_layout [Finite V] [Finite E] {key : c.blocks → ℕ}
-    (hkey : key.Injective) {X : ℝ}
-    (hX : ∀ q, ((c.multiQuotient.cut {B | key B < q}).ncard : ℝ) ≤ X) :
-    ∃ π : Layout V, ∀ t,
-      ((G.cut (π.initial t)).ncard : ℝ) ≤ X + d * Nat.log 2 (Nat.card V) + d := by
+/-- Expand an injective block order. Each nonempty prefix consists of whole
+earlier blocks and a prefix of one block. This exposes the decomposition before
+choosing whether to measure the whole-block boundary by wires or semantic codes. -/
+theorem exists_layout_prefixes [Finite V] [DecidableEq V] {key : c.blocks → ℕ}
+    (hkey : key.Injective) :
+    ∃ π : Layout V, ∀ t, π.initial t = ∅ ∨ ∃ B : c.blocks, ∃ r : ℕ,
+      π.initial t = {v | key (c.blockOf v) < key B} ∪
+        {v | c.blockOf v = B ∧ c.idx v < r} := by
   classical
   let := Fintype.ofFinite V
   let f (v : V) : ℕ ×ₗ ℕ := toLex (key (c.blockOf v), c.idx v)
@@ -711,27 +711,40 @@ theorem exists_layout [Finite V] [Finite E] {key : c.blocks → ℕ}
     exact (List.idxOf_inj (c.mem_iff_blockOf_eq.mpr rfl)).mp hi
   obtain ⟨π, hπ⟩ := Layout.exists_monotone hf
   refine ⟨π, fun t => ?_⟩
-  have hX₀ : 0 ≤ X := (Nat.cast_nonneg _).trans (hX 0)
   rcases (π.initial t).eq_empty_or_nonempty with h | h
+  · exact Or.inl h
+  obtain ⟨v₀, hv₀, hmax⟩ := Set.exists_max_image _ f (toFinite _) h
+  refine Or.inr ⟨c.blockOf v₀, c.idx v₀ + 1, ?_⟩
+  ext v
+  have : v ∈ π.initial t ↔ f v ≤ f v₀ :=
+    ⟨hmax v, fun h => Nat.lt_of_le_of_lt (hπ v v₀ h) hv₀⟩
+  rw [this]
+  simp [f, Prod.Lex.toLex_le_toLex, hkey.eq_iff]
+
+/-- **Expansion.** Lay out the vertices block by block, ordering the blocks by an injective
+key and each block by its list. If at most `X` edges of the multigraph quotient cross each
+prefix of the key, at most `X + d log₂ N + d` edges cross each frontier of the layout. -/
+theorem exists_layout [Finite V] [Finite E] {key : c.blocks → ℕ}
+    (hkey : key.Injective) {X : ℝ}
+    (hX : ∀ q, ((c.multiQuotient.cut {B | key B < q}).ncard : ℝ) ≤ X) :
+    ∃ π : Layout V, ∀ t,
+      ((G.cut (π.initial t)).ncard : ℝ) ≤ X + d * Nat.log 2 (Nat.card V) + d := by
+  classical
+  obtain ⟨π, hπ⟩ := c.exists_layout_prefixes hkey
+  refine ⟨π, fun t => ?_⟩
+  have hX₀ : 0 ≤ X := (Nat.cast_nonneg _).trans (hX 0)
+  rcases hπ t with h | ⟨B, r, hL⟩
   · rw [h, cut_empty, ncard_empty, Nat.cast_zero]
     exact le_add_of_le_of_nonneg (le_add_of_le_of_nonneg hX₀ (by positivity)) (by positivity)
-  obtain ⟨v₀, hv₀, hmax⟩ := Set.exists_max_image _ f (toFinite _) h
-  have hL : π.initial t = {v | key (c.blockOf v) < key (c.blockOf v₀)} ∪
-      {v | c.blockOf v = c.blockOf v₀ ∧ c.idx v < c.idx v₀ + 1} := by
-    ext v
-    have : v ∈ π.initial t ↔ f v ≤ f v₀ :=
-      ⟨hmax v, fun h => Nat.lt_of_le_of_lt (hπ v v₀ h) hv₀⟩
-    rw [this]
-    simp [f, Prod.Lex.toLex_le_toLex, hkey.eq_iff]
   have hnat : (G.cut (π.initial t)).ncard ≤
-      (c.multiQuotient.cut {B | key B < key (c.blockOf v₀)}).ncard +
+      (c.multiQuotient.cut {B' | key B' < key B}).ncard +
         (d * Nat.log 2 (Nat.card V) + d) := by
     rw [hL]
-    have hwhole := c.ncard_cut_multiQuotient {B | key B < key (c.blockOf v₀)}
-    have hpart := c.ncard_cut_take_le (c.blockOf v₀) (c.idx v₀ + 1)
+    have hwhole := c.ncard_cut_multiQuotient {B' | key B' < key B}
+    have hpart := c.ncard_cut_take_le B r
     have hbound := add_le_add hwhole.le hpart
     exact (ncard_le_ncard (G.cut_union_subset _ _)).trans ((ncard_union_le _ _).trans hbound)
-  have hq := hX (key (c.blockOf v₀))
+  have hq := hX (key B)
   have hreal := Nat.cast_le (α := ℝ).mpr hnat
   push_cast at hreal
   linarith

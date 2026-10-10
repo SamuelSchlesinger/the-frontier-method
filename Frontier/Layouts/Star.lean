@@ -76,6 +76,15 @@ private theorem sum_sq_sum_eq {ι J : Type} [Fintype ι] [DecidableEq J] (s : Fi
         simp only [sq]
     _ = _ := by rw [Finset.sum_add_distrib]; simp
 
+/-- The ordered-pair correlation sum is exactly the squared norm of the row sum
+minus the number of unit rows. -/
+theorem sum_inner_ordered_pairs_eq {ι J : Type} [Fintype ι] [DecidableEq J]
+    (s : Finset J) (y : J → ι → ℝ) (hy : ∀ j ∈ s, ∑ i, y j i ^ 2 = 1) :
+    (∑ j ∈ s, ∑ j' ∈ s.erase j, ∑ i, y j i * y j' i) =
+      (∑ i, (∑ j ∈ s, y j i) ^ 2) - s.card := by
+  rw [sum_sq_sum_eq s y hy]
+  ring
+
 /-- **Star inequality.** If `n` unit vectors each have inner product at least `κ ≥ 0` with a
 unit vector, the sum of their inner products over ordered pairs is at least `n ^ 2 κ ^ 2 - n`. -/
 theorem sum_inner_ordered_pairs_ge {ι J : Type} [Fintype ι] [DecidableEq J] {x : ι → ℝ}
@@ -125,15 +134,15 @@ theorem sum_arccos_le {J : Type} (s : Finset J) (x : J → ℝ) {x₀ : ℝ}
     Real.arccos_le_arccos ((le_inv_mul_iff₀ hn).2 hsum)
   exact (inv_mul_le_iff₀ hn).1 (h.trans hmono)
 
-/-- **Angles in a star of three.** Three unit vectors with inner product at least `κ ≥ 7/8`
-with a unit vector have pairwise angles summing, over the six ordered pairs, to at most
-`6 arccos ((3 κ ^ 2 - 1) / 2)`. -/
-theorem sum_arccos_star_le {ι J : Type} [Fintype ι] [DecidableEq J] {x : ι → ℝ}
+/-- Retain the measured mean correlation in the three-vector angle estimate.
+This permits a strict saving when the star inequality has positive slack. -/
+theorem sum_arccos_star_le_of_average {ι J : Type} [Fintype ι] [DecidableEq J] {x : ι → ℝ}
     (hx : ∑ i, x i ^ 2 = 1) (s : Finset J) (hs : s.card = 3) (y : J → ι → ℝ)
     (hy : ∀ j ∈ s, ∑ i, y j i ^ 2 = 1) {κ : ℝ} (hκ : 7 / 8 ≤ κ)
-    (hyx : ∀ j ∈ s, κ ≤ ∑ i, y j i * x i) :
+    (hyx : ∀ j ∈ s, κ ≤ ∑ i, y j i * x i) {a : ℝ}
+    (haverage : 6 * a ≤ ∑ j ∈ s, ∑ j' ∈ s.erase j, ∑ i, y j i * y j' i) :
     ∑ j ∈ s, ∑ j' ∈ s.erase j, Real.arccos (∑ i, y j i * y j' i) ≤
-      6 * Real.arccos ((3 * κ ^ 2 - 1) / 2) := by
+      6 * Real.arccos a := by
   -- The ordered pairs of distinct members of `s`.
   set P := s.sigma fun j => s.erase j
   have hP : (P.card : ℝ) = 6 := by
@@ -146,10 +155,23 @@ theorem sum_arccos_star_le {ι J : Type} [Fintype ι] [DecidableEq J] {x : ι �
     refine ⟨?_, inner_le_one (hy _ h1) (hy _ h2')⟩
     have := le_inner_of_le_inner hx (hy _ h1) (hy _ h2') (hyx _ h1) (hyx _ h2')
     linarith
-  have hsum := sum_inner_ordered_pairs_ge hx s y hy (by linarith) hyx
-  rw [hs, ← Finset.sum_sigma s (fun j => s.erase j) fun p => ∑ i, y p.1 i * y p.2 i] at hsum
-  have h := sum_arccos_le P (fun p => ∑ i, y p.1 i * y p.2 i) (x₀ := (3 * κ ^ 2 - 1) / 2)
-    hpair (by rw [hP]; push_cast at hsum; linarith)
+  have h := sum_arccos_le P (fun p => ∑ i, y p.1 i * y p.2 i) (x₀ := a)
+    hpair (by simpa only [hP, P, Finset.sum_sigma] using haverage)
   rwa [hP, Finset.sum_sigma] at h
+
+/-- **Angles in a star of three.** Three unit vectors with inner product at least `κ ≥ 7/8`
+with a unit vector have pairwise angles summing, over the six ordered pairs, to at most
+`6 arccos ((3 κ ^ 2 - 1) / 2)`. -/
+theorem sum_arccos_star_le {ι J : Type} [Fintype ι] [DecidableEq J] {x : ι → ℝ}
+    (hx : ∑ i, x i ^ 2 = 1) (s : Finset J) (hs : s.card = 3) (y : J → ι → ℝ)
+    (hy : ∀ j ∈ s, ∑ i, y j i ^ 2 = 1) {κ : ℝ} (hκ : 7 / 8 ≤ κ)
+    (hyx : ∀ j ∈ s, κ ≤ ∑ i, y j i * x i) :
+    ∑ j ∈ s, ∑ j' ∈ s.erase j, Real.arccos (∑ i, y j i * y j' i) ≤
+      6 * Real.arccos ((3 * κ ^ 2 - 1) / 2) := by
+  apply sum_arccos_star_le_of_average hx s hs y hy hκ hyx
+  have hsum := sum_inner_ordered_pairs_ge hx s y hy (by linarith) hyx
+  rw [hs] at hsum
+  push_cast at hsum
+  linarith
 
 end Frontier.Gaussian

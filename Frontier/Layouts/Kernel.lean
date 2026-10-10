@@ -39,6 +39,10 @@ which a row, or a pair of rows, depends.
 
 `sum_unitKernel_mul_ge` restates the correlation bound in maximum degree three, where the
 error is `3 (2 q ^ 2) ^ R`.
+
+`edgeRatioError` measures squared distance from the two adjacent-distance ratios.
+`sum_kernel_edgeRatioError_le` bounds its total by correlation slack and the
+truncation spheres. `KernelStability` carries this estimate to normalized rows.
 -/
 
 @[expose] public section
@@ -106,6 +110,114 @@ private theorem kappa_le_one (q : ℝ) : 2 * q / (1 + q ^ 2) ≤ 1 := by
 private theorem kappa_mul_sq_add_sq (q x : ℝ) :
     2 * q / (1 + q ^ 2) * (x ^ 2 + (x * q) ^ 2) / 2 = x * (x * q) := by
   field_simp
+
+/-- Squared error from the two ratios allowed when adjacent distances differ by one. -/
+noncomputable def edgeRatioError (q a b : ℝ) : ℝ :=
+  min ((a - q * b) ^ 2) ((b - q * a) ^ 2)
+
+theorem edgeRatioError_nonneg (q a b : ℝ) : 0 ≤ edgeRatioError q a b :=
+  le_min (sq_nonneg _) (sq_nonneg _)
+
+theorem edgeRatioError_comm (q a b : ℝ) : edgeRatioError q a b = edgeRatioError q b a :=
+  min_comm _ _
+
+theorem edgeRatioError_mul (q a : ℝ) : edgeRatioError q a (a * q) = 0 := by
+  simp only [edgeRatioError, mul_comm a q, sub_self, ne_eq, OfNat.ofNat_ne_zero,
+    not_false_eq_true, zero_pow]
+  exact min_eq_right (sq_nonneg _)
+
+/-- Perturbing the ratio costs only the squared perturbation times the two
+coordinate energies. -/
+theorem edgeRatioError_ratio_le (p q a b : ℝ) :
+    edgeRatioError p a b ≤
+      2 * edgeRatioError q a b + 2 * (p - q) ^ 2 * (a ^ 2 + b ^ 2) := by
+  unfold edgeRatioError
+  rcases le_total ((a - q * b) ^ 2) ((b - q * a) ^ 2) with h | h
+  · rw [min_eq_left h]
+    refine (min_le_left _ _).trans ?_
+    nlinarith [sq_nonneg (a - q * b + (p - q) * b),
+      mul_nonneg (sq_nonneg (p - q)) (sq_nonneg a)]
+  · rw [min_eq_right h]
+    refine (min_le_right _ _).trans ?_
+    nlinarith [sq_nonneg (b - q * a + (p - q) * a),
+      mul_nonneg (sq_nonneg (p - q)) (sq_nonneg b)]
+
+/-- Unequal row normalizers introduce a controlled additional ratio error. -/
+theorem edgeRatioError_div_le {q A B : ℝ} (hq₀ : 0 ≤ q) (hq₁ : q ≤ 1)
+    (hA : A ≠ 0) (hB : B ≠ 0) (a b : ℝ) :
+    edgeRatioError q (a / A) (b / B) ≤
+      2 * (edgeRatioError q a b / A ^ 2) +
+        2 * (B / A - 1) ^ 2 * (b / B) ^ 2 := by
+  have hq₂ : q ^ 2 ≤ 1 := by nlinarith [mul_nonneg hq₀ (sub_nonneg.mpr hq₁)]
+  unfold edgeRatioError
+  rcases le_total ((a - q * b) ^ 2) ((b - q * a) ^ 2) with h | h
+  · rw [min_eq_left h]
+    refine (min_le_left _ _).trans ?_
+    have heq : a / A - q * (b / B) =
+        (a - q * b) / A + q * ((B / A - 1) * (b / B)) := by
+      field_simp
+      ring
+    rw [heq, ← div_pow]
+    nlinarith [sq_nonneg ((a - q * b) / A - q * ((B / A - 1) * (b / B))),
+      mul_le_mul_of_nonneg_right hq₂ (sq_nonneg ((B / A - 1) * (b / B)))]
+  · rw [min_eq_right h]
+    refine (min_le_right _ _).trans ?_
+    have heq : b / B - q * (a / A) =
+        (b - q * a) / A - (B / A - 1) * (b / B) := by
+      field_simp
+      ring
+    rw [heq, ← div_pow]
+    nlinarith [sq_nonneg ((b - q * a) / A + (B / A - 1) * (b / B))]
+
+/-- The pointwise ratio error is paid for by correlation slack, except at the
+truncation spheres. Equal-distance coordinates are included in the slack. -/
+theorem kernel_edgeRatioError_le {q : ℝ} (hq₀ : 0 ≤ q) (hq₁ : q ≤ 1)
+    (R : ℕ) {u v : W} (huv : H.Adj u v) (z : W) :
+    edgeRatioError q (kernel H q R u z) (kernel H q R v z) ≤
+      (1 + q ^ 2) * kernel H q R u z * kernel H q R v z -
+        q * (kernel H q R u z ^ 2 + kernel H q R v z ^ 2) +
+        2 * (q ^ 2) ^ R *
+          ((if H.edist u z = R then 1 else 0) + (if H.edist v z = R then 1 else 0)) := by
+  wlog huvz : H.edist u z ≤ H.edist v z generalizing u v
+  · rw [edgeRatioError_comm]
+    convert this huv.symm (le_of_not_ge huvz) using 1
+    ring
+  have htail : 0 ≤ 2 * (q ^ 2) ^ R *
+      ((if H.edist u z = R then 1 else 0) + (if H.edist v z = R then 1 else 0)) := by
+    split_ifs <;> positivity
+  have hdist := edist_le_edist_add_one H huv.symm z
+  by_cases hv : H.edist v z ≤ R
+  · have hu := huvz.trans hv
+    simp only [kernel, ite_eq_left hu, ite_eq_left hv]
+    rw [edist_eq_dist_of_le H hu, edist_eq_dist_of_le H hv] at huvz hdist
+    have h₁ : H.dist u z ≤ H.dist v z := by exact_mod_cast huvz
+    have h₂ : H.dist v z ≤ H.dist u z + 1 := by exact_mod_cast hdist
+    rcases (by lia : H.dist v z = H.dist u z ∨ H.dist v z = H.dist u z + 1) with h | h
+    · rw [h]
+      simp only [edgeRatioError, min_self]
+      nlinarith only [htail]
+    · rw [h, pow_succ, edgeRatioError_mul]
+      nlinarith only [htail]
+  by_cases hu : H.edist u z ≤ R
+  · have hd := edist_eq_dist_of_le H hu
+    have hR : H.dist u z = R := by
+      rw [hd] at hdist hu
+      have hlt : R < H.dist u z + 1 := by exact_mod_cast (lt_of_not_ge hv).trans_le hdist
+      have hle : H.dist u z ≤ R := by exact_mod_cast hu
+      lia
+    have hsphere : H.edist u z = R := hd.trans (congrArg Nat.cast hR)
+    have hIv : (0 : ℝ) ≤ if H.edist v z = R then 1 else 0 := by split_ifs <;> norm_num
+    simp only [kernel, ite_eq_left hu, ite_eq_right hv, hR, ite_eq_left hsphere,
+      mul_zero, edgeRatioError]
+    refine (min_le_right _ _).trans ?_
+    have hsq : q ^ 2 ≤ 1 := by nlinarith [mul_nonneg hq₀ (sub_nonneg.mpr hq₁)]
+    have hpow : (q ^ R) ^ 2 = (q ^ 2) ^ R := by ring
+    simp only [zero_sub, neg_sq, mul_pow, hpow]
+    have hP : 0 ≤ (q ^ 2) ^ R := by positivity
+    nlinarith [mul_nonneg hP hIv, mul_le_mul_of_nonneg_right (add_le_add hsq hq₁) hP]
+  · simp only [kernel, ite_eq_right hu, ite_eq_right hv, edgeRatioError,
+      mul_zero, sub_self, min_self, zero_sub]
+    simpa using htail
 
 /-- **Pointwise defect.** For adjacent `u` and `v`, the kernel entries at `z` fall short of `κ`
 times their mean square only on the truncation spheres. -/
@@ -372,6 +484,36 @@ theorem sum_kernel_mul_ge_degree {D : ℕ} (hD : 2 ≤ D) (degree : ∀ v, H.deg
       D * ((D - 1 : ℕ) * q ^ 2) ^ R := by
     rw [mul_pow]
     nlinarith [mul_le_mul_of_nonneg_left (add_le_add hu hv) hP]
+  linarith
+
+/-- For adjacent rows, the total ratio error is bounded by correlation slack
+and an exponentially small truncation term when `(D-1)q² < 1`. -/
+theorem sum_kernel_edgeRatioError_le {D : ℕ} (hD : 2 ≤ D)
+    (degree : ∀ v, H.degree v ≤ D) {q : ℝ} (hq₀ : 0 ≤ q) (hq₁ : q ≤ 1)
+    (R : ℕ) {u v : W} (huv : H.Adj u v) :
+    (∑ z, edgeRatioError q (kernel H q R u z) (kernel H q R v z)) ≤
+      (1 + q ^ 2) * (∑ z, kernel H q R u z * kernel H q R v z) -
+        q * ((∑ z, kernel H q R u z ^ 2) + ∑ z, kernel H q R v z ^ 2) +
+        4 * D * ((D - 1 : ℕ) * q ^ 2) ^ R := by
+  have hsum := Finset.sum_le_sum fun z (_ : z ∈ Finset.univ) =>
+    kernel_edgeRatioError_le H hq₀ hq₁ R huv z
+  simp only [mul_assoc, Finset.sum_add_distrib, Finset.sum_sub_distrib,
+    ← Finset.mul_sum, Finset.sum_boole] at hsum
+  have hu : ((sphere H u R).card : ℝ) ≤ D * (D - 1 : ℕ) ^ R := by
+    exact_mod_cast card_sphere_le_degree H hD degree u R
+  have hv : ((sphere H v R).card : ℝ) ≤ D * (D - 1 : ℕ) ^ R := by
+    exact_mod_cast card_sphere_le_degree H hD degree v R
+  have htail : 2 * (q ^ 2) ^ R *
+      (((sphere H u R).card : ℝ) + (sphere H v R).card) ≤
+        4 * D * ((D - 1 : ℕ) * q ^ 2) ^ R := by
+    rw [mul_pow]
+    have hp : 0 ≤ 2 * (q ^ 2) ^ R := by positivity
+    nlinarith [mul_le_mul_of_nonneg_left (add_le_add hu hv) hp]
+  change (∑ z, edgeRatioError q (kernel H q R u z) (kernel H q R v z)) ≤
+    (1 + q ^ 2) * (∑ z, kernel H q R u z * kernel H q R v z) -
+      q * ((∑ z, kernel H q R u z ^ 2) + ∑ z, kernel H q R v z ^ 2) +
+      2 * ((q ^ 2) ^ R *
+        (((sphere H u R).card : ℝ) + (sphere H v R).card)) at hsum
   linarith
 
 /-- **Correlation of adjacent rows.** For a nonnegative ratio `q`, the unit kernel rows of

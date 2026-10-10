@@ -1,0 +1,79 @@
+{
+  "vertices": 64000,
+  "radius": 40,
+  "rounds": 256,
+  "seed": 1061,
+  "edge_correlation": 0.9405994966052182,
+  "rows": [
+    {
+      "round": 0,
+      "zero": 0.1431875,
+      "peak_threshold": 0.14334375,
+      "peak_prefix": 0.143359375,
+      "max_tie": 2
+    },
+    {
+      "round": 1,
+      "zero": 0.141703125,
+      "peak_threshold": 0.1418125,
+      "peak_prefix": 0.141859375,
+      "max_tie": 8
+    },
+    {
+      "round": 2,
+      "zero": 0.140359375,
+      "peak_threshold": 0.140546875,
+      "peak_prefix": 0.1405625,
+      "max_tie": 9
+    },
+    {
+      "round": 4,
+      "zero": 0.137953125,
+      "peak_threshold": 0.13803125,
+      "peak_prefix": 0.138078125,
+      "max_tie": 12
+    },
+    {
+      "round": 8,
+      "zero": 0.134953125,
+      "peak_threshold": 0.135046875,
+      "peak_prefix": 0.13509375,
+      "max_tie": 17
+    },
+    {
+      "round": 16,
+      "zero": 0.131609375,
+      "peak_threshold": 0.131828125,
+      "peak_prefix": 0.13196875,
+      "max_tie": 30
+    },
+    {
+      "round": 32,
+      "zero": 0.1284375,
+      "peak_threshold": 0.1293125,
+      "peak_prefix": 0.129515625,
+      "max_tie": 56
+    },
+    {
+      "round": 64,
+      "zero": 0.12475,
+      "peak_threshold": 0.12703125,
+      "peak_prefix": 0.1273125,
+      "max_tie": 81
+    },
+    {
+      "round": 128,
+      "zero": 0.11925,
+      "peak_threshold": 0.125546875,
+      "peak_prefix": 0.126015625,
+      "max_tie": 200
+    },
+    {
+      "round": 256,
+      "zero": 0.0883125,
+      "peak_threshold": 0.124859375,
+      "peak_prefix": 0.125484375,
+      "max_tie": 773
+    }
+  ]
+}

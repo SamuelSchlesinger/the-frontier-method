@@ -23,6 +23,15 @@ The layout bound is proved for subcubic graphs with `A = (3/π) arccos((1 + 2√
 (Gaussian edge scores), so circuits of fan-in two need more than `(L - ε) n` gates with
 `L = 1 + 1/A ≈ 4.5625`, and in particular `(4 - ε) n`. The same frontiers give:
 
+* **Explicit strict improvement**: disjoint pair optimization gives `A_* = A - 10^-48`
+  and `L_* = 1 + 1/A_* ≥ L + 10^-47`
+  (`Frontier.lowerBound_matching_explicit`, `Frontier.matchingCircuitCoefficient_gain`).
+  For dense sumset-free families over finite fields, up to `10^-48 n` extra linear inputs
+  can be supplied for free while preserving the full old coefficient `L`, with correctness
+  required only on consistent inputs (`Frontier.free_parity_rate_preserving_gaussian_explicit`).
+  The [quantitative certificate](research/communication/critical_supply.md#an-explicit-numerical-certificate)
+  records the conservative tolerances. The quarter supply coefficient and arbitrary linear
+  parity redundancy remain open.
 * **Explicit sets**: the fibers of sumset dispersers are rectangle-free, so the bound applies to
   balanced sumset dispersers (`Frontier.lowerBound_sumsetDisperser`). The paper obtains an
   explicit Boolean language in P from Xin Li's [sumset-extractor construction](https://arxiv.org/abs/2303.06802).

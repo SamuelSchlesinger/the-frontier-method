@@ -164,6 +164,15 @@ vertex, all inputs, including those the network does not read. -/
 def revealedBy (t : ℕ) : Set ι :=
   if t ≤ Nat.card V then N.readIn (π.initial t) else univ
 
+/-- Network sweeps reveal inputs monotonically, including the final unread step. -/
+theorem revealedBy_mono : Monotone (N.revealedBy π) := by
+  intro t u htu
+  by_cases hu : u ≤ Nat.card V
+  · simp only [revealedBy, htu.trans hu, hu, ite_true]
+    rintro i ⟨v, hv, hi⟩
+    exact ⟨v, (π.mem_initial.mp hv).trans_le htu, hi⟩
+  · simp [revealedBy, hu]
+
 variable {S : Set (ι → U)} {R : Type*}
 
 /-- **Sweeping along a layout.** Fix values `val x` on the edges for every input `x`, and an extra
@@ -341,23 +350,19 @@ noncomputable def sweep : Sweep N.accepted (Unit × (E → Option U)) :=
     fun _ _ _ hx _ hy _ hxy _ hzx hzy =>
       ((N.satisfies_witness hx).splice (N.satisfies_witness hy) hxy hzx hzy).imp fun _ h => h.1
 
-/-- **The frontier counting lemma for networks.** Let the accepted inputs of a network be
-`K`-rectangle-free, with at least `K` of them. If a layout has all frontiers of size at most
-`w`, every vertex has degree at most `d` and reads at most `m` inputs, then
-
-`|accepted| ≤ (K - 1) ^ 2 · (|V| · |U| ^ (w + d + m) + |U| ^ #(unread inputs))`. -/
-theorem ncard_accepted_le [Finite ι] [Finite U] [Finite E] {K : ℕ}
-    (hfree : RectangleFree N.accepted K) (hK : K ≤ N.accepted.ncard)
+/-- The transition supply of a network sweep, independently of any hardness
+property. It can also be used before enforcing an additional input promise. -/
+theorem transitionCount_sweep_le [Finite ι] [Finite U] [Finite E]
     {w d m : ℕ} (hw : ∀ t, (N.frontier π t).ncard ≤ w) (hd : N.MaxDegreeLE d)
     (hm : ∀ v, (N.readAt v).ncard ≤ m) :
-    N.accepted.ncard ≤
-      (K - 1) ^ 2 * (Nat.card V * Nat.card U ^ (w + d + m) + Nat.card U ^ N.readᶜ.ncard) := by
+    (N.sweep π).transitionCount ≤
+      Nat.card V * Nat.card U ^ (w + d + m) + Nat.card U ^ N.readᶜ.ncard := by
   have hq : 1 ≤ Nat.card U := Nat.card_pos
   -- The extra messages carry no information.
   have hunit : ∀ t, ((fun x => (((fun _ _ => ()) : ℕ → (ι → U) → Unit) t x,
       ((fun _ _ => ()) : ℕ → (ι → U) → Unit) (t + 1) x)) '' N.accepted).ncard ≤ 1 :=
     fun t => (ncard_le_one (toFinite _)).mpr fun a _ b _ => Subsingleton.elim a b
-  refine ((N.sweep π).ncard_le hfree hK).trans (Nat.mul_le_mul_left _ ?_)
+  unfold Sweep.transitionCount
   rw [show (N.sweep π).length = Nat.card V + 1 from rfl, Finset.sum_range_succ]
   refine add_le_add ?_ ((N.ncard_transition_last_le).trans ?_)
   · calc ∑ t ∈ Finset.range (Nat.card V), ((N.sweep π).transition t '' N.accepted).ncard
@@ -380,9 +385,23 @@ theorem ncard_accepted_le [Finite ι] [Finite U] [Finite E] {K : ℕ}
                   ncard_union_le _ _
               _ ≤ w + d := add_le_add (hw t) (hd _)
           have := hm (π.symm ⟨t, ht⟩)
-          omega
+          lia
       _ = Nat.card V * Nat.card U ^ (w + d + m) := by simp
   · exact (Nat.mul_le_mul_right _ (hunit (Nat.card V))).trans (by rw [one_mul])
+
+/-- **The frontier counting lemma for networks.** Let the accepted inputs of a network be
+`K`-rectangle-free, with at least `K` of them. If a layout has all frontiers of size at most
+`w`, every vertex has degree at most `d` and reads at most `m` inputs, then
+
+`|accepted| ≤ (K - 1) ^ 2 · (|V| · |U| ^ (w + d + m) + |U| ^ #(unread inputs))`. -/
+theorem ncard_accepted_le [Finite ι] [Finite U] [Finite E] {K : ℕ}
+    (hfree : RectangleFree N.accepted K) (hK : K ≤ N.accepted.ncard)
+    {w d m : ℕ} (hw : ∀ t, (N.frontier π t).ncard ≤ w) (hd : N.MaxDegreeLE d)
+    (hm : ∀ v, (N.readAt v).ncard ≤ m) :
+    N.accepted.ncard ≤
+      (K - 1) ^ 2 * (Nat.card V * Nat.card U ^ (w + d + m) + Nat.card U ^ N.readᶜ.ncard) :=
+  ((N.sweep π).ncard_le hfree hK).trans
+    (Nat.mul_le_mul_left _ (N.transitionCount_sweep_le π hw hd hm))
 
 /-- A label budget on adjacent frontiers bounds the accepted set without charging repeated
 copies of a label. This includes the inputs read during the step in the budget `b`. -/

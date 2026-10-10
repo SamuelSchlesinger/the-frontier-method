@@ -35,6 +35,29 @@ This is a threshold property, not the usual additive-combinatorial term "sum-fre
 def SumsetFree [Add G] (S : Set G) (K : ℕ) : Prop :=
   ∀ A B : Set G, (∀ a ∈ A, ∀ b ∈ B, a + b ∈ S) → A.ncard < K ∨ B.ncard < K
 
+/-- Coordinate rectangles are sumsets of disjointly supported assignments. -/
+theorem SumsetFree.rectangleFree {ι U : Type*} [AddZeroClass U]
+    {S : Set (ι → U)} {K : ℕ} (hS : SumsetFree S K) : RectangleFree S K := by
+  intro X A B hAB
+  have h := hS (pad X '' A) (pad Xᶜ '' B) (by
+    rintro _ ⟨a, ha, rfl⟩ _ ⟨b, hb, rfl⟩
+    apply hAB
+    obtain ⟨h₁, h₂⟩ := domRestrict_pad_add_pad X a b
+    rw [mem_rectangle, h₁, h₂]
+    exact ⟨ha, hb⟩)
+  simpa only [ncard_image_of_injective _ (pad_injective X),
+    ncard_image_of_injective _ (pad_injective Xᶜ)] using h
+
+/-- Sumset hardness is unchanged by an additive equivalence. -/
+theorem SumsetFree.preimage_addEquiv {H : Type*} [AddMonoid G] [AddMonoid H]
+    {S : Set G} {K : ℕ} (hS : SumsetFree S K) (e : H ≃+ G) :
+    SumsetFree (e ⁻¹' S) K := by
+  intro A B hAB
+  have h := hS (e '' A) (e '' B) (by
+    rintro _ ⟨a, ha, rfl⟩ _ ⟨b, hb, rfl⟩
+    simpa only [← e.map_add, mem_preimage] using hAB a ha b hb)
+  simpa only [ncard_image_of_injective _ e.injective] using h
+
 /-- A large sumset-free set cannot be invariant under a large set of translations.
 For a function of a linear image, this bounds the size of the image map's kernel. -/
 theorem SumsetFree.ncard_lt_of_stable [Add G] {S H : Set G} {K : ℕ}

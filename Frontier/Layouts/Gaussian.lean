@@ -367,20 +367,22 @@ theorem dependsOn_straddleEvent (q : ℝ) (R : ℕ) (t : ℝ) (v : W) :
   · rintro ⟨e, he, h1, e', he', h2⟩
     exact ⟨e, he, (hscore e he).symm ▸ h1, e', he', (hscore e' he').symm ▸ h2⟩
 
-omit [DecidableEq W] in
-/-- **Straddling probability.** If adjacent kernel rows have correlation at least `ρ₀ ≥ 17/32`,
-a vertex straddles any fixed threshold with probability at most `straddleBound ρ₀`. -/
-theorem measureReal_straddleEvent_le (regular : H.IsRegularOfDegree 3) {q : ℝ} (hq0 : 0 ≤ q)
+/-- Straddling probability with the actual average pair correlation retained.
+The lower bound `ρ₀` ensures that all pair correlations lie in the concavity interval. -/
+theorem measureReal_straddleEvent_le_of_average (regular : H.IsRegularOfDegree 3)
+    {q : ℝ} (hq0 : 0 ≤ q)
     {R : ℕ} {ρ₀ : ℝ} (hρ₀ : 17 / 32 ≤ ρ₀)
-    (hρ : ρ₀ ≤ 2 * q / (1 + q ^ 2) - 3 * (2 * q ^ 2) ^ R) (t : ℝ) (v : W) :
-    (gaussPi W).real (straddleEvent H q R t v) ≤ straddleBound ρ₀ := by
+    (hρ : ρ₀ ≤ 2 * q / (1 + q ^ 2) - 3 * (2 * q ^ 2) ^ R) (t : ℝ) (v : W)
+    {a : ℝ} (haverage : 6 * a ≤ ∑ e ∈ H.incidenceFinset v,
+      ∑ e' ∈ (H.incidenceFinset v).erase e,
+        ∑ z, edgeVector H q R e z * edgeVector H q R e' z) :
+    (gaussPi W).real (straddleEvent H q R t v) ≤ 3 / (2 * Real.pi) * Real.arccos a := by
   classical
   have degree : ∀ v, H.degree v ≤ 3 := fun v => (regular.degree_eq v).le
   set κ := Real.sqrt ((1 + ρ₀) / 2) with hκ
   have hκ78 : 7 / 8 ≤ κ := by
     rw [hκ, show (7 / 8 : ℝ) = Real.sqrt ((7 / 8) ^ 2) by rw [Real.sqrt_sq (by norm_num)]]
     exact Real.sqrt_le_sqrt (by linarith)
-  have hκsq : κ ^ 2 = (1 + ρ₀) / 2 := Real.sq_sqrt (by linarith)
   have star := fun e (he : e ∈ H.incidenceFinset v) =>
     edgeVector_star degree hq0 (by linarith) hρ v he
   set s := H.incidenceFinset v
@@ -420,8 +422,8 @@ theorem measureReal_straddleEvent_le (regular : H.IsRegularOfDegree 3) {q : ℝ}
         (measurable_edgeScore H q R e) (measurable_edgeScore H q R e') t)
   refine count.trans ?_
   -- Sheppard's bound for each separated pair, then the star inequality.
-  have hsum := sum_arccos_star_le hxv s hs (fun e => edgeVector H q R e)
-    (fun e he => (star e he).1) hκ78 (fun e he => (star e he).2)
+  have hsum := sum_arccos_star_le_of_average hxv s hs (fun e => edgeVector H q R e)
+    (fun e he => (star e he).1) hκ78 (fun e he => (star e he).2) haverage
   calc 1 / 4 * ∑ e ∈ s, ∑ e' ∈ s.erase e,
         (gaussPi W).real {ω | Between t (edgeScore H q R ω e) (edgeScore H q R ω e')}
       ≤ 1 / 4 * ∑ e ∈ s, ∑ e' ∈ s.erase e,
@@ -432,10 +434,28 @@ theorem measureReal_straddleEvent_le (regular : H.IsRegularOfDegree 3) {q : ℝ}
     _ = 1 / 4 / Real.pi * ∑ e ∈ s, ∑ e' ∈ s.erase e,
           Real.arccos (∑ z, edgeVector H q R e z * edgeVector H q R e' z) := by
         simp only [div_eq_mul_inv, ← sum_mul]; ring
-    _ ≤ 1 / 4 / Real.pi * (6 * Real.arccos ((3 * κ ^ 2 - 1) / 2)) := by gcongr
-    _ = straddleBound ρ₀ := by
-        rw [hκsq, straddleBound, show (3 * ((1 + ρ₀) / 2) - 1) / 2 = (1 + 3 * ρ₀) / 4 by ring]
-        ring
+    _ ≤ 1 / 4 / Real.pi * (6 * Real.arccos a) := by gcongr
+    _ = 3 / (2 * Real.pi) * Real.arccos a := by ring
+
+omit [DecidableEq W] in
+/-- **Straddling probability.** If adjacent kernel rows have correlation at least `ρ₀ ≥ 17/32`,
+a vertex straddles any fixed threshold with probability at most `straddleBound ρ₀`. -/
+theorem measureReal_straddleEvent_le (regular : H.IsRegularOfDegree 3) {q : ℝ} (hq0 : 0 ≤ q)
+    {R : ℕ} {ρ₀ : ℝ} (hρ₀ : 17 / 32 ≤ ρ₀)
+    (hρ : ρ₀ ≤ 2 * q / (1 + q ^ 2) - 3 * (2 * q ^ 2) ^ R) (t : ℝ) (v : W) :
+    (gaussPi W).real (straddleEvent H q R t v) ≤ straddleBound ρ₀ := by
+  classical
+  have degree : ∀ v, H.degree v ≤ 3 := fun v => (regular.degree_eq v).le
+  have star := fun e (he : e ∈ H.incidenceFinset v) =>
+    edgeVector_star degree hq0 (by linarith) hρ v he
+  apply measureReal_straddleEvent_le_of_average regular hq0 hρ₀ hρ
+  have hsum := sum_inner_ordered_pairs_ge (sum_unitKernel_sq H q R v)
+    (H.incidenceFinset v) (fun e => edgeVector H q R e)
+    (fun e he => (star e he).1) (Real.sqrt_nonneg ((1 + ρ₀) / 2))
+    (fun e he => (star e he).2)
+  rw [card_incidenceFinset_of_regular regular v, Real.sq_sqrt (by linarith)] at hsum
+  push_cast at hsum
+  linarith
 
 end Straddle
 
@@ -511,6 +531,12 @@ theorem sum_edgeVector_sq_of_mem (degree : ∀ v, H.degree v ≤ 3) {q : ℝ} (h
 noncomputable def cubicBound (ρ₀ T ε : ℝ) (M : ℕ) : ℝ :=
   max (9 / (2 * T ^ 2) + 3 * ε)
     (straddleBound ρ₀ + 9 / 2 * (2 * T / M) / Real.sqrt (2 * Real.pi) + 4 * ε)
+
+/-- The same grid and tail overhead with any uniform upper bound on the mean
+straddling count per vertex. -/
+noncomputable def cubicBoundOfMean (μ T ε : ℝ) (M : ℕ) : ℝ :=
+  max (9 / (2 * T ^ 2) + 3 * ε)
+    (μ + 9 / 2 * (2 * T / M) / Real.sqrt (2 * Real.pi) + 4 * ε)
 
 /-- The four concentration estimates needed by the deterministic median-layout step. -/
 private structure SampleConcentration (q : ℝ) (R : ℕ) (T ε : ℝ) (M : ℕ)
@@ -610,15 +636,17 @@ private theorem exists_concentrated_sample (regular : H.IsRegularOfDegree 3)
     fun i hi => (hmid i (mem_range.mpr hi)).2, hlow, hhigh⟩
 
 omit [DecidableEq W] in
-/-- **A good sample.** For a large cubic graph some Gaussian sample yields a median layout all
-of whose prefixes are crossed by at most `h · cubicBound ρ₀ T ε M` edges. -/
-theorem exists_good_sample (regular : H.IsRegularOfDegree 3) {q : ℝ} (hq0 : 0 ≤ q)
+/-- Concentration and the median-layout conversion retain any uniform bound on
+the total expected straddling count. -/
+theorem exists_good_sample_of_mean (regular : H.IsRegularOfDegree 3) {q : ℝ} (hq0 : 0 ≤ q)
     (R : ℕ) {ρ₀ : ℝ} (hρ₀ : 17 / 32 ≤ ρ₀)
     (hρ : ρ₀ ≤ 2 * q / (1 + q ^ 2) - 3 * (2 * q ^ 2) ^ R) {T ε : ℝ} (hT : 0 < T)
     (hε : 0 < ε) {M : ℕ} (hM : 0 < M)
-    (large : (3 * M + 3) * (vertexOverlap 3 (R + 1) : ℝ) / ε ^ 2 < Fintype.card W) :
+    (large : (3 * M + 3) * (vertexOverlap 3 (R + 1) : ℝ) / ε ^ 2 < Fintype.card W)
+    {μ : ℝ} (hmean : ∀ t, (∑ v, (gaussPi W).real (straddleEvent H q R t v)) ≤
+      Fintype.card W * μ) :
     ∃ key : W → ℕ, Function.Injective key ∧ ∀ t : ℕ,
-      (#(H.cutFinset {w | key w < t}) : ℝ) ≤ Fintype.card W * cubicBound ρ₀ T ε M := by
+      (#(H.cutFinset {w | key w < t}) : ℝ) ≤ Fintype.card W * cubicBoundOfMean μ T ε M := by
   classical
   have degree : ∀ v, H.degree v ≤ 3 := fun v => (regular.degree_eq v).le
   set h : ℝ := (Fintype.card W : ℝ)
@@ -665,13 +693,13 @@ theorem exists_good_sample (regular : H.IsRegularOfDegree 3) {q : ℝ} (hq0 : 0 
     calc 3 * (#{e ∈ H.edgeFinset | p (X e)} : ℝ)
         ≤ 3 * (#H.edgeFinset * (1 / T ^ 2) + c) := by linarith
       _ = h * (9 / (2 * T ^ 2) + 3 * ε) := by rw [hE, hc]; field_simp; ring
-  have hB1 : h * (9 / (2 * T ^ 2) + 3 * ε) ≤ h * cubicBound ρ₀ T ε M :=
+  have hB1 : h * (9 / (2 * T ^ 2) + 3 * ε) ≤ h * cubicBoundOfMean μ T ε M :=
     mul_le_mul_of_nonneg_left (le_max_left _ _) hhpos.le
-  have hB2 : h * (straddleBound ρ₀ + 9 / 2 * δ / Real.sqrt (2 * Real.pi) + 4 * ε) ≤
-      h * cubicBound ρ₀ T ε M :=
+  have hB2 : h * (μ + 9 / 2 * δ / Real.sqrt (2 * Real.pi) + 4 * ε) ≤
+      h * cubicBoundOfMean μ T ε M :=
     mul_le_mul_of_nonneg_left (le_max_right _ _) hhpos.le
   obtain ⟨key, hinj, hcut⟩ := exists_key_of_edgeScore regular X hδpos M
-    (a := -T) (B := h * cubicBound ρ₀ T ε M)
+    (a := -T) (B := h * cubicBoundOfMean μ T ε M)
     ((tail (· < -T) (fun e he => (tailMean e he).1) good.low).trans hB1)
     (by
       have hT' : -T + M * δ = T := by rw [hδ]; field_simp; ring
@@ -686,23 +714,38 @@ theorem exists_good_sample (regular : H.IsRegularOfDegree 3) {q : ℝ} (hq0 : 0 
       have hWcount := card_filter_le_sum_indicator H.edgeFinset (window i) ω
         (fun e => -T + i * δ ≤ X e ∧ X e < -T + (i + 1) * δ) fun e _ he =>
           ⟨he.1, by simp only [thr]; linarith [he.2]⟩
-      have hSmean : ∑ v, P.real (straddle i v) ≤ h * straddleBound ρ₀ :=
-        (sum_le_sum fun v _ => measureReal_straddleEvent_le regular hq0 hρ₀ hρ (thr i) v).trans_eq
-          (by rw [sum_const, nsmul_eq_mul, card_univ])
+      have hSmean : ∑ v, P.real (straddle i v) ≤ h * μ := hmean (thr i)
       have hWmean := edgeMean (p := fun x => thr i ≤ x ∧ x < thr i + δ)
         (b := δ / Real.sqrt (2 * Real.pi)) fun e he =>
         gaussPi_window_le _ (unit he) (thr i) hδpos.le
       calc (#{v | EdgeStraddles H X (-T + i * δ) v} : ℝ) +
             3 * #{e ∈ H.edgeFinset | -T + i * δ ≤ X e ∧ X e < -T + (i + 1) * δ}
-          ≤ (h * straddleBound ρ₀ + c) +
+          ≤ (h * μ + c) +
               3 * (#H.edgeFinset * (δ / Real.sqrt (2 * Real.pi)) + c) := by
             gcongr
             · linarith
             · linarith
-        _ = h * (straddleBound ρ₀ + 9 / 2 * δ / Real.sqrt (2 * Real.pi) + 4 * ε) := by
+        _ = h * (μ + 9 / 2 * δ / Real.sqrt (2 * Real.pi) + 4 * ε) := by
             rw [hE, hc]; ring
         _ ≤ _ := hB2)
   exact ⟨key, hinj, fun t => (hcut t).trans_eq (by ring)⟩
+
+
+omit [DecidableEq W] in
+/-- **A good sample.** For a large cubic graph some Gaussian sample yields a median layout all
+of whose prefixes are crossed by at most `h · cubicBound ρ₀ T ε M` edges. -/
+theorem exists_good_sample (regular : H.IsRegularOfDegree 3) {q : ℝ} (hq0 : 0 ≤ q)
+    (R : ℕ) {ρ₀ : ℝ} (hρ₀ : 17 / 32 ≤ ρ₀)
+    (hρ : ρ₀ ≤ 2 * q / (1 + q ^ 2) - 3 * (2 * q ^ 2) ^ R) {T ε : ℝ} (hT : 0 < T)
+    (hε : 0 < ε) {M : ℕ} (hM : 0 < M)
+    (large : (3 * M + 3) * (vertexOverlap 3 (R + 1) : ℝ) / ε ^ 2 < Fintype.card W) :
+    ∃ key : W → ℕ, Function.Injective key ∧ ∀ t : ℕ,
+      (#(H.cutFinset {w | key w < t}) : ℝ) ≤ Fintype.card W * cubicBound ρ₀ T ε M := by
+  apply exists_good_sample_of_mean regular hq0 R hρ₀ hρ hT hε hM large
+  intro t
+  have h := sum_le_sum (s := univ) fun v (_ : v ∈ (univ : Finset W)) =>
+    measureReal_straddleEvent_le regular hq0 hρ₀ hρ t v
+  simpa only [sum_const, card_univ, nsmul_eq_mul] using h
 
 end Sample
 

@@ -1,0 +1,91 @@
+{
+  "purpose": "screening throughput only; not certified numerical integration",
+  "model": "one limiting cubic-tree two-vertex patch; 13 Gaussian coordinates",
+  "configuration": {
+    "backend": "numpy",
+    "dtype": "float64",
+    "samples": 1000000,
+    "batch": 100000,
+    "repeats": 3,
+    "seed": 71943
+  },
+  "thresholds": [
+    -0.15,
+    -0.075,
+    0.0,
+    0.075,
+    0.15
+  ],
+  "environment": {
+    "python": "3.14.5",
+    "numpy": "2.4.4",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "thread_environment": {
+      "OPENBLAS_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1"
+    }
+  },
+  "validation": {
+    "minimum_eigenvalue_before_clipping": -1.9862140411937253e-15,
+    "factorization_max_error": 1.6653345369377348e-15,
+    "exact_lookup_patterns_checked": 8192
+  },
+  "setup_and_validation_seconds": 0.08331829200324137,
+  "runs": [
+    {
+      "wall_seconds": 0.09573200000158977,
+      "gain_sums": [
+        20249,
+        20245,
+        20244,
+        19807,
+        19946
+      ],
+      "sample_mean_gains_per_patch": [
+        0.020249,
+        0.020245,
+        0.020244,
+        0.019807,
+        0.019946
+      ]
+    },
+    {
+      "wall_seconds": 0.09464758400281426,
+      "gain_sums": [
+        20093,
+        19917,
+        19835,
+        20091,
+        20100
+      ],
+      "sample_mean_gains_per_patch": [
+        0.020093,
+        0.019917,
+        0.019835,
+        0.020091,
+        0.0201
+      ]
+    },
+    {
+      "wall_seconds": 0.09743445800268091,
+      "gain_sums": [
+        20159,
+        20000,
+        20160,
+        19921,
+        20139
+      ],
+      "sample_mean_gains_per_patch": [
+        0.020159,
+        0.02,
+        0.02016,
+        0.019921,
+        0.020139
+      ]
+    }
+  ],
+  "median_wall_seconds": 0.09573200000158977,
+  "samples_per_second": 10445827.936148765,
+  "same_workload_10000_evaluations_hours": 0.26592222222663825
+}

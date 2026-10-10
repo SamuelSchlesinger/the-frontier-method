@@ -104,6 +104,36 @@ private theorem integral_Ioi_mul_exp_neg_mul_sq {b : ℝ} (hb : 0 < b) :
     exact h
   exact_mod_cast h'
 
+/-- The absolute first moment, in a form convenient for products of Gaussian windows. -/
+theorem integral_abs_gaussianReal (v : ℝ≥0) :
+    ∫ x, |x| ∂gaussianReal 0 v = 2 * v / Real.sqrt (2 * Real.pi * v) := by
+  rcases eq_or_ne v 0 with rfl | hv
+  · simp
+  have hb : 0 < (2 * (v : ℝ))⁻¹ := by positivity
+  rw [integral_gaussianReal_eq_integral_smul hv]
+  have heq (x : ℝ) : gaussianPDFReal 0 v x * |x| =
+      (Real.sqrt (2 * Real.pi * v))⁻¹ *
+        (|x| * Real.exp (-(2 * (v : ℝ))⁻¹ * |x| ^ 2)) := by
+    simp only [gaussianPDFReal_def, sub_zero, sq_abs]
+    have he : -(x ^ 2) / (2 * (v : ℝ)) = -(2 * (v : ℝ))⁻¹ * x ^ 2 := by ring
+    rw [he]
+    ring
+  simp only [smul_eq_mul, heq]
+  rw [integral_const_mul,
+    integral_comp_abs (f := fun x : ℝ => x * Real.exp (-(2 * (v : ℝ))⁻¹ * x ^ 2)),
+    integral_Ioi_mul_exp_neg_mul_sq hb]
+  field_simp
+
+/-- A Gaussian interval is bounded by its length times the maximum density. -/
+theorem gaussianReal_Icc_le_length (v : ℝ≥0) (hv : v ≠ 0) (c w : ℝ) :
+    gaussianReal 0 v (Icc (c - w) (c + w)) ≤
+      ENNReal.ofReal (2 * w / Real.sqrt (2 * Real.pi * v)) := by
+  have h := gaussianReal_le_mul_volume 0 hv (Icc (c - w) (c + w))
+  rw [Real.volume_Icc, ← ENNReal.ofReal_mul (by positivity)] at h
+  convert h using 1
+  congr 1
+  ring
+
 /-! ### Laws of Gaussian forms -/
 
 section Forms
@@ -164,6 +194,59 @@ theorem gaussPi_map_form_pair (a b : ι → ℝ) (hab : ∑ i, a i * b i = 0) :
   rw [h, ← Measure.map_map (by fun_prop) (by fun_prop), map_pi_eq_stdGaussian,
     map_pair_stdGaussian, EuclideanSpace.real_norm_sq_eq, EuclideanSpace.real_norm_sq_eq]
   simpa [PiLp.inner_apply, mul_comm] using hab
+
+private theorem sum_sq_sum_eq_of_gram {κ ν : Type} [Fintype κ] [Fintype ν]
+    (a : κ → ι → ℝ) (b : κ → ν → ℝ)
+    (h : ∀ i j, ∑ k, a i k * a j k = ∑ k, b i k * b j k) (c : κ → ℝ) :
+    ∑ k, (∑ i, c i * a i k) ^ 2 = ∑ k, (∑ i, c i * b i k) ^ 2 := by
+  have hexpand {τ : Type} [Fintype τ] (v : κ → τ → ℝ) :
+      ∑ k, (∑ i, c i * v i k) ^ 2 =
+        ∑ i, ∑ j, c i * c j * ∑ k, v i k * v j k := by
+    simp only [sq, Finset.sum_mul, Finset.mul_sum]
+    rw [Finset.sum_comm]
+    apply Finset.sum_congr rfl
+    intro i _
+    rw [Finset.sum_comm]
+    apply Finset.sum_congr rfl
+    intro j _
+    apply Finset.sum_congr rfl
+    intro k _
+    ring
+  rw [hexpand a, hexpand b]
+  simp only [h]
+
+/-- Equal Gram matrices give the same joint Gaussian law. The coefficient
+families may use different finite coordinate spaces. This permits a probability
+estimate proved in an explicit model to apply to any realization of its covariance. -/
+theorem gaussPi_map_forms_eq_of_gram {κ ν : Type} [Finite κ] [Fintype ν]
+    (a : κ → ι → ℝ) (b : κ → ν → ℝ)
+    (h : ∀ i j, ∑ k, a i k * a j k = ∑ k, b i k * b j k) :
+    (gaussPi ι).map (fun ω i => form (a i) ω) =
+      (gaussPi ν).map (fun ω i => form (b i) ω) := by
+  classical
+  let : Fintype κ := Fintype.ofFinite κ
+  apply Measure.ext_of_charFunDual
+  funext L
+  have hdual (z : κ → ℝ) : L z = ∑ i, L (Pi.single i 1) * z i := by
+    conv_lhs => rw [pi_eq_sum_univ' z, map_sum]
+    simp only [map_smul, smul_eq_mul, mul_comm]
+  have heq {τ : Type} [Fintype τ] (v : κ → τ → ℝ) :
+      L ∘ (fun ω i => form (v i) ω) =
+        form (fun k => ∑ i, L (Pi.single i 1) * v i k) := by
+    funext ω
+    simp only [Function.comp_apply]
+    rw [hdual]
+    simp only [form, Finset.mul_sum, Finset.sum_mul]
+    rw [Finset.sum_comm]
+    apply Finset.sum_congr rfl
+    intro k _
+    apply Finset.sum_congr rfl
+    intro i _
+    ring
+  simp only [charFunDual_eq_charFun_map_one]
+  rw [Measure.map_map (by fun_prop) (by unfold form; fun_prop),
+    Measure.map_map (by fun_prop) (by unfold form; fun_prop), heq, heq,
+    gaussPi_map_form, gaussPi_map_form, sum_sq_sum_eq_of_gram a b h]
 
 /-! ### Windows and tails -/
 

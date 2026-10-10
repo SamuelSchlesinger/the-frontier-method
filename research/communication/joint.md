@@ -6,10 +6,14 @@ an affine interface and an arbitrary nonlinear suffix. It removes an overcount:
 visible interface values and the syndrome need not be independent information.
 
 Lean checks the abstract subspace identity and dimension formula below as
-`LinearBoundary.joint_eq` and `finrank_joint`. The code instantiation, graph
-formula, and compiler are paper proofs with finite checks. They are not an
-end-to-end formal circuit lower bound, and no universal quarter-coefficient
-layout theorem is proved here.
+`LinearBoundary.joint_eq` and `finrank_joint`. It also checks the actual joint
+observation map, its rank and affine cardinality, and the resulting supply bound
+for a consistency-enforcing sweep in `Frontier/Boundary/Observation.lean`.
+`ncard_le_parity_joint_codes` applies this to free supplied parity inputs, with
+correctness required only on consistent pairs. The graph formula and full
+additive compiler remain paper proofs with finite checks. No universal
+quarter-coefficient layout theorem or full redundant-parity preservation is
+proved here.
 
 ## The joint code
 
@@ -69,9 +73,21 @@ For subspaces `U_Q<=U` and `V_Q<=V`, modularity gives
 Explicitly, if `w=u+v_q=v+u_q` belongs to the right side, then
 `w-u_q-v_q=u-u_q=v-v_q` belongs to `U intersect V`. The other containment
 is immediate. Also `(U+V_Q)+(V+U_Q)=U+V`. The dimension formula for an
-intersection now gives (1). Equations (2) and its dimension formula are the
-precise Lean-checked statements; identifying the code's observation map with
-these row spaces is the paper proof just given.
+intersection now gives (1). Lean checks (2) and its dimension formula in
+`Boundary/Joint.lean`. The actual map `J:x |-> (L_Q x,R_P L_P x)` is handled
+in `Boundary/Observation.lean` by the equivalent kernel proof:
+
+```
+ker J = ker L_(P union Q) + ker L_(F union Q),
+ker L_(P union Q) intersect ker L_(F union Q) = ker L.
+```
+
+Given a vector in `ker J`, the condition `ker R=im L` supplies a preimage
+of its past-supported codeword. That preimage and its difference from the
+original vector give the two summands. Rank-nullity and the dimension formula
+then prove (1). This allows a singular `L` and redundant rows of `R`.
+`ncard_affine_jointObservation` also checks that translating the code leaves
+the exact number of joint observations unchanged.
 
 ## A smaller transition budget
 
