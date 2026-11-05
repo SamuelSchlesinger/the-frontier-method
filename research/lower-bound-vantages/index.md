@@ -8,6 +8,11 @@ semantic transitions. The branching route now has a standard target parameter,
 line-graph treewidth. None of the comparisons supplies a new unrestricted gate
 coefficient. The [bibliography](sources.md) credits the underlying methods.
 
+The companion [extractor–frontier hybrid failure catalogue](../frontier-hybrids/README.md)
+records specific unsuccessful implications from the cut, extractor, multi-output,
+and computation-segmentation exploration. It includes counterexamples and
+distinguishes them from open structural steps.
+
 ## Question and scope
 
 Which established lower-bound mechanisms can strengthen the frontier method, rather
