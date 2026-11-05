@@ -6,6 +6,11 @@ The results below are kernel-checked refinements of the method. None asserts a s
 universal cubic layout coefficient. The explicit extractor construction and all runtime
 claims remain outside the formalization.
 
+For exploratory routes that did not yield a stronger bound, see the
+[extractor–frontier hybrid failure catalogue](research/frontier-hybrids/README.md).
+It separates counterexamples, insufficient estimates, restricted results, and
+missing structural bridges, with supporting paper proofs and literature links.
+
 ## Read witnesses cost gates
 
 `lowerBound_nondeterministic_witnesses_gaussian` proves that for each fixed `D` and
